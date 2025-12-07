@@ -1,0 +1,147 @@
+import { Sidebar } from '@/components/Sidebar';
+import { Header } from '@/components/Header';
+import { useLanguage } from '@/contexts/LanguageContext';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Switch } from '@/components/ui/switch';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { ChevronLeft } from 'lucide-react';
+
+export const VehicleCoveragePlanSimple = () => {
+  const { t } = useLanguage();
+
+  const steps = [
+    { number: 1, label: 'Insurance Plan', status: 'completed' },
+    { number: 2, label: 'Coverage Plan', status: 'inProcess' },
+    { number: 3, label: 'Coverage Details', status: 'pending' },
+    { number: 4, label: 'Vehicles Details', status: 'pending' },
+    { number: 5, label: 'KYC Details', status: 'pending' },
+  ];
+
+  return (
+    <div className="flex min-h-screen">
+      <Sidebar />
+      <div className="flex-1 flex flex-col">
+        <Header />
+        <main className="flex-1 p-8 bg-background">
+          {/* Stepper */}
+          <div className="mb-12">
+            <div className="flex items-center justify-between max-w-5xl mx-auto">
+              {steps.map((step, index) => (
+                <div key={step.number} className="flex items-center flex-1">
+                  <div className="flex flex-col items-center">
+                    <div className={`w-12 h-12 rounded-full flex items-center justify-center mb-2 ${
+                      step.status === 'completed' 
+                        ? 'bg-green-500 text-white' 
+                        : step.status === 'inProcess'
+                        ? 'bg-primary text-primary-foreground'
+                        : 'bg-muted text-muted-foreground'
+                    }`}>
+                      {step.status === 'completed' ? '✓' : step.number}
+                    </div>
+                    <span className="text-xs text-center max-w-[100px] font-medium">
+                      STEP {step.number}
+                    </span>
+                    <span className={`text-xs mt-1 ${
+                      step.status === 'completed' ? 'text-green-500' :
+                      step.status === 'inProcess' ? 'text-primary' : 'text-orange-500'
+                    }`}>
+                      {step.status === 'completed' ? 'Completed' :
+                       step.status === 'inProcess' ? t('claim.inProcess') : t('claim.pending')}
+                    </span>
+                    <span className="text-xs text-center max-w-[100px] mt-1">{step.label}</span>
+                  </div>
+                  {index < steps.length - 1 && (
+                    <div className="flex-1 h-0.5 bg-border mx-2"></div>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Form */}
+          <div className="max-w-4xl mx-auto">
+            <Button variant="ghost" className="mb-4 gap-2">
+              <ChevronLeft className="w-4 h-4" />
+            </Button>
+
+            <h1 className="text-2xl font-bold mb-8">Coverage Plan</h1>
+
+            <div className="space-y-6">
+              <div className="grid md:grid-cols-2 gap-4">
+                <div>
+                  <Label>Category *</Label>
+                  <Select>
+                    <SelectTrigger className="mt-2">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="two-wheeler">Two Wheeler</SelectItem>
+                      <SelectItem value="four-wheeler">Four Wheeler</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label>Year Of Manufacture *</Label>
+                  <Select>
+                    <SelectTrigger className="mt-2">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="2024">2024</SelectItem>
+                      <SelectItem value="2023">2023</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
+              <div className="grid md:grid-cols-2 gap-4">
+                <div>
+                  <Label>Cubic Capacity (cc) / KW *</Label>
+                  <Input className="mt-2" />
+                </div>
+                <div>
+                  <Label>Effective Date *</Label>
+                  <Input type="date" defaultValue="2025-10-29" className="mt-2" />
+                </div>
+              </div>
+
+              <div>
+                <Label>Expiry Date</Label>
+                <Input type="date" defaultValue="2026-10-28" className="mt-2" disabled />
+              </div>
+
+              <div>
+                <Label>Agent Code *</Label>
+                <Input className="mt-2" />
+              </div>
+
+              <div className="flex items-center justify-between pt-4">
+                <Label>Would you prefer a direct discount?</Label>
+                <Switch />
+              </div>
+
+              {/* Action Buttons */}
+              <div className="flex justify-between pt-6">
+                <Button variant="outline" className="gap-2 text-primary border-primary">
+                  <ChevronLeft className="w-4 h-4" />
+                  BACK
+                </Button>
+                <Button size="lg" className="bg-destructive hover:bg-destructive/90 text-white px-8">
+                  CALCULATE
+                </Button>
+              </div>
+            </div>
+          </div>
+        </main>
+      </div>
+    </div>
+  );
+};

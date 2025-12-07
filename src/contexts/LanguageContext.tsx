@@ -1,0 +1,616 @@
+import React, { createContext, useContext, useState, ReactNode } from 'react';
+
+type Language = 'en' | 'ne';
+
+interface LanguageContextType {
+  language: Language;
+  setLanguage: (lang: Language) => void;
+  t: (key: string) => string;
+}
+
+const translations = {
+  en: {
+    // Common
+    'common.submit': 'SUBMIT',
+    'common.next': 'NEXT',
+    'common.signIn': 'SIGN IN',
+    'common.signUp': 'Sign Up',
+    'common.sendMessage': 'SEND MESSAGE',
+    
+    // Auth
+    'auth.signIn': 'Sign In',
+    'auth.signUp': 'Sign Up',
+    'auth.mobileNo': 'Mobile No',
+    'auth.password': 'Password',
+    'auth.forgotPassword': 'Forgot Password ?',
+    'auth.dontHaveAccount': "Don't you have an account?",
+    'auth.alreadyHaveAccount': 'Already have and account?',
+    'auth.signInHere': 'Sign in here',
+    'auth.userType': 'User Type',
+    'auth.customer': 'Customer',
+    'auth.staff': 'Staff',
+    'auth.corporate': 'Corporate',
+    'auth.surveyor': 'Surveyor',
+    
+    // Insurance Types
+    'insurance.motor': 'Motor',
+    'insurance.travel': 'Travel',
+    'insurance.home': 'Home',
+    'insurance.vehicle': 'Vehicle Insurance',
+    'insurance.travelIns': 'Travel Insurance',
+    'insurance.homeIns': 'Home Insurance',
+    
+    // Navigation
+    'nav.buyPolicies': 'Buy Policies',
+    'nav.kyc': 'KYC',
+    'nav.draftPolicyPayment': 'Draft Policy Payment',
+    'nav.myPolicies': 'My Policies',
+    'nav.claim': 'Claim',
+    'nav.claimIntimate': 'Claim Intimate',
+    'nav.claimTracking': 'Claim Tracking',
+    'nav.faq': 'FAQ',
+    'nav.contactUs': 'Contact Us',
+    'nav.transactionHistory': 'Transaction History',
+    'nav.kycAdd': 'KYC Add',
+    'nav.kycAddCorporate': 'KYC Add Corporate',
+    'nav.kycLink': 'KYC Link',
+    'nav.myDraftPolicy': 'My Draft Policy',
+    'nav.login': 'LOGIN',
+    
+    // Homepage
+    'home.title': "Let's find you the best Insurance Policy",
+    'home.whyPickUs': 'Why should you Pick us?',
+    'home.compareProduct': 'Compare Product',
+    'home.compareDesc': 'Easily Compare Insurance Plan and find the best one for you',
+    'home.simpleReliable': 'Simple & Reliable',
+    'home.simpleDesc': 'Easily fill up the your detail and explore the list of insurance catered to you.',
+    'home.saveMoney': 'Save Money',
+    'home.saveDesc': 'Look for the best product for you and save your precious earned money.',
+    
+    // Claim
+    'claim.fileAClaim': 'File a Claim',
+    'claim.completeForm': 'Complete the provided form to submit a new claims.',
+    'claim.kycDetails': 'KYC DETAILS',
+    'claim.self': 'Self',
+    'claim.others': 'Others',
+    'claim.step1': 'Select KYC',
+    'claim.step2': 'Policy Details',
+    'claim.step3': 'Accident Details',
+    'claim.step4': 'Witness and Investigation',
+    'claim.step5': 'Attachments',
+    'claim.inProcess': 'In Process',
+    'claim.pending': 'Pending',
+    
+    // Dashboard
+    'dashboard.kycNotVerified': 'Dear User Your KYC is not completed and verified. You cannot purchase or make proforma unless your KYC is verified',
+    
+    // Contact
+    'contact.title': 'Contact Us',
+    'contact.subtitle': 'Any question or remarks? Just write us a message',
+    'contact.info': 'Contact Information',
+    'contact.infoDesc': 'Fill up the form and our team will get back to you.',
+    'contact.firstName': 'First Name',
+    'contact.lastName': 'Last Name',
+    'contact.email': 'Email',
+    'contact.phoneNumber': 'Phone Number',
+    'contact.message': 'Write your message here...',
+    
+    // FAQ
+    'faq.title': 'Frequently Asked Questions',
+    'faq.q1': '1. What is Insurance ?',
+    'faq.q2': '2. What are the various types of General Insurance available ?',
+    'faq.q3': '3. How Insurance can be affected ?',
+    'faq.q4': '4. How the sum insured is fixed ?',
+    'faq.q5': '5. Why do insured needs to read and check the Insurance Policy thoroughly ?',
+    'faq.q6': '6. What is Excess or Deductible mentioned in the Policy ?',
+    'faq.q7': '7. Why do Insurance Companies arrange Reinsurance ?',
+    'faq.q8': '8. What shall the Insured do if the incident giving rise to a claim under the Policy occur ?',
+    'faq.q9': '9. What factors affect the premium in comprehensive vehicle insurance?',
+    'faq.q10': "10. What does 'No-Claim Bonus' mean?",
+    
+    // Password
+    'password.change': 'Change Password',
+    'password.current': 'Current Password',
+    'password.new': 'New Password',
+    'password.confirm': 'Confirm Password',
+    
+    // Settings
+    'settings.title': 'Settings',
+    'settings.language': 'Language',
+    'settings.english': 'English',
+    'settings.nepali': 'नेपाली',
+    
+    // Transaction
+    'transaction.sn': 'S.N',
+    'transaction.userName': 'User Name',
+    'transaction.transactionId': 'Transaction ID',
+    'transaction.amount': 'Transaction Am...',
+    'transaction.serviceProvider': 'Service Provider',
+    'transaction.requestDate': 'Request Date',
+    'transaction.paymentStatus': 'Payment Status',
+    'transaction.noRows': 'No rows',
+    'transaction.rowsPerPage': 'Rows per page:',
+    
+    // Claim Tracking
+    'claimTracking.title': 'Track Your Claim:',
+    'claimTracking.selfList': 'Self Claim List',
+    'claimTracking.othersList': 'Others Claim List',
+    'claimTracking.claimNo': 'Claim No',
+    'claimTracking.policyNo': 'Policy No',
+    'claimTracking.regDate': 'Reg. Date',
+    'claimTracking.insuredName': 'Insured Name',
+    'claimTracking.vehicleNumber': 'Vehicle Number',
+    'claimTracking.documentNumber': 'Document Number',
+    'claimTracking.action': 'Action',
+    'claimTracking.claimInitimation': 'CLAIM INITIMATION',
+    
+    // Claim Intimate
+    'claimIntimate.title': 'Intimate Your Claim',
+    'claimIntimate.address': 'Address',
+    'claimIntimate.intimationDate': 'Intimation Date',
+    'claimIntimate.claimStatus': 'Claim Status',
+    
+    // My Draft Policy
+    'draftPolicy.approvedDraft': 'Approved Draft',
+    'draftPolicy.unapprovedDraft': 'Unapproved Draft',
+    'draftPolicy.rejectedDraft': 'Rejected Draft',
+    'draftPolicy.productName': 'Product Name',
+    'draftPolicy.createdDate': 'Created Date',
+    'draftPolicy.acceptanceNo': 'Acceptance No',
+    'draftPolicy.proformaNo': 'Profoma No',
+    'draftPolicy.status': 'Status',
+    'draftPolicy.remarks': 'Remarks',
+    
+    // My Policies
+    'myPolicies.dateFrom': 'Date From',
+    'myPolicies.dateTo': 'Date To',
+    'myPolicies.search': 'SEARCH',
+    'myPolicies.policyList': 'Policy List',
+    'myPolicies.expiredPolicyList': 'Expired Policy List',
+    'myPolicies.expiryDate': 'Expiry Date',
+    'myPolicies.policyNumber': 'Policy Number',
+    'myPolicies.totalPremium': 'Total Premium',
+    
+    // KYC Check
+    'kycCheck.title': 'KYC Check',
+    'kycCheck.mobileNumber': 'Mobile Number',
+    
+    // KYC Add Corporate
+    'kycCorporate.step1': 'KYC Type',
+    'kycCorporate.step2': 'Basic Information',
+    'kycCorporate.step3': 'Member Information',
+    'kycCorporate.step4': 'Company Attachment',
+    'kycCorporate.step5': 'Branch List',
+    'kycCorporate.individualKyc': 'Individual KYC',
+    'kycCorporate.corporateKyc': 'Corporate KYC',
+    'kycCorporate.kycCategory': 'KYC Category',
+    'kycCorporate.self': 'SELF',
+    'kycCorporate.others': 'OTHERS',
+    'kycCorporate.basicInformation': 'Basic Information',
+    'kycCorporate.fullName': 'Full name',
+    'kycCorporate.fullNameNepali': 'Full name Nepali',
+    'kycCorporate.occupation': 'Occupation',
+    'kycCorporate.incomeSource': 'Income Source',
+    'kycCorporate.expectedAnnualTurnover': 'Expected Annual Turnover',
+    'kycCorporate.contactPerson': 'Contact Person',
+    'kycCorporate.emailAddress': 'Email Address',
+    'kycCorporate.phoneNo': 'Phone No',
+    'kycCorporate.mobileNo': 'Mobile No',
+    'kycCorporate.panVatNo': 'PAN/VAT No',
+    'kycCorporate.issueDate': 'Issue Date',
+    'kycCorporate.issueDateBS': 'Issue Date (B.S)',
+    'kycCorporate.registrationNo': 'Registration No',
+    'kycCorporate.regDate': 'Reg Date',
+    'kycCorporate.regDateBS': 'Reg Date (B.S)',
+    'kycCorporate.regOffice': 'Reg Office',
+    'kycCorporate.address': 'Address',
+    'kycCorporate.country': 'Country',
+    'kycCorporate.province': 'Province',
+    'kycCorporate.district': 'District',
+    'kycCorporate.municipality': 'Municipality',
+    'kycCorporate.wardNo': 'Ward No',
+    'kycCorporate.area': 'Area',
+    'kycCorporate.addressField': 'Address',
+    'kycCorporate.addressNepali': 'Address Nepali',
+    'kycCorporate.back': 'BACK',
+    'kycCorporate.continue': 'CONTINUE',
+    'kycCorporate.completed': 'Completed',
+    
+    // KYC Add
+    'kycAdd.basicInfo': 'Basic Information',
+    'kycAdd.fullName': 'Full name',
+    'kycAdd.maritalStatus': 'Marital Status',
+    'kycAdd.dateOfBirth': 'Date of Birth (B.S)',
+    'kycAdd.placeOfBirth': 'Place of Birth (B.S)',
+    'kycAdd.gender': 'Gender',
+    'kycAdd.email': 'E-mail',
+    'kycAdd.permanentAddress': 'Permanent Address',
+    'kycAdd.temporaryAddress': 'Temporary Address',
+    'kycAdd.province': 'Province',
+    'kycAdd.district': 'District',
+    'kycAdd.municipality': 'Municipality/VDC',
+    'kycAdd.tole': 'Tole',
+    'kycAdd.wardNumber': 'Ward Number',
+    'kycAdd.sameAsPermanent': 'Same as Permanent',
+    'kycAdd.others': 'Others',
+    'kycAdd.occupation': 'Occupation',
+    'kycAdd.incomeSource': 'Income Source',
+    'kycAdd.kycClassification': 'KYC Classification',
+    'kycAdd.citizenshipNumber': 'Citizenship Number',
+    'kycAdd.citizenshipIssuedDistrict': 'Citizenship Issued District',
+    'kycAdd.citizenshipIssuedDate': 'Citizenship Issued Date(A.D)',
+    'kycAdd.grandFatherName': 'Grand Father Name',
+    'kycAdd.fatherName': 'Father Name',
+    'kycAdd.motherName': 'Mother Name',
+    'kycAdd.attachments': 'Attachments',
+    'kycAdd.doYouWantToAttach': 'Do you want to attach this file?',
+    'kycAdd.clickToUpload': 'Click here to upload',
+    'kycAdd.businessBranch': 'Business Branch',
+    'kycAdd.selectBusinessBranch': 'Select Business Branch',
+    'kycAdd.pen': 'PEN',
+    'kycAdd.eraser': 'ERASER',
+    'kycAdd.clear': 'CLEAR',
+    'kycAdd.eSignature': 'E-Signature',
+    
+    // Buy Policies
+    'buyPolicies.title': "Let's find you the best Insurance Policy",
+    'buyPolicies.motor': 'Motor',
+    'buyPolicies.travel': 'Travel',
+    'buyPolicies.home': 'Home',
+    
+    // Home Insurance
+    'homeInsurance.title': 'Home Insurance',
+    'homeInsurance.step1': 'Calculate House Premium',
+    'homeInsurance.step2': 'House Premium Report',
+    'homeInsurance.step3': 'House Policy Details',
+    'homeInsurance.step4': 'Proceed to Pay',
+    'homeInsurance.propertyLists': 'Property Lists',
+    'homeInsurance.sumInsured': 'Sum Insured',
+    'homeInsurance.effectiveDate': 'Effective Date',
+    'homeInsurance.expiryDate': 'Expiry Date',
+    'homeInsurance.propertyDescription': 'Property Description',
+    'homeInsurance.addPropertyList': 'ADD PROPERTY LIST',
+    'homeInsurance.total': 'TOTAL',
+    'homeInsurance.note': 'Note: The sum insured property cannot exceed Rs. 2 crore.',
+    
+    // Vehicle Insurance
+    'vehicleInsurance.title': 'Vehicles Details',
+    'vehicleInsurance.step1': 'Insurance Plan',
+    'vehicleInsurance.step2': 'Coverage Plan',
+    'vehicleInsurance.step3': 'Coverage Details',
+    'vehicleInsurance.step4': 'Vehicles Details',
+    'vehicleInsurance.step5': 'KYC Details',
+    'vehicleInsurance.chooseSystem': 'Choose Your vehicle number plate system',
+    'vehicleInsurance.zoneSystem': 'Zone System',
+    'vehicleInsurance.provinceSystem': 'Province System',
+    'vehicleInsurance.embossedSystem': 'Embossed System',
+    'vehicleInsurance.zone': 'Zone',
+    'vehicleInsurance.lotNo': 'Lot No.',
+    'vehicleInsurance.vehicleSymbol': 'Vehicle Symbol',
+    'vehicleInsurance.vehicleNumber': 'Vehicle number',
+    'vehicleInsurance.registerDate': 'Register Date',
+    'vehicleInsurance.manufactureCompany': 'Manufacture Company',
+    'vehicleInsurance.model': 'Model',
+    'vehicleInsurance.vehicleType': 'Vehicle Type',
+    'vehicleInsurance.chasisNo': 'Chasis No',
+    'vehicleInsurance.engineNo': 'Engine No',
+    'vehicleInsurance.blueBookVehicleReg': 'Blue Book (Vehicle registration page / Page No 2)',
+    'vehicleInsurance.blueBookNamsari': 'Blue Book (Namsari / owner page)',
+    'vehicleInsurance.blueBookVehicleDetails': 'Blue Book (Vehicle details page / Page No 9)',
+    'vehicleInsurance.back': 'BACK',
+  },
+  ne: {
+    // Common
+    'common.submit': 'पेश गर्नुहोस्',
+    'common.next': 'अर्को',
+    'common.signIn': 'साइन इन',
+    'common.signUp': 'साइन अप',
+    'common.sendMessage': 'सन्देश पठाउनुहोस्',
+    
+    // Auth
+    'auth.signIn': 'साइन इन',
+    'auth.signUp': 'साइन अप',
+    'auth.mobileNo': 'मोबाइल नम्बर',
+    'auth.password': 'पासवर्ड',
+    'auth.forgotPassword': 'पासवर्ड बिर्सनुभयो?',
+    'auth.dontHaveAccount': 'खाता छैन?',
+    'auth.alreadyHaveAccount': 'खाता छ?',
+    'auth.signInHere': 'यहाँ साइन इन गर्नुहोस्',
+    'auth.userType': 'प्रयोगकर्ता प्रकार',
+    'auth.customer': 'ग्राहक',
+    'auth.staff': 'कर्मचारी',
+    'auth.corporate': 'कर्पोरेट',
+    'auth.surveyor': 'सर्वेयर',
+    
+    // Insurance Types
+    'insurance.motor': 'मोटर',
+    'insurance.travel': 'यात्रा',
+    'insurance.home': 'घर',
+    'insurance.vehicle': 'सवारी साधन बीमा',
+    'insurance.travelIns': 'यात्रा बीमा',
+    'insurance.homeIns': 'घर बीमा',
+    
+    // Navigation
+    'nav.buyPolicies': 'नीति किन्नुहोस्',
+    'nav.kyc': 'केवाईसी',
+    'nav.draftPolicyPayment': 'ड्राफ्ट नीति भुक्तानी',
+    'nav.myPolicies': 'मेरा नीतिहरू',
+    'nav.claim': 'दाबी',
+    'nav.claimIntimate': 'दाबी सूचना',
+    'nav.claimTracking': 'दाबी ट्र्याकिङ',
+    'nav.faq': 'प्राय सोधिने प्रश्नहरू',
+    'nav.contactUs': 'सम्पर्क गर्नुहोस्',
+    'nav.transactionHistory': 'लेनदेन इतिहास',
+    'nav.kycAdd': 'केवाईसी थप्नुहोस्',
+    'nav.kycAddCorporate': 'केवाईसी कर्पोरेट थप्नुहोस्',
+    'nav.kycLink': 'केवाईसी लिंक',
+    'nav.myDraftPolicy': 'मेरो ड्राफ्ट नीति',
+    'nav.login': 'लगइन',
+    
+    // Homepage
+    'home.title': 'तपाईंको लागि उत्तम बीमा नीति खोजौं',
+    'home.whyPickUs': 'हामीलाई किन छान्ने?',
+    'home.compareProduct': 'उत्पादन तुलना गर्नुहोस्',
+    'home.compareDesc': 'बीमा योजना सजिलै तुलना गर्नुहोस् र तपाईंको लागि उत्तम फेला पार्नुहोस्',
+    'home.simpleReliable': 'सरल र भरपर्दो',
+    'home.simpleDesc': 'आफ्नो विवरण सजिलै भर्नुहोस् र तपाईंको लागि बीमा सूची अन्वेषण गर्नुहोस्।',
+    'home.saveMoney': 'पैसा बचत गर्नुहोस्',
+    'home.saveDesc': 'तपाईंको लागि उत्तम उत्पादन खोज्नुहोस् र आफ्नो बहुमूल्य कमाइ बचत गर्नुहोस्।',
+    
+    // Claim
+    'claim.fileAClaim': 'दाबी दर्ता गर्नुहोस्',
+    'claim.completeForm': 'नयाँ दाबी पेश गर्न प्रदान गरिएको फारम पूरा गर्नुहोस्।',
+    'claim.kycDetails': 'केवाईसी विवरण',
+    'claim.self': 'आफै',
+    'claim.others': 'अन्य',
+    'claim.step1': 'केवाईसी चयन गर्नुहोस्',
+    'claim.step2': 'नीति विवरण',
+    'claim.step3': 'दुर्घटना विवरण',
+    'claim.step4': 'साक्षी र अनुसन्धान',
+    'claim.step5': 'संलग्नकहरू',
+    'claim.inProcess': 'प्रक्रियामा',
+    'claim.pending': 'बाँकी',
+    
+    // Dashboard
+    'dashboard.kycNotVerified': 'प्रिय प्रयोगकर्ता तपाईंको केवाईसी पूरा र प्रमाणित भएको छैन। तपाईंले केवाईसी प्रमाणित नभएसम्म खरिद वा प्रोफर्मा बनाउन सक्नुहुन्न',
+    
+    // Contact
+    'contact.title': 'सम्पर्क गर्नुहोस्',
+    'contact.subtitle': 'कुनै प्रश्न वा टिप्पणी? हामीलाई सन्देश लेख्नुहोस्',
+    'contact.info': 'सम्पर्क जानकारी',
+    'contact.infoDesc': 'फारम भर्नुहोस् र हाम्रो टोलीले तपाईंलाई सम्पर्क गर्नेछ।',
+    'contact.firstName': 'पहिलो नाम',
+    'contact.lastName': 'थर',
+    'contact.email': 'इमेल',
+    'contact.phoneNumber': 'फोन नम्बर',
+    'contact.message': 'यहाँ आफ्नो सन्देश लेख्नुहोस्...',
+    
+    // FAQ
+    'faq.title': 'प्राय सोधिने प्रश्नहरू',
+    'faq.q1': '१. बीमा के हो?',
+    'faq.q2': '२. सामान्य बीमाका विभिन्न प्रकारहरू के छन्?',
+    'faq.q3': '३. बीमा कसरी प्रभावित हुन सक्छ?',
+    'faq.q4': '४. बीमित रकम कसरी निर्धारण गरिन्छ?',
+    'faq.q5': '५. बीमितले बीमा नीति राम्ररी पढ्न र जाँच्नु किन आवश्यक छ?',
+    'faq.q6': '६. नीतिमा उल्लेख गरिएको अतिरिक्त वा कटौती के हो?',
+    'faq.q7': '७. बीमा कम्पनीहरूले पुनर्बीमा किन व्यवस्था गर्छन्?',
+    'faq.q8': '८. नीति अन्तर्गत दाबी उत्पन्न हुने घटना भएमा बीमितले के गर्नुपर्छ?',
+    'faq.q9': '९. व्यापक वाहन बीमामा प्रिमियमलाई असर गर्ने कारकहरू के हुन्?',
+    'faq.q10': '१०. "नो-क्लेम बोनस" को अर्थ के हो?',
+    
+    // Password
+    'password.change': 'पासवर्ड परिवर्तन गर्नुहोस्',
+    'password.current': 'हालको पासवर्ड',
+    'password.new': 'नयाँ पासवर्ड',
+    'password.confirm': 'पासवर्ड पुष्टि गर्नुहोस्',
+    
+    // Settings
+    'settings.title': 'सेटिङहरू',
+    'settings.language': 'भाषा',
+    'settings.english': 'English',
+    'settings.nepali': 'नेपाली',
+    
+    // Transaction
+    'transaction.sn': 'क्र.सं.',
+    'transaction.userName': 'प्रयोगकर्ता नाम',
+    'transaction.transactionId': 'लेनदेन आईडी',
+    'transaction.amount': 'लेनदेन रकम',
+    'transaction.serviceProvider': 'सेवा प्रदायक',
+    'transaction.requestDate': 'अनुरोध मिति',
+    'transaction.paymentStatus': 'भुक्तानी स्थिति',
+    'transaction.noRows': 'कुनै पङ्क्ति छैन',
+    'transaction.rowsPerPage': 'प्रति पृष्ठ पङ्क्तिहरू:',
+    
+    // Claim Tracking
+    'claimTracking.title': 'आफ्नो दाबी ट्र्याक गर्नुहोस्:',
+    'claimTracking.selfList': 'आफ्नो दाबी सूची',
+    'claimTracking.othersList': 'अन्य दाबी सूची',
+    'claimTracking.claimNo': 'दाबी नं.',
+    'claimTracking.policyNo': 'नीति नं.',
+    'claimTracking.regDate': 'दर्ता मिति',
+    'claimTracking.insuredName': 'बीमित नाम',
+    'claimTracking.vehicleNumber': 'वाहन नम्बर',
+    'claimTracking.documentNumber': 'कागजात नम्बर',
+    'claimTracking.action': 'कार्य',
+    'claimTracking.claimInitimation': 'दाबी सूचना',
+    
+    // Claim Intimate
+    'claimIntimate.title': 'आफ्नो दाबी सूचित गर्नुहोस्',
+    'claimIntimate.address': 'ठेगाना',
+    'claimIntimate.intimationDate': 'सूचना मिति',
+    'claimIntimate.claimStatus': 'दाबी स्थिति',
+    
+    // My Draft Policy
+    'draftPolicy.approvedDraft': 'स्वीकृत ड्राफ्ट',
+    'draftPolicy.unapprovedDraft': 'अस्वीकृत ड्राफ्ट',
+    'draftPolicy.rejectedDraft': 'अस्वीकार गरिएको ड्राफ्ट',
+    'draftPolicy.productName': 'उत्पादन नाम',
+    'draftPolicy.createdDate': 'सिर्जना मिति',
+    'draftPolicy.acceptanceNo': 'स्वीकृति नं.',
+    'draftPolicy.proformaNo': 'प्रोफर्मा नं.',
+    'draftPolicy.status': 'स्थिति',
+    'draftPolicy.remarks': 'टिप्पणी',
+    
+    // My Policies
+    'myPolicies.dateFrom': 'मिति देखि',
+    'myPolicies.dateTo': 'मिति सम्म',
+    'myPolicies.search': 'खोज्नुहोस्',
+    'myPolicies.policyList': 'नीति सूची',
+    'myPolicies.expiredPolicyList': 'म्याद सकिएको नीति सूची',
+    'myPolicies.expiryDate': 'म्याद समाप्ति मिति',
+    'myPolicies.policyNumber': 'नीति नम्बर',
+    'myPolicies.totalPremium': 'कुल प्रिमियम',
+    
+    // KYC Check
+    'kycCheck.title': 'केवाईसी जाँच',
+    'kycCheck.mobileNumber': 'मोबाइल नम्बर',
+    
+    // KYC Add Corporate
+    'kycCorporate.step1': 'केवाईसी प्रकार',
+    'kycCorporate.step2': 'आधारभूत जानकारी',
+    'kycCorporate.step3': 'सदस्य जानकारी',
+    'kycCorporate.step4': 'कम्पनी संलग्नक',
+    'kycCorporate.step5': 'शाखा सूची',
+    'kycCorporate.individualKyc': 'व्यक्तिगत केवाईसी',
+    'kycCorporate.corporateKyc': 'कर्पोरेट केवाईसी',
+    'kycCorporate.kycCategory': 'केवाईसी श्रेणी',
+    'kycCorporate.self': 'स्वयं',
+    'kycCorporate.others': 'अन्य',
+    'kycCorporate.basicInformation': 'आधारभूत जानकारी',
+    'kycCorporate.fullName': 'पूरा नाम',
+    'kycCorporate.fullNameNepali': 'पूरा नाम नेपाली',
+    'kycCorporate.occupation': 'पेशा',
+    'kycCorporate.incomeSource': 'आय स्रोत',
+    'kycCorporate.expectedAnnualTurnover': 'अपेक्षित वार्षिक कारोबार',
+    'kycCorporate.contactPerson': 'सम्पर्क व्यक्ति',
+    'kycCorporate.emailAddress': 'ईमेल ठेगाना',
+    'kycCorporate.phoneNo': 'फोन नम्बर',
+    'kycCorporate.mobileNo': 'मोबाइल नम्बर',
+    'kycCorporate.panVatNo': 'प्यान/भ्याट नम्बर',
+    'kycCorporate.issueDate': 'जारी मिति',
+    'kycCorporate.issueDateBS': 'जारी मिति (बि.सं.)',
+    'kycCorporate.registrationNo': 'दर्ता नम्बर',
+    'kycCorporate.regDate': 'दर्ता मिति',
+    'kycCorporate.regDateBS': 'दर्ता मिति (बि.सं.)',
+    'kycCorporate.regOffice': 'दर्ता कार्यालय',
+    'kycCorporate.address': 'ठेगाना',
+    'kycCorporate.country': 'देश',
+    'kycCorporate.province': 'प्रदेश',
+    'kycCorporate.district': 'जिल्ला',
+    'kycCorporate.municipality': 'नगरपालिका',
+    'kycCorporate.wardNo': 'वडा नम्बर',
+    'kycCorporate.area': 'क्षेत्र',
+    'kycCorporate.addressField': 'ठेगाना',
+    'kycCorporate.addressNepali': 'ठेगाना नेपाली',
+    'kycCorporate.back': 'पछाडि',
+    'kycCorporate.continue': 'जारी राख्नुहोस्',
+    'kycCorporate.completed': 'पूरा भयो',
+    
+    // KYC Add
+    'kycAdd.basicInfo': 'आधारभूत जानकारी',
+    'kycAdd.fullName': 'पूरा नाम',
+    'kycAdd.maritalStatus': 'वैवाहिक स्थिति',
+    'kycAdd.dateOfBirth': 'जन्म मिति (बि.सं.)',
+    'kycAdd.placeOfBirth': 'जन्म स्थान (बि.सं.)',
+    'kycAdd.gender': 'लिङ्ग',
+    'kycAdd.email': 'इमेल',
+    'kycAdd.permanentAddress': 'स्थायी ठेगाना',
+    'kycAdd.temporaryAddress': 'अस्थायी ठेगाना',
+    'kycAdd.province': 'प्रदेश',
+    'kycAdd.district': 'जिल्ला',
+    'kycAdd.municipality': 'नगरपालिका/गाउँपालिका',
+    'kycAdd.tole': 'टोल',
+    'kycAdd.wardNumber': 'वार्ड नम्बर',
+    'kycAdd.sameAsPermanent': 'स्थायी जस्तै',
+    'kycAdd.others': 'अन्य',
+    'kycAdd.occupation': 'पेशा',
+    'kycAdd.incomeSource': 'आय स्रोत',
+    'kycAdd.kycClassification': 'केवाईसी वर्गीकरण',
+    'kycAdd.citizenshipNumber': 'नागरिकता नम्बर',
+    'kycAdd.citizenshipIssuedDistrict': 'नागरिकता जारी जिल्ला',
+    'kycAdd.citizenshipIssuedDate': 'नागरिकता जारी मिति (ई.सं.)',
+    'kycAdd.grandFatherName': 'हजुरबुवाको नाम',
+    'kycAdd.fatherName': 'बुवाको नाम',
+    'kycAdd.motherName': 'आमाको नाम',
+    'kycAdd.attachments': 'संलग्नकहरू',
+    'kycAdd.doYouWantToAttach': 'के तपाईं यो फाइल संलग्न गर्न चाहनुहुन्छ?',
+    'kycAdd.clickToUpload': 'अपलोड गर्न यहाँ क्लिक गर्नुहोस्',
+    'kycAdd.businessBranch': 'व्यापार शाखा',
+    'kycAdd.selectBusinessBranch': 'व्यापार शाखा चयन गर्नुहोस्',
+    'kycAdd.pen': 'कलम',
+    'kycAdd.eraser': 'इरेजर',
+    'kycAdd.clear': 'खाली गर्नुहोस्',
+    'kycAdd.eSignature': 'ई-हस्ताक्षर',
+    
+    // Buy Policies
+    'buyPolicies.title': 'तपाईंको लागि उत्तम बीमा नीति खोजौं',
+    'buyPolicies.motor': 'मोटर',
+    'buyPolicies.travel': 'यात्रा',
+    'buyPolicies.home': 'घर',
+    
+    // Home Insurance
+    'homeInsurance.title': 'घर बीमा',
+    'homeInsurance.step1': 'घर प्रिमियम गणना गर्नुहोस्',
+    'homeInsurance.step2': 'घर प्रिमियम रिपोर्ट',
+    'homeInsurance.step3': 'घर नीति विवरण',
+    'homeInsurance.step4': 'भुक्तानी गर्न अगाडि बढ्नुहोस्',
+    'homeInsurance.propertyLists': 'सम्पत्ति सूची',
+    'homeInsurance.sumInsured': 'बीमित रकम',
+    'homeInsurance.effectiveDate': 'प्रभावकारी मिति',
+    'homeInsurance.expiryDate': 'म्याद समाप्ति मिति',
+    'homeInsurance.propertyDescription': 'सम्पत्ति विवरण',
+    'homeInsurance.addPropertyList': 'सम्पत्ति सूची थप्नुहोस्',
+    'homeInsurance.total': 'कुल',
+    'homeInsurance.note': 'नोट: बीमित सम्पत्ति रु. २ करोड भन्दा बढी हुन सक्दैन।',
+    
+    // Vehicle Insurance
+    'vehicleInsurance.title': 'वाहन विवरण',
+    'vehicleInsurance.step1': 'बीमा योजना',
+    'vehicleInsurance.step2': 'कभरेज योजना',
+    'vehicleInsurance.step3': 'कभरेज विवरण',
+    'vehicleInsurance.step4': 'वाहन विवरण',
+    'vehicleInsurance.step5': 'केवाईसी विवरण',
+    'vehicleInsurance.chooseSystem': 'आफ्नो वाहन नम्बर प्लेट प्रणाली छान्नुहोस्',
+    'vehicleInsurance.zoneSystem': 'जोन प्रणाली',
+    'vehicleInsurance.provinceSystem': 'प्रदेश प्रणाली',
+    'vehicleInsurance.embossedSystem': 'एम्बोस्ड प्रणाली',
+    'vehicleInsurance.zone': 'जोन',
+    'vehicleInsurance.lotNo': 'लट नं.',
+    'vehicleInsurance.vehicleSymbol': 'वाहन चिन्ह',
+    'vehicleInsurance.vehicleNumber': 'वाहन नम्बर',
+    'vehicleInsurance.registerDate': 'दर्ता मिति',
+    'vehicleInsurance.manufactureCompany': 'निर्माण कम्पनी',
+    'vehicleInsurance.model': 'मोडेल',
+    'vehicleInsurance.vehicleType': 'वाहन प्रकार',
+    'vehicleInsurance.chasisNo': 'च्यासिस नं.',
+    'vehicleInsurance.engineNo': 'इन्जिन नं.',
+    'vehicleInsurance.blueBookVehicleReg': 'निलो किताब (वाहन दर्ता पृष्ठ / पृष्ठ नं २)',
+    'vehicleInsurance.blueBookNamsari': 'निलो किताब (नामसारी / मालिक पृष्ठ)',
+    'vehicleInsurance.blueBookVehicleDetails': 'निलो किताब (वाहन विवरण पृष्ठ / पृष्ठ नं ९)',
+    'vehicleInsurance.back': 'पछाडि',
+  },
+};
+
+const LanguageContext = createContext<LanguageContextType | undefined>(undefined);
+
+export const LanguageProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
+  const [language, setLanguage] = useState<Language>('en');
+
+  const t = (key: string): string => {
+    return translations[language][key] || key;
+  };
+
+  return (
+    <LanguageContext.Provider value={{ language, setLanguage, t }}>
+      {children}
+    </LanguageContext.Provider>
+  );
+};
+
+export const useLanguage = () => {
+  const context = useContext(LanguageContext);
+  if (context === undefined) {
+    throw new Error('useLanguage must be used within a LanguageProvider');
+  }
+  return context;
+};
