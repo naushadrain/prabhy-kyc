@@ -1,92 +1,152 @@
 // src/api/customerKycClient.ts
-import { CustomerKycFormData } from "@/models/kyc";
-import { buildSignatureForBody } from "@/api/signature"; // you already use this elsewhere
+import { buildSignatureForBody } from "./signature";
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL as string;
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
-export async function submitCustomerKyc(values: CustomerKycFormData) {
+export type CustomerKycPayload = {
+    honour: string;
+    first_name_nep: string;
+    middle_name_nep: string;
+    last_name_nep: string;
+
+    id_type: string;
+    id_no: string;
+    issued_district: string;
+    issue_date_ad: string;
+    issue_date_bs: string;
+
+    province_name: string;
+    district_name: string;
+    local_level_name: string;
+    ward_no: string;
+    residence_country: string;
+
+    mobile: string;
+    email: string;
+
+    father_name: string;
+    father_name_nep: string;
+    father_citizenship_no: string;
+    father_citizenship_issued_district: string;
+
+    gender_code: string;
+    dob_ad: string;
+    dob_bs: string;
+    occupation: string;
+
+    politically_involved: boolean;
+
+    doc_type: "citizenship" | "passport" | "nid";
+    image_profile?: File | null;
+    ctz_front?: File | null;
+    ctz_back?: File | null;
+    passport_front?: File | null;
+    passport_back?: File | null;
+    nid_front?: File | null;
+    nid_back?: File | null;
+};
+
+function appendIfFile(fd: FormData, key: string, file?: File | null) {
+    if (file instanceof File) fd.append(key, file);
+}
+
+function formDataToDebug(fd: FormData) {
+    const out: Record<string, any> = {};
+    for (const [k, v] of fd.entries()) {
+        out[k] = v instanceof File ? `File(name=${v.name}, size=${v.size})` : v;
+    }
+    return out;
+}
+
+export async function submitCustomerKyc(
+    payload: CustomerKycPayload,
+    opts?: { debug?: boolean }
+) {
     if (!API_BASE_URL) throw new Error("VITE_API_BASE_URL is not set");
 
     const accessToken = localStorage.getItem("access_token");
-    if (!accessToken) throw new Error("Not authenticated");
+    if (!accessToken) throw new Error("टोकन भेटिएन। कृपया OTP login गरेर फेरि प्रयास गर्नुहोस्।");
 
-    const form = new FormData();
+    const fd = new FormData();
 
-    // 🔹 Map to form-data keys exactly like Postman screenshot
+    fd.append("Customer_Name.Honour", payload.honour);
+    fd.append("Customer_Name.First_Name_nep", payload.first_name_nep);
+    fd.append("Customer_Name.Middle_Name_nep", payload.middle_name_nep);
+    fd.append("Customer_Name.Last_Name_nep", payload.last_name_nep);
 
-    // Customer_Name.*
-    form.append("Customer_Name.Honour", values.honour);
-    if (values.firstNameNep) form.append("Customer_Name.First_Name_nep", values.firstNameNep);
-    if (values.middleNameNep) form.append("Customer_Name.Middle_Name_nep", values.middleNameNep);
-    if (values.lastNameNep) form.append("Customer_Name.Last_Name_nep", values.lastNameNep);
+    fd.append("Identification.Id_Type", payload.id_type);
+    fd.append("Identification.Id_No", payload.id_no);
+    fd.append("Identification.Issued_District", payload.issued_district);
+    fd.append("Identification.Issue_Date_AD", payload.issue_date_ad);
+    fd.append("Identification.Issue_Date_BS", payload.issue_date_bs);
 
-    // Identification.*
-    form.append("Identification.Id_Type", values.idType);
-    form.append("Identification.Id_No", values.idNo);
-    form.append("Identification.Issued_District", values.issuedDistrict);
-    form.append("Identification.Issue_Date_AD", values.issueDateAD);
-    form.append("Identification.Issue_Date_BS", values.issueDateBS);
+    fd.append("Address.Province", payload.province_name);
+    fd.append("Address.District", payload.district_name);
+    fd.append("Address.Local_level", payload.local_level_name);
+    fd.append("Address.Ward_No", payload.ward_no);
+    fd.append("Address.Residence_Country", payload.residence_country || "NEPAL");
 
-    // Address.*
-    form.append("Address.Province", values.province);
-    form.append("Address.District", values.district);
-    form.append("Address.Local_level", values.localLevel);
-    form.append("Address.Ward_No", values.wardNo);
-    form.append("Address.Residence_Country", values.residenceCountry);
+    fd.append("Contact.Mobile", payload.mobile);
+    fd.append("Contact.Email", payload.email);
 
-    // Contact.*
-    form.append("Contact.Mobile", values.mobile);
-    form.append("Contact.Email", values.email);
+    fd.append("Relation.Father_Name", payload.father_name);
+    fd.append("Relation.Father_Name_nep", payload.father_name_nep);
+    fd.append("Relation.Father_Citizenship_No", payload.father_citizenship_no);
+    fd.append("Relation.Father_Citizenship_Issued_District", payload.father_citizenship_issued_district);
 
-    // Relation.*
-    form.append("Relation.Father_Name", values.fatherName);
-    form.append("Relation.Father_Citizenship_No", values.fatherCitizenshipNo);
+    fd.append("CustomerInformation.Gender", payload.gender_code);
+    fd.append("CustomerInformation.Date_Of_Birth_AD", payload.dob_ad);
+    fd.append("CustomerInformation.Date_Of_Birth_BS", payload.dob_bs);
+    fd.append("CustomerInformation.Occupation", payload.occupation);
 
-    // CustomerInformation.*
-    form.append("CustomerInformation.Gender", values.gender);
-    form.append("CustomerInformation.Date_Of_Birth_AD", values.dobAD);
-    form.append("CustomerInformation.Date_Of_Birth_BS", values.dobBS);
-    form.append("CustomerInformation.Occupation", values.occupation);
+    fd.append("Politically_Involved", String(payload.politically_involved));
 
-    // Risk / Political
-    form.append("Politically_Involved", String(values.politicallyInvolved));
-    form.append("Party_Inspection_Category", values.partyInspectionCategory);
-    form.append("Risk_Factors", values.riskFactors);
+    fd.append("customer_image.doc_type", payload.doc_type);
+    appendIfFile(fd, "customer_image.image_profile", payload.image_profile);
+    appendIfFile(fd, "customer_image.ctz_image_front", payload.ctz_front);
+    appendIfFile(fd, "customer_image.ctz_image_back", payload.ctz_back);
+    appendIfFile(fd, "customer_image.passport_image_front", payload.passport_front);
+    appendIfFile(fd, "customer_image.passport_image_back", payload.passport_back);
+    appendIfFile(fd, "customer_image.nid_image_front", payload.nid_front);
+    appendIfFile(fd, "customer_image.nid_image_back", payload.nid_back);
 
-    // Images – only append if not null
-    if (values.imageProfile) {
-        form.append("customer_image.image_profile", values.imageProfile);
-    }
-    if (values.imageFront) {
-        form.append("customer_image.image_front", values.imageFront);
-    }
-    if (values.imageBack) {
-        form.append("customer_image.image_back", values.imageBack);
-    }
-    form.append("customer_image.doc_type", values.docType);
-
-    // 🔐 Signature: body is form-data, but Postman uses raw body = "" → jsonBody = ""
-    const jsonBody = "";
-    const { unixTs, signature } = buildSignatureForBody(jsonBody);
+    const { unixTs, signature } = buildSignatureForBody("");
 
     const res = await fetch(`${API_BASE_URL}/v1/CustomerKyc/customer-kyc`, {
         method: "POST",
         headers: {
-            // ⚠️ Do NOT set Content-Type manually; browser will set multipart boundary
             "verify-signature": `${unixTs}.${signature}`,
             Authorization: `Bearer ${accessToken}`,
         },
-        body: form,
+        body: fd,
     });
 
-    const data = await res.json().catch(() => ({}));
-
-    if (!res.ok || (data?.process_result === false && data?.error_list?.length)) {
-        const msg =
-            data?.error_list?.[0]?.error_message ||
-            `KYC error ${res.status}`;
-        throw new Error(msg);
+    // ✅ read response safely
+    const rawText = await res.text();
+    let json: any = {};
+    try {
+        json = rawText ? JSON.parse(rawText) : {};
+    } catch {
+        json = {};
     }
 
-    return data;
+    const debug = {
+        url: `${API_BASE_URL}/v1/CustomerKyc/customer-kyc`,
+        status: res.status,
+        ok: res.ok,
+        request_form_data: formDataToDebug(fd),
+        response_json: json,
+        response_text: rawText,
+    };
+
+    if (!res.ok) {
+        const msg = json?.error_list?.[0]?.error_message || json?.message || `KYC error ${res.status}`;
+        const err = new Error(msg) as any;
+        err.debug = debug;
+        throw err;
+    }
+
+    // return both data + debug when you want
+    if (opts?.debug) return { data: json, debug };
+    return json;
 }

@@ -108,7 +108,7 @@ export const Register = () => {
         </h1>
 
         <form className="space-y-6" onSubmit={handleSubmit(onSubmit)}>
-          <div>
+          {/* <div>
             <Label className="text-sm text-muted-foreground mb-3 block">
               {t('auth.userType')}
             </Label>
@@ -133,7 +133,7 @@ export const Register = () => {
                 <Label htmlFor="surveyor">{t('auth.surveyor')}</Label>
               </div>
             </RadioGroup>
-          </div>
+          </div> */}
 
           <div>
             <Input
