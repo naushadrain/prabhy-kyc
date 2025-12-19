@@ -7,11 +7,11 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { LanguageProvider } from "@/contexts/LanguageContext";
 
 import { Home } from "./pages/Home";
-import { Login } from "./pages/Login";
-import { Register } from "./pages/Register";
+import { Login } from "./pages/auth/Login";
+import { Register } from "./pages/auth/Register";
 import { Dashboard } from "./pages/Dashboard";
 import { Claim } from "./pages/Claim";
-import { ChangePassword } from "./pages/ChangePassword";
+import { ChangePassword } from "./pages/changePassword/ChangePassword";
 import { TransactionHistory } from "./pages/TransactionHistory";
 import { Contact } from "./pages/Contact";
 import { FAQ } from "./pages/FAQ";
@@ -33,12 +33,14 @@ import { TravelInsurance } from "./pages/TravelInsurance";
 import { TravelInsuranceCoverage } from "./pages/TravelInsuranceCoverage";
 import { TravelInsuranceDetails } from "./pages/TravelInsuranceDetails";
 import NotFound from "./pages/NotFound";
-import { OneTimeRegister } from "./pages/OneTimeRegister";
-import SendOtpPage from "./pages/SendOtpPage";
-import RegisterPage from "./pages/RegisterPage";
+import { OneTimeRegister } from "./pages/auth/OneTimeRegister";
+import RegisterPage from "./pages/auth/RegisterPage";
 
 import { ProtectedRoute } from "./routes/ProtectedRoute";
 import { KYCAddPage } from "./pages/KYCAddPage";
+import ForgotPasswordPage from "./pages/forgot/ForgotPassword";
+import ForgotPasswordVerifyOtpPage from "./pages/forgot/ForgotPasswordVerifyOtpPage";
+import ResetPasswordPage from "./pages/changePassword/ResetPasswordPage";
 
 const queryClient = new QueryClient();
 
@@ -55,9 +57,11 @@ const App = () => (
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />
             <Route path="/client-register" element={<RegisterPage />} />
-            <Route path="/sendOtpPage" element={<SendOtpPage />} />
             <Route path="/otp-validate" element={<OneTimeRegister />} />
+            <Route path="/verify-otp" element={<ForgotPasswordVerifyOtpPage />} />
             <Route path="/contact" element={<Contact />} />
+            <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+            <Route path="/reset-password" element={<ResetPasswordPage />} />
             <Route path="/faq" element={<FAQ />} />
 
             {/* Protected routes */}

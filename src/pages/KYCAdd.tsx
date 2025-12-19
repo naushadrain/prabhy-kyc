@@ -16,7 +16,7 @@ import { useForm, Controller } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 
-import { submitCustomerKyc } from "@/api/customerKycClient";
+import { submitCustomerKyc } from "@/api/kyc/customerKycClient";
 
 // ✅ Regex
 const NEPALI_ONLY = /^[\u0900-\u097F\s\-.'’]+$/;
@@ -243,7 +243,7 @@ export const KYCAdd = () => {
   const provinceName = useMemo(() => provinces.find((p: any) => p.id === Number(provinceId))?.name ?? "", [provinces, provinceId]);
   const districtName = useMemo(() => districts.find((d: any) => d.id === Number(districtId))?.name ?? "", [districts, districtId]);
   const municipalityName = useMemo(
-    () => municipalities.find((m: any) => m.id === Number(watch("municipality_id")) )?.name ?? "",
+    () => municipalities.find((m: any) => m.id === Number(watch("municipality_id")))?.name ?? "",
     [municipalities, watch]
   );
 
@@ -503,7 +503,7 @@ export const KYCAdd = () => {
                             <SelectContent>
                               {provinces.map((p: any) => (
                                 <SelectItem key={p.id} value={String(p.id)}>
-                                  {p.name}
+                                  {p.data}
                                 </SelectItem>
                               ))}
                             </SelectContent>

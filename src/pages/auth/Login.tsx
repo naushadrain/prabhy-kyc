@@ -9,8 +9,7 @@ import logo from '@/assets/logo.png';
 
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { loginSchema, LoginSchemaType } from "@/zod/authSchema";
-import { loginCustomer } from "../api/loginClient";
+import { loginCustomer } from "@/api/auth/login/loginClient";
 
 export const Login = () => {
   const { t } = useLanguage();
@@ -20,8 +19,7 @@ export const Login = () => {
     register,
     formState: { errors },
     handleSubmit,
-  } = useForm<LoginSchemaType>({
-    resolver: zodResolver(loginSchema),
+  } = useForm({
     mode: "onChange",
   });
 
@@ -29,7 +27,7 @@ export const Login = () => {
   const [serverMessage, setServerMessage] = useState<string | null>(null);
   const [serverIsError, setServerIsError] = useState(false);
 
-  const onSubmit = async (values: LoginSchemaType) => {
+  const onSubmit = async (values) => {
     setLoading(true);
     setServerMessage(null);
     setServerIsError(false);
@@ -95,9 +93,7 @@ export const Login = () => {
               {...register("mobile")}
             />
             <MessageSquare className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-            {errors.mobile && (
-              <p className="text-red-500 text-xs mt-1">{errors.mobile.message}</p>
-            )}
+
           </div>
 
           {/* Password */}
@@ -109,15 +105,13 @@ export const Login = () => {
               {...register("password")}
             />
             <Eye className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-            {errors.password && (
-              <p className="text-red-500 text-xs mt-1">{errors.password.message}</p>
-            )}
+
           </div>
 
           <div className="text-right">
-            <a href="#" className="text-sm text-primary hover:underline">
+            <Link to="/forgot-password" className="text-sm text-primary hover:underline">
               {t('auth.forgotPassword')}
-            </a>
+            </Link>
           </div>
 
           <Button

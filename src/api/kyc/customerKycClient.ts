@@ -1,5 +1,5 @@
 // src/api/customerKycClient.ts
-import { buildSignatureForBody } from "./signature";
+import { buildSignatureForBody } from "../session/signature";
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
@@ -65,7 +65,7 @@ export async function submitCustomerKyc(
     if (!API_BASE_URL) throw new Error("VITE_API_BASE_URL is not set");
 
     const accessToken = localStorage.getItem("access_token");
-    if (!accessToken) throw new Error("टोकन भेटिएन। कृपया OTP login गरेर फेरि प्रयास गर्नुहोस्।");
+    if (!accessToken) throw new Error("Not logged in. Please login first.");
 
     const fd = new FormData();
 

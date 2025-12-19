@@ -8,7 +8,7 @@ import { InsuranceCard } from '@/components/InsuranceCard';
 import { useLanguage } from '@/contexts/LanguageContext';
 import logo from '@/assets/logo.png';
 import { useForm } from 'react-hook-form';
-import { sendOneTimeOtp } from "@/api/otpClient";
+import { sendOneTimeOtp } from "@/api/auth/login/otpClient";
 
 type RegisterFormValues = {
   mobile: string;

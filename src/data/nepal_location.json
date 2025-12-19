@@ -2,7 +2,8 @@
     "provinceList": [
         {
             "id": 1,
-            "name": "KOSHI PROVINCE",
+            "data": "STATE 1",
+            "value": "STATE 1",
             "districtList": [
                 {
                     "id": 1,
@@ -640,7 +641,8 @@
         },
         {
             "id": 2,
-            "name": "MADHESH PROVINCE",
+            "data": "STATE 2",
+            "value": "Madhesh Province",
             "districtList": [
                 {
                     "id": 15,
@@ -1238,7 +1240,8 @@
         },
         {
             "id": 3,
-            "name": "BAGMATI PROVINCE",
+            "data": "STATE 3",
+            "value": "Bagmati Province",
             "districtList": [
                 {
                     "id": 23,
@@ -1798,7 +1801,8 @@
         },
         {
             "id": 4,
-            "name": "GANDAKI PROVINCE",
+            "data": "STATE 4",
+            "value": "Gandaki Province",
             "districtList": [
                 {
                     "id": 36,
@@ -2210,7 +2214,8 @@
         },
         {
             "id": 5,
-            "name": "LUMBINI PROVINCE",
+            "data": "STATE 5",
+            "value": "Lumbini Province",
             "districtList": [
                 {
                     "id": 47,
@@ -2724,7 +2729,8 @@
         },
         {
             "id": 6,
-            "name": "KARNALI PROVINCE",
+            "data": "STATE 6",
+            "value": "Karnali Province",
             "districtList": [
                 {
                     "id": 59,
@@ -3106,7 +3112,8 @@
         },
         {
             "id": 7,
-            "name": "SUDUR PASHCHIMANCHAL PROVINCE",
+            "data": "STATE 7",
+            "value": "Sudur Pashchimanchal Province",
             "districtList": [
                 {
                     "id": 69,

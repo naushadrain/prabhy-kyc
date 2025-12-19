@@ -1,7 +1,7 @@
 // src/pages/OtpValidatePage.jsx
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { validateOneTimeOtp } from "../api/otpClient";
+import { validateOneTimeOtp } from "../../api/auth/login/otpClient";
 
 export default function OtpValidatePage() {
     const [otp, setOtp] = useState("");

@@ -1,7 +1,7 @@
 // src/api/loginClient.ts
-import { encryptAESWithSecret } from "./cryptoHelpers";
-import { buildSignatureForBody } from "./signature";
-import { ensureSession } from "./sessionClient";
+import { encryptAESWithSecret } from "../../cryptoHelpers";
+import { buildSignatureForBody } from "@/api/session/signature";
+import { ensureSession } from "../../session/sessionClient";
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL as string;
 const USER_LOGIN_ID = import.meta.env.VITE_USER_LOGIN_ID as string;

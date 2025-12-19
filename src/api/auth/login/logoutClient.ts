@@ -1,5 +1,5 @@
 // src/api/logoutClient.ts
-import { buildSignatureForBody } from "@/api/signature"; // same helper you used for other APIs
+import { buildSignatureForBody } from "@/api/session/signature"; // same helper you used for other APIs
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL as string;
 

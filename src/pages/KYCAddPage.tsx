@@ -11,7 +11,7 @@ import { useLanguage } from "@/contexts/LanguageContext";
 import logo from "@/assets/logo.png";
 
 import { CustomerKycFormData } from "@/models/kyc";
-import { submitCustomerKyc } from "@/api/customerKycClient";
+import { submitCustomerKyc } from "@/api/kyc/customerKycClient";
 
 export const KYCAddPage = () => {
     const { t } = useLanguage();
@@ -96,7 +96,7 @@ export const KYCAddPage = () => {
 
     return (
         <div className="min-h-screen bg-background flex">
-            
+
 
             {/* Right Side - KYC Form */}
             <div className="w-[1650px] bg-card p-8 flex flex-col">

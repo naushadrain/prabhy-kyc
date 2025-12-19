@@ -9,7 +9,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 
-import { logoutCustomer } from '@/api/logoutClient';
+import { logoutCustomer } from '@/api/auth/login/logoutClient';
 import { useNavigate } from "react-router-dom";
 
 export const Header = () => {

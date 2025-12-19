@@ -1,7 +1,7 @@
 // src/api/otpClient.js
-import { encryptAESWithSecret } from "./cryptoHelpers";
-import { buildSignatureForBody } from "./signature";
-import { ensureSession } from "./sessionClient";
+import { encryptAESWithSecret } from "../../cryptoHelpers";
+import { buildSignatureForBody } from "../../session/signature";
+import { ensureSession } from "../../session/sessionClient";
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 const USER_LOGIN_ID = import.meta.env.VITE_USER_LOGIN_ID;
@@ -10,7 +10,7 @@ export async function sendOneTimeOtp(mobileNumber) {
   if (!API_BASE_URL) throw new Error("VITE_API_BASE_URL is not set");
   if (!USER_LOGIN_ID) throw new Error("VITE_USER_LOGIN_ID is not set");
 
-  // ✅ session process_key (for Basic Auth password)
+  //  session process_key (for Basic Auth password)
   const sessionProcessKey = await ensureSession();
 
   const encryptedMobile = encryptAESWithSecret(mobileNumber);
@@ -27,7 +27,7 @@ export async function sendOneTimeOtp(mobileNumber) {
   const jsonBody = JSON.stringify(bodyObj);
   const { unixTs, signature } = buildSignatureForBody(jsonBody);
 
-  // ✅ Basic Auth = user_login_id : session_process_key
+  // Basic Auth = user_login_id : session_process_key
   const basicToken = btoa(`${USER_LOGIN_ID}:${sessionProcessKey}`);
 
   const res = await fetch(`${API_BASE_URL}/v1/common/onetime-otp`, {
@@ -54,7 +54,7 @@ export async function validateOneTimeOtp(otp) {
   if (!API_BASE_URL) throw new Error("VITE_API_BASE_URL is not set");
   if (!USER_LOGIN_ID) throw new Error("VITE_USER_LOGIN_ID is not set");
 
-  // ✅ session process_key (Basic password)
+  //  session process_key (Basic password)
   const sessionProcessKey = await ensureSession();
 
   const otpProcessId = localStorage.getItem("otp_process_id");

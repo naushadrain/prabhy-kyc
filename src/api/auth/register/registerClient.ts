@@ -1,7 +1,7 @@
 // src/api/registerClient.js
-import { encryptAESWithSecret } from "./cryptoHelpers";
-import { buildSignatureForBody } from "./signature";
-import { ensureSession } from "./sessionClient";
+import { encryptAESWithSecret } from "../../cryptoHelpers";
+import { buildSignatureForBody } from "../../session/signature";
+import { ensureSession } from "../../session/sessionClient";
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 const USER_LOGIN_ID = import.meta.env.VITE_USER_LOGIN_ID;
