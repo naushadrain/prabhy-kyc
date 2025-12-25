@@ -2,7 +2,7 @@
 import CryptoJS from "crypto-js";
 import { ensureSession } from "../../session/sessionClient";
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL as string; // https://.../WebOnline
+const API_BASE_URL = "https://insurancedemo.iremit.com.my/WebOnline"; // https://.../WebOnline
 const SECRET_KEY = import.meta.env.VITE_SECRET_KEY as string;
 const USER_LOGIN_ID = import.meta.env.VITE_USER_LOGIN_ID as string;
 

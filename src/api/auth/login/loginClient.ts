@@ -1,46 +1,30 @@
 // src/api/loginClient.ts
-import { encryptAESWithSecret } from "../../cryptoHelpers";
+import { encryptAESWithSecret } from "@/api/cryptoHelpers";
 import { buildSignatureForBody } from "@/api/session/signature";
-import { ensureSession } from "../../session/sessionClient";
+import { createSession } from "@/api/session/sessionClient";
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL as string;
 const USER_LOGIN_ID = import.meta.env.VITE_USER_LOGIN_ID as string;
 
-/**
- * Matches Postman login pre-request:
- * - AES(mobile)  -> username
- * - AES(password)-> password
- * - verify-signature: unix_ts + "." + JSON(body) + "." + secret-key
- * - Basic Auth: username = user_login_id, password = process_id (from session-id)
- */
 export async function loginCustomer(mobile: string, password: string) {
-    if (!API_BASE_URL) {
-        throw new Error("VITE_API_BASE_URL is not set");
-    }
-    if (!USER_LOGIN_ID) {
-        throw new Error("VITE_USER_LOGIN_ID is not set");
-    }
+    if (!API_BASE_URL) throw new Error("VITE_API_BASE_URL is not set");
+    if (!USER_LOGIN_ID) throw new Error("VITE_USER_LOGIN_ID is not set");
 
-    // 1) session-id -> process_id (for Basic Auth password)
-    const sessionProcessId = await ensureSession();
+    // 1) session-id -> process_id
+    const sessionProcessId = await createSession();
 
-    // 2) AES encrypt mobile & password (like Postman)
-    const encryptedMobile = encryptAESWithSecret(mobile);     // "{{login-encrypt}}"
-    const encryptedPwd = encryptAESWithSecret(password);      // "{{pwd-encrypt}}"
+    // 2) AES encrypt
+    const encryptedMobile = encryptAESWithSecret(mobile);
+    const encryptedPwd = encryptAESWithSecret(password);
 
-    // 3) Request body (same as Postman raw body)
-    const bodyObj = {
-        username: encryptedMobile,
-        password: encryptedPwd,
-        grant_type: "password",
-    };
-
+    // 3) Body
+    const bodyObj = { username: encryptedMobile, password: encryptedPwd, grant_type: "password" };
     const jsonBody = JSON.stringify(bodyObj);
 
-    // 4) Signature: unix_ts + "." + jsonBody + "." + secret-key
+    // 4) Signature for LOGIN (body = jsonBody)
     const { unixTs, signature } = buildSignatureForBody(jsonBody);
 
-    // 5) Basic auth: username=user_login_id, password=process_id
+    // 5) Basic auth
     const basicToken = btoa(`${USER_LOGIN_ID}:${sessionProcessId}`);
 
     const res = await fetch(`${API_BASE_URL}/v1/common/login`, {
@@ -49,33 +33,21 @@ export async function loginCustomer(mobile: string, password: string) {
             "Content-Type": "application/json",
             "verify-signature": `${unixTs}.${signature}`,
             Authorization: `Basic ${basicToken}`,
+            Accept: "*/*",
         },
         body: jsonBody,
     });
 
-    const data = await res.json();
+    const text = await res.text();
+    let data: any = {};
+    try { data = text ? JSON.parse(text) : {}; } catch { data = {}; }
 
-    // API error: error_list[]
-    if (data?.error_list && data.error_list.length > 0) {
-        const err = data.error_list[0];
-        throw new Error(err.error_message || "Login failed");
-    }
+    if (data?.error_list?.length) throw new Error(data.error_list[0]?.error_message || "Login failed");
+    if (!res.ok) throw new Error(data?.message || `Login error ${res.status}`);
 
-    if (!res.ok) {
-        throw new Error(`Login error ${res.status}`);
-    }
-
-    // Store tokens like Postman test script would
-    if (data.access_token) {
-        localStorage.setItem("access_token", data.access_token);
-    }
-    if (data.refresh_token) {
-        localStorage.setItem("refresh_token", data.refresh_token);
-    }
-    if (data.new_device_process_id) {
-        // if backend says "new device", you can use this for OTP flow
-        localStorage.setItem("otp_process_id", data.new_device_process_id);
-    }
+    if (data.access_token) localStorage.setItem("access_token", data.access_token);
+    if (data.refresh_token) localStorage.setItem("refresh_token", data.refresh_token);
+    if (data.new_device_process_id) localStorage.setItem("otp_process_id", data.new_device_process_id);
 
     return data;
 }

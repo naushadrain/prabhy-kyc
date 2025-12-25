@@ -19,9 +19,9 @@ import { ClaimTracking } from "./pages/ClaimTracking";
 import { ClaimIntimate } from "./pages/ClaimIntimate";
 import { MyDraftPolicy } from "./pages/MyDraftPolicy";
 import { MyPolicies } from "./pages/MyPolicies";
-import { KYCCheck } from "./pages/KYCCheck";
-import { KYCAdd } from "./pages/KYCAdd";
-import { KYCAddCorporate } from "./pages/KYCAddCorporate";
+import { KYCCheck } from "./pages/kyc/KYCCheck";
+import { KYCAdd } from "./pages/kyc/KYCAdd";
+import { KYCAddCorporate } from "./pages/kyc/KYCAddCorporate";
 import { BuyPolicies } from "./pages/BuyPolicies";
 import { HomeInsurance } from "./pages/HomeInsurance";
 import { VehicleInsurance } from "./pages/VehicleInsurance";
@@ -41,6 +41,7 @@ import { KYCAddPage } from "./pages/KYCAddPage";
 import ForgotPasswordPage from "./pages/forgot/ForgotPassword";
 import ForgotPasswordVerifyOtpPage from "./pages/forgot/ForgotPasswordVerifyOtpPage";
 import ResetPasswordPage from "./pages/changePassword/ResetPasswordPage";
+import KycTestPage from "./pages/kyc/kyctest";
 
 const queryClient = new QueryClient();
 
@@ -67,6 +68,7 @@ const App = () => (
             {/* Protected routes */}
             <Route element={<ProtectedRoute />}>
               <Route path="/dashboard" element={<Dashboard />} />
+              <Route path="/kyc-test" element={<KycTestPage />} />
               <Route path="/claim" element={<Claim />} />
               <Route path="/claim-tracking" element={<ClaimTracking />} />
               <Route path="/claim-intimate" element={<ClaimIntimate />} />

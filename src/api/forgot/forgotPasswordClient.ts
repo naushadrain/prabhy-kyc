@@ -136,3 +136,64 @@ export async function validateForgotPasswordOtp(otp: string): Promise<boolean> {
 
   return true;
 }
+
+export async function resetPassword(newPassword: string): Promise<boolean> {
+  if (!API_BASE_URL) throw new Error("VITE_API_BASE_URL is not set");
+  if (!USER_LOGIN_ID) throw new Error("VITE_USER_LOGIN_ID is not set");
+
+  const otpProcessId =
+    localStorage.getItem("otp_process_id") || localStorage.getItem("otp-process-id");
+
+  if (!otpProcessId) throw new Error("OTP process_id not found. Please validate OTP again.");
+
+  // 1) create/ensure session (gives process_key)
+  const sessionProcessKey = await createSession();
+
+  // 2) encrypt password (AES CBC, iv=secret_key)
+  const encryptedPassword = encryptAESWithSecret(newPassword);
+
+  // 3) Postman body (MUST match)
+  const bodyObj = {
+    new_login_password: encryptedPassword,
+    issue_type: "02",
+    process_id: otpProcessId,
+  };
+
+  const jsonBody = JSON.stringify(bodyObj);
+
+  // 4) signature based on jsonBody
+  const { unixTs, signature } = buildSignatureForBody(jsonBody);
+
+  // 5) Basic Auth: user_login_id : process_key
+  const basicToken = btoa(`${USER_LOGIN_ID}:${sessionProcessKey}`);
+
+  const res = await fetch(`${API_BASE_URL}/v1/member/forgot-password`, {
+    method: "PUT", // ✅ Postman uses PUT
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Basic ${basicToken}`,
+      "verify-signature": `${unixTs}.${signature}`,
+      // keep if your backend accepts it (safe)
+      "split-signature": `${unixTs}.${signature}`,
+    },
+    body: jsonBody,
+  });
+
+  const rawText = await res.text();
+  let data: SendOtpResponse = {};
+  try {
+    data = rawText ? JSON.parse(rawText) : {};
+  } catch {
+    data = {};
+  }
+
+  if (!res.ok || data?.error_list?.length) {
+    const msg =
+      data?.error_list?.[0]?.error_message ||
+      rawText ||
+      `Failed to reset password (${res.status})`;
+    throw new Error(msg);
+  }
+
+  return true;
+}

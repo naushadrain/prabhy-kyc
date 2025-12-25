@@ -3,7 +3,7 @@ import { useMemo, useState } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -11,6 +11,9 @@ import { Label } from "@/components/ui/label";
 
 import logo from "@/assets/logo.png";
 import { ArrowLeft, Eye, EyeOff, Lock, Phone } from "lucide-react";
+
+// ✅ import your API function
+import { resetPassword } from "@/api/forgot/forgotPasswordClient";
 
 // ✅ Password rules:
 // - 6 to 12 chars
@@ -41,8 +44,16 @@ const resetSchema = z
 type ResetValues = z.infer<typeof resetSchema>;
 
 export default function ResetPasswordPage() {
-    // ✅ show the mobile number from storage (if you saved it earlier)
-    const storedMobile = useMemo(() => localStorage.getItem("fp_mobile") || "", []);
+    const navigate = useNavigate();
+
+    // ✅ read saved mobile (support both keys)
+    const storedMobile = useMemo(
+        () =>
+            localStorage.getItem("forgot_mobile") ||
+            localStorage.getItem("fp_mobile") ||
+            "",
+        []
+    );
 
     const [showNew, setShowNew] = useState(false);
     const [showConfirm, setShowConfirm] = useState(false);
@@ -51,6 +62,7 @@ export default function ResetPasswordPage() {
         register,
         handleSubmit,
         setValue,
+        setError,
         formState: { errors, isValid, isSubmitting },
     } = useForm<ResetValues>({
         resolver: zodResolver(resetSchema),
@@ -70,9 +82,35 @@ export default function ResetPasswordPage() {
         setValue("mobile", cleaned, { shouldValidate: true, shouldDirty: true });
     };
 
-    const onSubmit = async (_values: ResetValues) => {
-        // ✅ UI ONLY: no API here
-        alert("✅ Password reset form is valid (UI only).");
+    const onSubmit = async (values: ResetValues) => {
+        try {
+            // optional safety: ensure user resets same mobile used in OTP request
+            const savedMobile = localStorage.getItem("forgot_mobile");
+            if (savedMobile && savedMobile !== values.mobile) {
+                setError("mobile", {
+                    type: "validate",
+                    message: "Mobile number does not match OTP request.",
+                });
+                return;
+            }
+
+            // ✅ call API (uses otp_process_id from localStorage in your client)
+            await resetPassword(values.newPassword);
+
+            // ✅ cleanup (optional)
+            localStorage.removeItem("otp_process_id");
+            localStorage.removeItem("forgot_mobile_encrypt");
+
+            // ✅ redirect
+            navigate("/login", { replace: true });
+        } catch (err: any) {
+            const msg =
+                err?.message ||
+                "Failed to reset password. Please try again.";
+
+            // show error under password field
+            setError("newPassword", { type: "server", message: msg });
+        }
     };
 
     return (
@@ -81,9 +119,12 @@ export default function ResetPasswordPage() {
             <div className="hidden lg:flex flex-1 items-center justify-center p-16 bg-muted/30">
                 <div className="max-w-md">
                     <img src={logo} alt="Logo" className="h-16 mb-6" />
-                    <h2 className="text-3xl font-bold leading-tight">Set a new password</h2>
+                    <h2 className="text-3xl font-bold leading-tight">
+                        Set a new password
+                    </h2>
                     <p className="text-muted-foreground mt-3">
-                        Create a strong password to secure your account. Make sure your new password is different from old passwords.
+                        Create a strong password to secure your account. Make sure your new
+                        password is different from old passwords.
                     </p>
 
                     <div className="mt-8 space-y-4">
@@ -103,7 +144,8 @@ export default function ResetPasswordPage() {
 
                         <div className="rounded-2xl border bg-background p-6 shadow-sm">
                             <p className="text-sm text-muted-foreground">
-                                If you didn’t request a password reset, you can safely ignore this.
+                                If you didn’t request a password reset, you can safely ignore
+                                this.
                             </p>
                         </div>
                     </div>
@@ -147,7 +189,11 @@ export default function ResetPasswordPage() {
                             />
                             <Phone className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                         </div>
-                        {errors.mobile && <p className="text-xs text-red-500 mt-1">{errors.mobile.message}</p>}
+                        {errors.mobile && (
+                            <p className="text-xs text-red-500 mt-1">
+                                {errors.mobile.message}
+                            </p>
+                        )}
                     </div>
 
                     {/* New password */}
@@ -168,10 +214,18 @@ export default function ResetPasswordPage() {
                                 className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
                                 aria-label={showNew ? "Hide password" : "Show password"}
                             >
-                                {showNew ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                                {showNew ? (
+                                    <EyeOff className="h-4 w-4" />
+                                ) : (
+                                    <Eye className="h-4 w-4" />
+                                )}
                             </button>
                         </div>
-                        {errors.newPassword && <p className="text-xs text-red-500 mt-1">{errors.newPassword.message}</p>}
+                        {errors.newPassword && (
+                            <p className="text-xs text-red-500 mt-1">
+                                {errors.newPassword.message}
+                            </p>
+                        )}
                     </div>
 
                     {/* Confirm password */}
@@ -192,15 +246,26 @@ export default function ResetPasswordPage() {
                                 className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
                                 aria-label={showConfirm ? "Hide password" : "Show password"}
                             >
-                                {showConfirm ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                                {showConfirm ? (
+                                    <EyeOff className="h-4 w-4" />
+                                ) : (
+                                    <Eye className="h-4 w-4" />
+                                )}
                             </button>
                         </div>
                         {errors.confirmPassword && (
-                            <p className="text-xs text-red-500 mt-1">{errors.confirmPassword.message}</p>
+                            <p className="text-xs text-red-500 mt-1">
+                                {errors.confirmPassword.message}
+                            </p>
                         )}
                     </div>
 
-                    <Button type="submit" className="w-full" size="lg" disabled={!isValid || isSubmitting}>
+                    <Button
+                        type="submit"
+                        className="w-full"
+                        size="lg"
+                        disabled={!isValid || isSubmitting}
+                    >
                         {isSubmitting ? "Saving..." : "Save new password"}
                     </Button>
 

@@ -120,7 +120,7 @@ export const Login = () => {
             type="submit"
             disabled={loading}
           >
-            {loading ? t('common.loading') : t('common.signIn')}
+            {loading ? "Loading..." : t('common.signIn')}
           </Button>
 
           {serverMessage && (
