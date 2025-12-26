@@ -1,18 +1,35 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
+
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { InsuranceCard } from "@/components/InsuranceCard";
 import { useLanguage } from "@/contexts/LanguageContext";
 import logo from "@/assets/logo.png";
+
 import { useForm } from "react-hook-form";
+import { z } from "zod";
+import { zodResolver } from "@hookform/resolvers/zod";
+
 import { sendOneTimeOtp } from "@/api/auth/login/otpClient";
 
-type RegisterFormValues = {
-  mobile: string;
-  userType: "customer" | "staff" | "corporate" | "surveyor";
-};
+/* =========================
+   ✅ Zod schema validation
+   ========================= */
+const registerSchema = z.object({
+  mobile: z
+    .string()
+    .trim()
+    .min(1, "Mobile number is required")
+    .regex(/^\d+$/, "Mobile number must contain digits only")
+    .refine((v) => v.startsWith("97") || v.startsWith("98"), "Mobile must start with 97 or 98")
+    .refine((v) => v.length === 10, "Mobile number must be exactly 10 digits"), // Access the underlying ZodString schema directly
+
+  userType: z.enum(["customer", "staff", "corporate", "surveyor"]),
+});
+
+type RegisterFormValues = z.infer<typeof registerSchema>;
 
 export const Register = () => {
   const { t } = useLanguage();
@@ -21,19 +38,18 @@ export const Register = () => {
   const {
     register,
     handleSubmit,
-    formState: { errors },
+    formState: { errors, isValid, isSubmitting },
   } = useForm<RegisterFormValues>({
+    resolver: zodResolver(registerSchema),
     mode: "onChange",
     defaultValues: { mobile: "", userType: "customer" },
   });
 
-  const [loading, setLoading] = useState(false);
   const [serverMessage, setServerMessage] = useState<string | null>(null);
-  const [serverIsError, setServerIsError] = useState<boolean | null>(false);
+  const [serverIsError, setServerIsError] = useState<boolean>(false);
 
-  //  Mobile toggle for left section
+  // Mobile toggle for left section
   const [showInsuranceOnMobile, setShowInsuranceOnMobile] = useState(false);
-  //  add these states near top of component
   const [insuranceIndex, setInsuranceIndex] = useState(0);
 
   const insuranceItems = [
@@ -42,16 +58,13 @@ export const Register = () => {
     { type: "home", title: t("insurance.home"), subtitle: t("insurance.homeIns") },
   ] as const;
 
-  const nextInsurance = () =>
-    setInsuranceIndex((i) => (i + 1) % insuranceItems.length);
-
+  const nextInsurance = () => setInsuranceIndex((i) => (i + 1) % insuranceItems.length);
   const prevInsurance = () =>
     setInsuranceIndex((i) => (i - 1 + insuranceItems.length) % insuranceItems.length);
 
   const onSubmit = async (values: RegisterFormValues) => {
     setServerMessage(null);
     setServerIsError(false);
-    setLoading(true);
 
     try {
       const data = await sendOneTimeOtp(values.mobile);
@@ -62,24 +75,25 @@ export const Register = () => {
 
         setServerMessage(t("auth.otpSent") ?? "OTP sent successfully. Redirecting...");
         setServerIsError(false);
+
         navigate("/otp-validate");
       } else {
         const err = data?.error_list?.[0];
-        setServerMessage(err ? `${err.error_message} (Code: ${err.error_code})` : "Failed to send OTP. Please try again.");
+        setServerMessage(
+          err ? `${err.error_message} (Code: ${err.error_code})` : "Failed to send OTP. Please try again."
+        );
         setServerIsError(true);
       }
     } catch (err: any) {
-      setServerMessage(err.message || "Unexpected error while sending OTP.");
+      setServerMessage(err?.message || "Unexpected error while sending OTP.");
       setServerIsError(true);
-    } finally {
-      setLoading(false);
     }
   };
 
   return (
     <div className="min-h-screen bg-background">
       <div className="flex min-h-screen flex-col md:flex-row">
-        {/* ================= RIGHT SIDE (FORM) - ALWAYS TOP ON MOBILE ================= */}
+        {/* ================= RIGHT SIDE (FORM) ================= */}
         <div className="order-1 w-full bg-card px-4 py-8 sm:px-8 sm:py-10 md:order-2 md:w-[440px] lg:w-[500px] md:border-l md:border-border">
           <div className="mx-auto w-full max-w-md">
             <div className="mb-8 flex items-center justify-center md:justify-start">
@@ -90,7 +104,6 @@ export const Register = () => {
               {t("auth.signUp")}
             </h1>
 
-            {/*  your same form here */}
             <form className="space-y-6" onSubmit={handleSubmit(onSubmit)}>
               <div>
                 <Label className="text-sm text-muted-foreground mb-2 block">
@@ -101,15 +114,13 @@ export const Register = () => {
                   placeholder={t("auth.mobileNo")}
                   inputMode="numeric"
                   {...register("mobile", {
-                    required: t("auth.mobileRequired") ?? "Mobile number is required",
-                    pattern: {
-                      value: /^[0-9]{10}$/,
-                      message: t("auth.mobileInvalid") ?? "Enter a valid 10-digit mobile number",
-                    },
+                    // ✅ while typing: remove any non-digit characters
+                    setValueAs: (v) => String(v ?? "").replace(/\D/g, ""),
                   })}
+                  className={errors.mobile ? "border-red-500 focus-visible:ring-red-500" : ""}
                 />
 
-                {errors.mobile && (
+                {errors.mobile?.message && (
                   <p className="text-sm text-red-500 mt-1">{errors.mobile.message}</p>
                 )}
 
@@ -120,8 +131,8 @@ export const Register = () => {
                 )}
               </div>
 
-              <Button className="w-full" size="lg" type="submit" disabled={loading}>
-                {loading ? t("common.loading") : t("common.submit")}
+              <Button className="w-full" size="lg" type="submit" disabled={!isValid || isSubmitting}>
+                {isSubmitting ? "loading..." : "submit"}
               </Button>
 
               <p className="text-center text-sm">
@@ -135,65 +146,29 @@ export const Register = () => {
         </div>
 
         {/* ================= LEFT SIDE (INSURANCE) ================= */}
-        <div className="order-2 flex-1 bg-background px-4 pb-10 pt-2 sm:px-8 md:order-1 md:px-10 md:py-12 lg:px-16 lg:py-16">
+        {/* ================= LEFT SIDE (INSURANCE) ================= */}
+        <div className="order-2 md:order-1 flex-1 px-4 pb-10 pt-2 sm:px-8 md:px-10 md:py-12 lg:px-16 lg:py-16">
           <div className="mx-auto w-full max-w-5xl">
-            {/*  Mobile: button + single-card carousel */}
-            <div className="md:hidden">
-              <Button
-                type="button"
-                variant="outline"
-                className="w-full"
-                onClick={() => setShowInsuranceOnMobile((v) => !v)}
-              >
-                {showInsuranceOnMobile ? "Hide Insurance Options" : "View Insurance Options"}
-              </Button>
-
-              {showInsuranceOnMobile && (
-                <div className="mt-4 rounded-2xl border bg-card p-4">
-                  <div className="flex items-center justify-between mb-3">
-                    <button
-                      type="button"
-                      onClick={prevInsurance}
-                      className="rounded-lg border bg-white px-3 py-2 text-sm hover:bg-gray-50"
-                    >
-                      Prev
-                    </button>
-
-                    <div className="text-xs text-muted-foreground">
-                      {insuranceIndex + 1} / {insuranceItems.length}
-                    </div>
-
-                    <button
-                      type="button"
-                      onClick={nextInsurance}
-                      className="rounded-lg border bg-white px-3 py-2 text-sm hover:bg-gray-50"
-                    >
-                      Next
-                    </button>
-                  </div>
-
-                  <InsuranceCard
-                    // @ts-ignore (if your InsuranceCard expects a union type)
-                    type={insuranceItems[insuranceIndex].type}
-                    title={insuranceItems[insuranceIndex].title}
-                    subtitle={insuranceItems[insuranceIndex].subtitle}
-                  />
-
-                  {/* dots */}
-                  <div className="mt-3 flex justify-center gap-2">
-                    {insuranceItems.map((_, i) => (
-                      <span
-                        key={i}
-                        className={`h-2 w-2 rounded-full ${i === insuranceIndex ? "bg-primary" : "bg-gray-300"
-                          }`}
-                      />
-                    ))}
-                  </div>
-                </div>
-              )}
+            {/* ✅ Mobile: show all cards one-by-one (single column) */}
+            <div className="grid grid-cols-1 gap-4 md:hidden">
+              <InsuranceCard
+                type="motor"
+                title={t("insurance.motor")}
+                subtitle={t("insurance.vehicle")}
+              />
+              <InsuranceCard
+                type="travel"
+                title={t("insurance.travel")}
+                subtitle={t("insurance.travelIns")}
+              />
+              <InsuranceCard
+                type="home"
+                title={t("insurance.home")}
+                subtitle={t("insurance.homeIns")}
+              />
             </div>
 
-            {/*  md+ : normal grid always visible */}
+            {/* ✅ md+ : normal grid */}
             <div className="hidden md:grid grid-cols-2 lg:grid-cols-3 gap-6">
               <InsuranceCard type="motor" title={t("insurance.motor")} subtitle={t("insurance.vehicle")} />
               <InsuranceCard type="travel" title={t("insurance.travel")} subtitle={t("insurance.travelIns")} />
@@ -201,8 +176,8 @@ export const Register = () => {
             </div>
           </div>
         </div>
+
       </div>
     </div>
-
   );
 };

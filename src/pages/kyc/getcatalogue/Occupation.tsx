@@ -67,7 +67,7 @@ export function Occupation({ value, onChange, label = "Occupation" }: HonourProp
 
     return (
         <div>
-            <Label>{label}</Label>
+            <Label>{label} *</Label>
 
             <Select value={selected} onValueChange={handleChange}>
                 <SelectTrigger className="mt-2">

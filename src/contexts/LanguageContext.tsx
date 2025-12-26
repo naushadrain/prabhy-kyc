@@ -16,7 +16,7 @@ const translations = {
     'common.signIn': 'SIGN IN',
     'common.signUp': 'Sign Up',
     'common.sendMessage': 'SEND MESSAGE',
-    
+
     // Auth
     'auth.signIn': 'Sign In',
     'auth.signUp': 'Sign Up',
@@ -31,7 +31,7 @@ const translations = {
     'auth.staff': 'Staff',
     'auth.corporate': 'Corporate',
     'auth.surveyor': 'Surveyor',
-    
+
     // Insurance Types
     'insurance.motor': 'Motor',
     'insurance.travel': 'Travel',
@@ -39,7 +39,7 @@ const translations = {
     'insurance.vehicle': 'Vehicle Insurance',
     'insurance.travelIns': 'Travel Insurance',
     'insurance.homeIns': 'Home Insurance',
-    
+
     // Navigation
     'nav.buyPolicies': 'Buy Policies',
     'nav.kyc': 'KYC',
@@ -56,7 +56,7 @@ const translations = {
     'nav.kycLink': 'KYC Link',
     'nav.myDraftPolicy': 'My Draft Policy',
     'nav.login': 'LOGIN',
-    
+
     // Homepage
     'home.title': "Let's find you the best Insurance Policy",
     'home.whyPickUs': 'Why should you Pick us?',
@@ -66,7 +66,7 @@ const translations = {
     'home.simpleDesc': 'Easily fill up the your detail and explore the list of insurance catered to you.',
     'home.saveMoney': 'Save Money',
     'home.saveDesc': 'Look for the best product for you and save your precious earned money.',
-    
+
     // Claim
     'claim.fileAClaim': 'File a Claim',
     'claim.completeForm': 'Complete the provided form to submit a new claims.',
@@ -80,10 +80,10 @@ const translations = {
     'claim.step5': 'Attachments',
     'claim.inProcess': 'In Process',
     'claim.pending': 'Pending',
-    
+
     // Dashboard
     'dashboard.kycNotVerified': 'Dear User Your KYC is not completed and verified. You cannot purchase or make proforma unless your KYC is verified',
-    
+
     // Contact
     'contact.title': 'Contact Us',
     'contact.subtitle': 'Any question or remarks? Just write us a message',
@@ -94,7 +94,7 @@ const translations = {
     'contact.email': 'Email',
     'contact.phoneNumber': 'Phone Number',
     'contact.message': 'Write your message here...',
-    
+
     // FAQ
     'faq.title': 'Frequently Asked Questions',
     'faq.q1': '1. What is Insurance ?',
@@ -107,19 +107,19 @@ const translations = {
     'faq.q8': '8. What shall the Insured do if the incident giving rise to a claim under the Policy occur ?',
     'faq.q9': '9. What factors affect the premium in comprehensive vehicle insurance?',
     'faq.q10': "10. What does 'No-Claim Bonus' mean?",
-    
+
     // Password
     'password.change': 'Change Password',
     'password.current': 'Current Password',
     'password.new': 'New Password',
     'password.confirm': 'Confirm Password',
-    
+
     // Settings
     'settings.title': 'Settings',
     'settings.language': 'Language',
     'settings.english': 'English',
     'settings.nepali': 'नेपाली',
-    
+
     // Transaction
     'transaction.sn': 'S.N',
     'transaction.userName': 'User Name',
@@ -130,7 +130,7 @@ const translations = {
     'transaction.paymentStatus': 'Payment Status',
     'transaction.noRows': 'No rows',
     'transaction.rowsPerPage': 'Rows per page:',
-    
+
     // Claim Tracking
     'claimTracking.title': 'Track Your Claim:',
     'claimTracking.selfList': 'Self Claim List',
@@ -143,13 +143,13 @@ const translations = {
     'claimTracking.documentNumber': 'Document Number',
     'claimTracking.action': 'Action',
     'claimTracking.claimInitimation': 'CLAIM INITIMATION',
-    
+
     // Claim Intimate
     'claimIntimate.title': 'Intimate Your Claim',
     'claimIntimate.address': 'Address',
     'claimIntimate.intimationDate': 'Intimation Date',
     'claimIntimate.claimStatus': 'Claim Status',
-    
+
     // My Draft Policy
     'draftPolicy.approvedDraft': 'Approved Draft',
     'draftPolicy.unapprovedDraft': 'Unapproved Draft',
@@ -160,7 +160,7 @@ const translations = {
     'draftPolicy.proformaNo': 'Profoma No',
     'draftPolicy.status': 'Status',
     'draftPolicy.remarks': 'Remarks',
-    
+
     // My Policies
     'myPolicies.dateFrom': 'Date From',
     'myPolicies.dateTo': 'Date To',
@@ -170,11 +170,11 @@ const translations = {
     'myPolicies.expiryDate': 'Expiry Date',
     'myPolicies.policyNumber': 'Policy Number',
     'myPolicies.totalPremium': 'Total Premium',
-    
+
     // KYC Check
     'kycCheck.title': 'KYC Check',
     'kycCheck.mobileNumber': 'Mobile Number',
-    
+
     // KYC Add Corporate
     'kycCorporate.step1': 'KYC Type',
     'kycCorporate.step2': 'Basic Information',
@@ -218,13 +218,13 @@ const translations = {
     'kycCorporate.back': 'BACK',
     'kycCorporate.continue': 'CONTINUE',
     'kycCorporate.completed': 'Completed',
-    
+
     // KYC Add
     'kycAdd.basicInfo': 'Basic Information',
     'kycAdd.firstName': 'First name',
     'kycAdd.middleName': 'Middle name',
     'kycAdd.lastName': 'Last name',
-    'kycAdd.identification':' Identification',
+    'kycAdd.identification': ' Identification',
     'kycAdd.idType': 'ID Type',
     'kycAdd.idNumber': 'ID No',
     'kycAdd.maritalStatus': 'Marital Status',
@@ -238,16 +238,19 @@ const translations = {
     'kycAdd.temporaryAddress': 'Temporary Address',
     'kycAdd.province': 'Province',
     'kycAdd.district': 'District',
-    'kycAdd.idIssueDistrict': 'Identification Issued District',
+    'kycAdd.idIssueDistrict': 'Issued District',
     'kycAdd.idIssueDate': 'Identification Issued Date (A.D)',
     'kycAdd.idIssueDateBS': 'Identification Issued Date (B.S)',
     'kycAdd.municipality': 'Municipality/VDC',
     'kycAdd.tole': 'Tole',
     'kycAdd.wardNumber': 'Ward Number',
+    'kycAdd.contact': 'Contact Information',
+    'kycAdd.docType': 'Document Type',
+    'kycAdd.industry': 'Industry',
     'kycAdd.relation': 'Relation',
-    'kycAdd.fatherNameNep': 'Father Name Nepali',
+    'kycAdd.fatherNameNep': 'Father Name नेपाली',
     'kycAdd.fatherCitizenshipNo': 'Father Citizenship No',
-    'kycAdd.fatherCitizenshipIssuedDistrict': 'Father Citizenship Issued District',
+    'kycAdd.fatherCitizenshipIssuedDistrict': 'Citizenship Issued District',
     'kycAdd.compliance': 'Compliance / Risk',
     'kycAdd.politicallyInvolved': 'Are you Politically Involved Person?',
     'kycAdd.partyInspectionCategory': 'Party / Inspection Category',
@@ -273,13 +276,13 @@ const translations = {
     'kycAdd.eraser': 'ERASER',
     'kycAdd.clear': 'CLEAR',
     'kycAdd.eSignature': 'E-Signature',
-    
+
     // Buy Policies
     'buyPolicies.title': "Let's find you the best Insurance Policy",
     'buyPolicies.motor': 'Motor',
     'buyPolicies.travel': 'Travel',
     'buyPolicies.home': 'Home',
-    
+
     // Home Insurance
     'homeInsurance.title': 'Home Insurance',
     'homeInsurance.step1': 'Calculate House Premium',
@@ -294,7 +297,7 @@ const translations = {
     'homeInsurance.addPropertyList': 'ADD PROPERTY LIST',
     'homeInsurance.total': 'TOTAL',
     'homeInsurance.note': 'Note: The sum insured property cannot exceed Rs. 2 crore.',
-    
+
     // Vehicle Insurance
     'vehicleInsurance.title': 'Vehicles Details',
     'vehicleInsurance.step1': 'Insurance Plan',
@@ -328,7 +331,7 @@ const translations = {
     'common.signIn': 'साइन इन',
     'common.signUp': 'साइन अप',
     'common.sendMessage': 'सन्देश पठाउनुहोस्',
-    
+
     // Auth
     'auth.signIn': 'साइन इन',
     'auth.signUp': 'साइन अप',
@@ -343,7 +346,7 @@ const translations = {
     'auth.staff': 'कर्मचारी',
     'auth.corporate': 'कर्पोरेट',
     'auth.surveyor': 'सर्वेयर',
-    
+
     // Insurance Types
     'insurance.motor': 'मोटर',
     'insurance.travel': 'यात्रा',
@@ -351,7 +354,7 @@ const translations = {
     'insurance.vehicle': 'सवारी साधन बीमा',
     'insurance.travelIns': 'यात्रा बीमा',
     'insurance.homeIns': 'घर बीमा',
-    
+
     // Navigation
     'nav.buyPolicies': 'नीति किन्नुहोस्',
     'nav.kyc': 'केवाईसी',
@@ -368,7 +371,7 @@ const translations = {
     'nav.kycLink': 'केवाईसी लिंक',
     'nav.myDraftPolicy': 'मेरो ड्राफ्ट नीति',
     'nav.login': 'लगइन',
-    
+
     // Homepage
     'home.title': 'तपाईंको लागि उत्तम बीमा नीति खोजौं',
     'home.whyPickUs': 'हामीलाई किन छान्ने?',
@@ -378,7 +381,7 @@ const translations = {
     'home.simpleDesc': 'आफ्नो विवरण सजिलै भर्नुहोस् र तपाईंको लागि बीमा सूची अन्वेषण गर्नुहोस्।',
     'home.saveMoney': 'पैसा बचत गर्नुहोस्',
     'home.saveDesc': 'तपाईंको लागि उत्तम उत्पादन खोज्नुहोस् र आफ्नो बहुमूल्य कमाइ बचत गर्नुहोस्।',
-    
+
     // Claim
     'claim.fileAClaim': 'दाबी दर्ता गर्नुहोस्',
     'claim.completeForm': 'नयाँ दाबी पेश गर्न प्रदान गरिएको फारम पूरा गर्नुहोस्।',
@@ -392,10 +395,10 @@ const translations = {
     'claim.step5': 'संलग्नकहरू',
     'claim.inProcess': 'प्रक्रियामा',
     'claim.pending': 'बाँकी',
-    
+
     // Dashboard
     'dashboard.kycNotVerified': 'प्रिय प्रयोगकर्ता तपाईंको केवाईसी पूरा र प्रमाणित भएको छैन। तपाईंले केवाईसी प्रमाणित नभएसम्म खरिद वा प्रोफर्मा बनाउन सक्नुहुन्न',
-    
+
     // Contact
     'contact.title': 'सम्पर्क गर्नुहोस्',
     'contact.subtitle': 'कुनै प्रश्न वा टिप्पणी? हामीलाई सन्देश लेख्नुहोस्',
@@ -406,7 +409,7 @@ const translations = {
     'contact.email': 'इमेल',
     'contact.phoneNumber': 'फोन नम्बर',
     'contact.message': 'यहाँ आफ्नो सन्देश लेख्नुहोस्...',
-    
+
     // FAQ
     'faq.title': 'प्राय सोधिने प्रश्नहरू',
     'faq.q1': '१. बीमा के हो?',
@@ -419,19 +422,19 @@ const translations = {
     'faq.q8': '८. नीति अन्तर्गत दाबी उत्पन्न हुने घटना भएमा बीमितले के गर्नुपर्छ?',
     'faq.q9': '९. व्यापक वाहन बीमामा प्रिमियमलाई असर गर्ने कारकहरू के हुन्?',
     'faq.q10': '१०. "नो-क्लेम बोनस" को अर्थ के हो?',
-    
+
     // Password
     'password.change': 'पासवर्ड परिवर्तन गर्नुहोस्',
     'password.current': 'हालको पासवर्ड',
     'password.new': 'नयाँ पासवर्ड',
     'password.confirm': 'पासवर्ड पुष्टि गर्नुहोस्',
-    
+
     // Settings
     'settings.title': 'सेटिङहरू',
     'settings.language': 'भाषा',
     'settings.english': 'English',
     'settings.nepali': 'नेपाली',
-    
+
     // Transaction
     'transaction.sn': 'क्र.सं.',
     'transaction.userName': 'प्रयोगकर्ता नाम',
@@ -442,7 +445,7 @@ const translations = {
     'transaction.paymentStatus': 'भुक्तानी स्थिति',
     'transaction.noRows': 'कुनै पङ्क्ति छैन',
     'transaction.rowsPerPage': 'प्रति पृष्ठ पङ्क्तिहरू:',
-    
+
     // Claim Tracking
     'claimTracking.title': 'आफ्नो दाबी ट्र्याक गर्नुहोस्:',
     'claimTracking.selfList': 'आफ्नो दाबी सूची',
@@ -455,13 +458,13 @@ const translations = {
     'claimTracking.documentNumber': 'कागजात नम्बर',
     'claimTracking.action': 'कार्य',
     'claimTracking.claimInitimation': 'दाबी सूचना',
-    
+
     // Claim Intimate
     'claimIntimate.title': 'आफ्नो दाबी सूचित गर्नुहोस्',
     'claimIntimate.address': 'ठेगाना',
     'claimIntimate.intimationDate': 'सूचना मिति',
     'claimIntimate.claimStatus': 'दाबी स्थिति',
-    
+
     // My Draft Policy
     'draftPolicy.approvedDraft': 'स्वीकृत ड्राफ्ट',
     'draftPolicy.unapprovedDraft': 'अस्वीकृत ड्राफ्ट',
@@ -472,7 +475,7 @@ const translations = {
     'draftPolicy.proformaNo': 'प्रोफर्मा नं.',
     'draftPolicy.status': 'स्थिति',
     'draftPolicy.remarks': 'टिप्पणी',
-    
+
     // My Policies
     'myPolicies.dateFrom': 'मिति देखि',
     'myPolicies.dateTo': 'मिति सम्म',
@@ -482,11 +485,11 @@ const translations = {
     'myPolicies.expiryDate': 'म्याद समाप्ति मिति',
     'myPolicies.policyNumber': 'नीति नम्बर',
     'myPolicies.totalPremium': 'कुल प्रिमियम',
-    
+
     // KYC Check
     'kycCheck.title': 'केवाईसी जाँच',
     'kycCheck.mobileNumber': 'मोबाइल नम्बर',
-    
+
     // KYC Add Corporate
     'kycCorporate.title': 'कर्पोरेट केवाईसी जोड्नुहोस्',
     'kycCorporate.step0': 'केवाईसी जोड्नुहोस्',
@@ -531,7 +534,7 @@ const translations = {
     'kycCorporate.back': 'पछाडि',
     'kycCorporate.continue': 'जारी राख्नुहोस्',
     'kycCorporate.completed': 'पूरा भयो',
-    
+
     // KYC Add
     'kycAdd.basicInfo': 'आधारभूत जानकारी',
     'kycAdd.fullName': 'पूरा नाम',
@@ -567,13 +570,13 @@ const translations = {
     'kycAdd.eraser': 'इरेजर',
     'kycAdd.clear': 'खाली गर्नुहोस्',
     'kycAdd.eSignature': 'ई-हस्ताक्षर',
-    
+
     // Buy Policies
     'buyPolicies.title': 'तपाईंको लागि उत्तम बीमा नीति खोजौं',
     'buyPolicies.motor': 'मोटर',
     'buyPolicies.travel': 'यात्रा',
     'buyPolicies.home': 'घर',
-    
+
     // Home Insurance
     'homeInsurance.title': 'घर बीमा',
     'homeInsurance.step1': 'घर प्रिमियम गणना गर्नुहोस्',
@@ -588,7 +591,7 @@ const translations = {
     'homeInsurance.addPropertyList': 'सम्पत्ति सूची थप्नुहोस्',
     'homeInsurance.total': 'कुल',
     'homeInsurance.note': 'नोट: बीमित सम्पत्ति रु. २ करोड भन्दा बढी हुन सक्दैन।',
-    
+
     // Vehicle Insurance
     'vehicleInsurance.title': 'वाहन विवरण',
     'vehicleInsurance.step1': 'बीमा योजना',

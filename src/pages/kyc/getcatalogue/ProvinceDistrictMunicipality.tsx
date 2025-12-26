@@ -1,4 +1,4 @@
-// src/pages/kyc/ProvinceDistrictMunicipality.tsx
+// ProvinceDistrictMunicipality.tsx
 import React, { useEffect, useMemo, useState } from "react";
 import { getCatalogue } from "@/api/kyc/getcatalogue/getcatalogue";
 import { Label } from "@/components/ui/label";
@@ -11,14 +11,14 @@ import {
 } from "@/components/ui/select";
 
 type CatalogueItem = {
-    data: string;              // e.g. "STATE 6" OR "Jumla"
-    value: string;             // display label
-    additional_value?: string; // e.g. "STATE 6" (for district), or district name/code (for municipality)
+    data: string;
+    value: string;
+    additional_value?: string;
 };
 
 const PROVINCE_TYPE = 11;
 const DISTRICT_TYPE = 12;
-const MUNICIPALITY_TYPE = 13; // keep if your API exists
+const MUNICIPALITY_TYPE = 13;
 
 async function fetchCatalogueList(catalogueType: number, id: string | number) {
     const res = await getCatalogue(catalogueType, id);
@@ -36,8 +36,11 @@ export function ProvinceDistrictMunicipality(props: {
     onChange: (next: PdmValue) => void;
     labels?: { province?: string; district?: string; local_level?: string };
     disabled?: boolean;
+
+    // ✅ add this
+    errors?: { province?: string; district?: string; local_level?: string };
 }) {
-    const { value, onChange, labels, disabled } = props;
+    const { value, onChange, labels, disabled, errors } = props;
 
     const [provinces, setProvinces] = useState<CatalogueItem[]>([]);
     const [allDistricts, setAllDistricts] = useState<CatalogueItem[]>([]);
@@ -51,7 +54,6 @@ export function ProvinceDistrictMunicipality(props: {
     const [errDistrict, setErrDistrict] = useState("");
     const [errMunicipality, setErrMunicipality] = useState("");
 
-    /** 1) Load provinces */
     useEffect(() => {
         let alive = true;
         (async () => {
@@ -71,7 +73,6 @@ export function ProvinceDistrictMunicipality(props: {
         };
     }, []);
 
-    /** 2) Load ALL districts once (id=1) */
     useEffect(() => {
         let alive = true;
         (async () => {
@@ -91,7 +92,6 @@ export function ProvinceDistrictMunicipality(props: {
         };
     }, []);
 
-    /** 3) Load ALL municipalities once (optional) */
     useEffect(() => {
         let alive = true;
         (async () => {
@@ -101,7 +101,6 @@ export function ProvinceDistrictMunicipality(props: {
                 const list = await fetchCatalogueList(MUNICIPALITY_TYPE, 1);
                 if (alive) setAllMunicipalities(list);
             } catch (e: any) {
-                // if API not exists you can ignore
                 if (alive) setErrMunicipality(e?.message || "Failed to load municipalities");
             } finally {
                 if (alive) setLoadingMunicipality(false);
@@ -112,44 +111,34 @@ export function ProvinceDistrictMunicipality(props: {
         };
     }, []);
 
-    /** Filter districts by province: district.additional_value must equal provinceCode */
     const districts = useMemo(() => {
         if (!value.province) return [];
         const pv = value.province.trim();
         return allDistricts.filter((d) => (d.additional_value || "").trim() === pv);
     }, [allDistricts, value.province]);
 
-    /** Filter municipalities by district (based on your API pattern) */
     const municipalities = useMemo(() => {
         if (!value.district) return [];
         const dist = value.district.trim();
         return allMunicipalities.filter((m) => (m.additional_value || "").trim() === dist);
     }, [allMunicipalities, value.district]);
 
-    /** When province changes: reset district + local_level if they no longer match */
     useEffect(() => {
         if (!value.province) {
-            if (value.district || value.local_level) {
-                onChange({ province: "", district: "", local_level: "" });
-            }
+            if (value.district || value.local_level) onChange({ province: "", district: "", local_level: "" });
             return;
         }
-
-        // if selected district isn't in filtered list, clear it
         if (value.district && !districts.some((d) => d.data === value.district)) {
             onChange({ province: value.province, district: "", local_level: "" });
-            return;
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [value.province, districts]);
 
-    /** When district changes: reset local_level if invalid */
     useEffect(() => {
         if (!value.district) {
             if (value.local_level) onChange({ ...value, local_level: "" });
             return;
         }
-
         if (value.local_level && !municipalities.some((m) => m.data === value.local_level)) {
             onChange({ ...value, local_level: "" });
         }
@@ -160,13 +149,13 @@ export function ProvinceDistrictMunicipality(props: {
         <>
             {/* Province */}
             <div>
-                <Label>{labels?.province ?? "Province"}</Label>
+                <Label>{labels?.province ?? "Province"} *</Label>
                 <Select
                     value={value.province}
                     onValueChange={(v) => onChange({ province: v, district: "", local_level: "" })}
                     disabled={disabled || loadingProvince}
                 >
-                    <SelectTrigger className="mt-2">
+                    <SelectTrigger className={`mt-2 ${errors?.province ? "border-red-500 focus-visible:ring-red-500" : ""}`}>
                         <SelectValue placeholder={loadingProvince ? "Loading..." : "Select province"} />
                     </SelectTrigger>
                     <SelectContent>
@@ -181,17 +170,18 @@ export function ProvinceDistrictMunicipality(props: {
                         )}
                     </SelectContent>
                 </Select>
+                {errors?.province && <p className="text-xs text-red-500 mt-1">{errors.province}</p>}
             </div>
 
             {/* District */}
             <div>
-                <Label>{labels?.district ?? "District"}</Label>
+                <Label>{labels?.district ?? "District"} *</Label>
                 <Select
                     value={value.district}
                     onValueChange={(v) => onChange({ ...value, district: v, local_level: "" })}
                     disabled={disabled || !value.province || loadingDistrict}
                 >
-                    <SelectTrigger className="mt-2">
+                    <SelectTrigger className={`mt-2 ${errors?.district ? "border-red-500 focus-visible:ring-red-500" : ""}`}>
                         <SelectValue
                             placeholder={
                                 !value.province
@@ -216,17 +206,18 @@ export function ProvinceDistrictMunicipality(props: {
                         )}
                     </SelectContent>
                 </Select>
+                {errors?.district && <p className="text-xs text-red-500 mt-1">{errors.district}</p>}
             </div>
 
-            {/* Municipality / Local level */}
+            {/* Municipality */}
             <div>
-                <Label>{labels?.local_level ?? "Municipality"}</Label>
+                <Label>{labels?.local_level ?? "Municipality"} *</Label>
                 <Select
                     value={value.local_level}
                     onValueChange={(v) => onChange({ ...value, local_level: v })}
                     disabled={disabled || !value.district || loadingMunicipality}
                 >
-                    <SelectTrigger className="mt-2">
+                    <SelectTrigger className={`mt-2 ${errors?.local_level ? "border-red-500 focus-visible:ring-red-500" : ""}`}>
                         <SelectValue
                             placeholder={
                                 !value.district
@@ -251,6 +242,7 @@ export function ProvinceDistrictMunicipality(props: {
                         )}
                     </SelectContent>
                 </Select>
+                {errors?.local_level && <p className="text-xs text-red-500 mt-1">{errors.local_level}</p>}
             </div>
         </>
     );
