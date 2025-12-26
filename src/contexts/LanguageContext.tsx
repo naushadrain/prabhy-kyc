@@ -16,7 +16,6 @@ const translations = {
     'common.signIn': 'SIGN IN',
     'common.signUp': 'Sign Up',
     'common.sendMessage': 'SEND MESSAGE',
-
     // Auth
     'auth.signIn': 'Sign In',
     'auth.signUp': 'Sign Up',
@@ -31,7 +30,6 @@ const translations = {
     'auth.staff': 'Staff',
     'auth.corporate': 'Corporate',
     'auth.surveyor': 'Surveyor',
-
     // Insurance Types
     'insurance.motor': 'Motor',
     'insurance.travel': 'Travel',
@@ -39,7 +37,6 @@ const translations = {
     'insurance.vehicle': 'Vehicle Insurance',
     'insurance.travelIns': 'Travel Insurance',
     'insurance.homeIns': 'Home Insurance',
-
     // Navigation
     'nav.buyPolicies': 'Buy Policies',
     'nav.kyc': 'KYC',
@@ -56,7 +53,6 @@ const translations = {
     'nav.kycLink': 'KYC Link',
     'nav.myDraftPolicy': 'My Draft Policy',
     'nav.login': 'LOGIN',
-
     // Homepage
     'home.title': "Let's find you the best Insurance Policy",
     'home.whyPickUs': 'Why should you Pick us?',
@@ -66,7 +62,6 @@ const translations = {
     'home.simpleDesc': 'Easily fill up the your detail and explore the list of insurance catered to you.',
     'home.saveMoney': 'Save Money',
     'home.saveDesc': 'Look for the best product for you and save your precious earned money.',
-
     // Claim
     'claim.fileAClaim': 'File a Claim',
     'claim.completeForm': 'Complete the provided form to submit a new claims.',
@@ -80,10 +75,8 @@ const translations = {
     'claim.step5': 'Attachments',
     'claim.inProcess': 'In Process',
     'claim.pending': 'Pending',
-
     // Dashboard
     'dashboard.kycNotVerified': 'Dear User Your KYC is not completed and verified. You cannot purchase or make proforma unless your KYC is verified',
-
     // Contact
     'contact.title': 'Contact Us',
     'contact.subtitle': 'Any question or remarks? Just write us a message',
@@ -94,7 +87,6 @@ const translations = {
     'contact.email': 'Email',
     'contact.phoneNumber': 'Phone Number',
     'contact.message': 'Write your message here...',
-
     // FAQ
     'faq.title': 'Frequently Asked Questions',
     'faq.q1': '1. What is Insurance ?',
@@ -107,19 +99,16 @@ const translations = {
     'faq.q8': '8. What shall the Insured do if the incident giving rise to a claim under the Policy occur ?',
     'faq.q9': '9. What factors affect the premium in comprehensive vehicle insurance?',
     'faq.q10': "10. What does 'No-Claim Bonus' mean?",
-
     // Password
     'password.change': 'Change Password',
     'password.current': 'Current Password',
     'password.new': 'New Password',
     'password.confirm': 'Confirm Password',
-
     // Settings
     'settings.title': 'Settings',
     'settings.language': 'Language',
     'settings.english': 'English',
     'settings.nepali': 'नेपाली',
-
     // Transaction
     'transaction.sn': 'S.N',
     'transaction.userName': 'User Name',
@@ -130,7 +119,6 @@ const translations = {
     'transaction.paymentStatus': 'Payment Status',
     'transaction.noRows': 'No rows',
     'transaction.rowsPerPage': 'Rows per page:',
-
     // Claim Tracking
     'claimTracking.title': 'Track Your Claim:',
     'claimTracking.selfList': 'Self Claim List',
@@ -143,13 +131,11 @@ const translations = {
     'claimTracking.documentNumber': 'Document Number',
     'claimTracking.action': 'Action',
     'claimTracking.claimInitimation': 'CLAIM INITIMATION',
-
     // Claim Intimate
     'claimIntimate.title': 'Intimate Your Claim',
     'claimIntimate.address': 'Address',
     'claimIntimate.intimationDate': 'Intimation Date',
     'claimIntimate.claimStatus': 'Claim Status',
-
     // My Draft Policy
     'draftPolicy.approvedDraft': 'Approved Draft',
     'draftPolicy.unapprovedDraft': 'Unapproved Draft',
@@ -160,7 +146,6 @@ const translations = {
     'draftPolicy.proformaNo': 'Profoma No',
     'draftPolicy.status': 'Status',
     'draftPolicy.remarks': 'Remarks',
-
     // My Policies
     'myPolicies.dateFrom': 'Date From',
     'myPolicies.dateTo': 'Date To',
@@ -170,11 +155,9 @@ const translations = {
     'myPolicies.expiryDate': 'Expiry Date',
     'myPolicies.policyNumber': 'Policy Number',
     'myPolicies.totalPremium': 'Total Premium',
-
     // KYC Check
     'kycCheck.title': 'KYC Check',
     'kycCheck.mobileNumber': 'Mobile Number',
-
     // KYC Add Corporate
     'kycCorporate.step1': 'KYC Type',
     'kycCorporate.step2': 'Basic Information',
@@ -218,7 +201,6 @@ const translations = {
     'kycCorporate.back': 'BACK',
     'kycCorporate.continue': 'CONTINUE',
     'kycCorporate.completed': 'Completed',
-
     // KYC Add
     'kycAdd.basicInfo': 'Basic Information',
     'kycAdd.firstName': 'First name',
@@ -248,7 +230,7 @@ const translations = {
     'kycAdd.docType': 'Document Type',
     'kycAdd.industry': 'Industry',
     'kycAdd.relation': 'Relation',
-    'kycAdd.fatherNameNep': 'Father Name नेपाली',
+    'kycAdd.fatherNameNep': 'Father Name Nepali',
     'kycAdd.fatherCitizenshipNo': 'Father Citizenship No',
     'kycAdd.fatherCitizenshipIssuedDistrict': 'Citizenship Issued District',
     'kycAdd.compliance': 'Compliance / Risk',
@@ -276,13 +258,11 @@ const translations = {
     'kycAdd.eraser': 'ERASER',
     'kycAdd.clear': 'CLEAR',
     'kycAdd.eSignature': 'E-Signature',
-
     // Buy Policies
     'buyPolicies.title': "Let's find you the best Insurance Policy",
     'buyPolicies.motor': 'Motor',
     'buyPolicies.travel': 'Travel',
     'buyPolicies.home': 'Home',
-
     // Home Insurance
     'homeInsurance.title': 'Home Insurance',
     'homeInsurance.step1': 'Calculate House Premium',
@@ -297,7 +277,6 @@ const translations = {
     'homeInsurance.addPropertyList': 'ADD PROPERTY LIST',
     'homeInsurance.total': 'TOTAL',
     'homeInsurance.note': 'Note: The sum insured property cannot exceed Rs. 2 crore.',
-
     // Vehicle Insurance
     'vehicleInsurance.title': 'Vehicles Details',
     'vehicleInsurance.step1': 'Insurance Plan',

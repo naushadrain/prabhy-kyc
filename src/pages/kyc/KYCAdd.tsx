@@ -4,6 +4,7 @@ import { Sidebar } from "@/components/Sidebar";
 import { Header } from "@/components/Header";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useNavigate } from "react-router-dom";
+
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -31,19 +32,9 @@ import {
   isNepaliOnly,
 } from "./validation/kycSchema";
 
-// ✅ API
+// API
 import { submitCustomerKyc, type CustomerKycFormEntity } from "@/api/kyc/customerKycClient";
 
-// ✅ inside component
-const navigate = useNavigate();
-const redirectTimerRef = useRef<number | null>(null);
-
-// ✅ cleanup on unmount (recommended)
-useEffect(() => {
-  return () => {
-    if (redirectTimerRef.current) window.clearTimeout(redirectTimerRef.current);
-  };
-}, []);
 /* =========================
    Upload config
 ========================= */
@@ -51,7 +42,7 @@ type UploadItem = { file: File; previewUrl: string };
 const ALLOWED_MIME = ["image/png", "image/jpeg"];
 const MAX_FILE_MB = 1;
 
-/** ✅ IMPORTANT: Use the same keys everywhere (UI, uploads state, payload mapping) */
+/** IMPORTANT: Use the same keys everywhere */
 const PHOTO_KEY = "Photo *";
 const CTZ_FRONT_KEY = "Citizenship / Front (Optional)";
 const CTZ_BACK_KEY = "Citizenship / Back (Optional)";
@@ -80,8 +71,21 @@ type BannerState =
 
 type ApiErrorItem = { error_code?: string; error_message?: string };
 
+// ✅ Avoid SWC union parsing issue
+type DocType = "citizenship" | "passport" | "nid";
+
 export const KYCAdd = () => {
   const { t } = useLanguage();
+  const navigate = useNavigate();
+
+  // redirect timer
+  const redirectTimerRef = useRef<number | null>(null);
+  useEffect(() => {
+    return () => {
+      if (redirectTimerRef.current) window.clearTimeout(redirectTimerRef.current);
+    };
+  }, []);
+
   const { minDobAD, maxDobAD } = useMemo(() => getDobMinMaxYMD(), []);
   const [banner, setBanner] = useState<BannerState>(null);
 
@@ -124,9 +128,6 @@ export const KYCAdd = () => {
     doc_type: "citizenship",
   };
 
-  /* =========================
-     RHF + Zod
-  ========================= */
   const {
     register,
     watch,
@@ -187,7 +188,7 @@ export const KYCAdd = () => {
     };
 
   /* =========================
-     Upload state + validation (client-side)
+     Upload state + validation
   ========================= */
   const [uploads, setUploads] = useState<Record<string, UploadItem | null>>({});
   const [uploadErrors, setUploadErrors] = useState<Record<string, string>>({});
@@ -210,16 +211,11 @@ export const KYCAdd = () => {
   };
 
   const cleanupAllPreviews = () => {
-    Object.entries(uploads).forEach(([k, u]) => {
-      if (u?.previewUrl) URL.revokeObjectURL(u.previewUrl);
-      // keep it simple; state reset happens separately
-    });
+    Object.values(uploads).forEach((u) => u?.previewUrl && URL.revokeObjectURL(u.previewUrl));
   };
 
   useEffect(() => {
-    return () => {
-      cleanupAllPreviews();
-    };
+    return () => cleanupAllPreviews();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -269,27 +265,24 @@ export const KYCAdd = () => {
   ========================= */
   const applyApiErrorsToFields = (list: ApiErrorItem[] | undefined) => {
     if (!list?.length) return false;
-
     let mappedAny = false;
 
     for (const item of list) {
-      const msg = (item?.error_message || "").toLowerCase();
+      const raw = item?.error_message || "";
+      const msg = raw.toLowerCase();
 
-      // ✅ Your example: "Duplicate Passport/Citizen Number 1214322452"
       if (msg.includes("duplicate") && (msg.includes("passport") || msg.includes("citizen") || msg.includes("citizenship"))) {
-        setError("id_no", { type: "server", message: item.error_message || "Duplicate document number" });
+        setError("id_no", { type: "server", message: raw });
         mappedAny = true;
         continue;
       }
-
-      // other common mappings (optional)
       if (msg.includes("mobile")) {
-        setError("mobile", { type: "server", message: item.error_message || "Invalid mobile" });
+        setError("mobile", { type: "server", message: raw });
         mappedAny = true;
         continue;
       }
       if (msg.includes("email")) {
-        setError("email", { type: "server", message: item.error_message || "Invalid email" });
+        setError("email", { type: "server", message: raw });
         mappedAny = true;
         continue;
       }
@@ -313,36 +306,23 @@ export const KYCAdd = () => {
   const onValidSubmit = async (values: KycFormValues) => {
     setBanner(null);
 
-    // ✅ extra client side: nepali helper errors
+    // UI-only nepali errors
     if (Object.keys(npErrors).length) {
-      setBanner({
-        type: "error",
-        title: "Validation error",
-        message: "कृपया नेपाली फिल्डहरू सही गर्नुहोस्।",
-      });
+      setBanner({ type: "error", title: "Validation error", message: "कृपया नेपाली फिल्डहरू सही गर्नुहोस्।" });
       window.scrollTo({ top: 0, behavior: "smooth" });
       return;
     }
 
-    // ✅ Photo required (client-side)
+    // photo required
     if (!uploads[PHOTO_KEY]?.file) {
       setUploadError(PHOTO_KEY, "Profile photo is required.");
-      setBanner({
-        type: "error",
-        title: "Upload error",
-        message: "Please upload the required profile photo.",
-      });
+      setBanner({ type: "error", title: "Upload error", message: "Please upload the required profile photo." });
       window.scrollTo({ top: 0, behavior: "smooth" });
       return;
     }
 
-    // ✅ any upload invalid → block submit
     if (Object.keys(uploadErrors).length) {
-      setBanner({
-        type: "error",
-        title: "Upload error",
-        message: "Please fix document upload errors.",
-      });
+      setBanner({ type: "error", title: "Upload error", message: "Please fix document upload errors." });
       window.scrollTo({ top: 0, behavior: "smooth" });
       return;
     }
@@ -350,7 +330,6 @@ export const KYCAdd = () => {
     setBanner({ type: "info", title: "Submitting…", message: "Submitting your KYC. Please wait." });
     window.scrollTo({ top: 0, behavior: "smooth" });
 
-    // ✅ map values to API entity
     const payload: CustomerKycFormEntity = {
       honour: values.honour,
 
@@ -366,8 +345,8 @@ export const KYCAdd = () => {
       id_no: values.id_no,
       issued_district: values.issued_district,
 
-      issue_date_ad: values.issue_date_ad,
-      issue_date_bs: values.issue_date_bs,
+      issue_date_ad: values.issue_date_ad || "",
+      issue_date_bs: values.issue_date_bs || "",
 
       province: values.province,
       district: values.district,
@@ -376,7 +355,7 @@ export const KYCAdd = () => {
 
       residence_country: values.residence_country || "NEPAL",
       mobile: values.mobile,
-      email: values.email,
+      email: values.email || "",
 
       father_name: values.father_name,
       father_name_nep: values.father_name_nep,
@@ -385,16 +364,16 @@ export const KYCAdd = () => {
 
       gender: values.gender,
       dob_ad: values.dob_ad,
-      dob_bs: values.dob_bs,
+      dob_bs: values.dob_bs || "",
 
       occupation: values.occupation || "",
-      politically_involved: !!values.politically_involved,
+      politically_involved: Boolean(values.politically_involved),
       party_inspection_category: values.party_inspection_category,
       risk_factors: values.risk_factors,
 
-      doc_type: values.doc_type as "citizenship" | "passport" | "nid",
+      // ✅ FIXED (NO UNION INLINE)
+      doc_type: values.doc_type as DocType,
 
-      // uploads
       image_profile: uploads[PHOTO_KEY]?.file ?? null,
       ctz_front: uploads[CTZ_FRONT_KEY]?.file ?? null,
       ctz_back: uploads[CTZ_BACK_KEY]?.file ?? null,
@@ -415,19 +394,14 @@ export const KYCAdd = () => {
         message: result?.data?.message || "Your KYC information has been submitted and under review.",
       });
 
-      // ✅ clear form + uploads AFTER SUCCESS
       clearFormAfterSuccess();
-      // TODO: navigate to kyc list page after a delay to dashboard
-      // navigate("/dashboard");
-      // ✅ redirect to dashboard after 3 seconds
-      if (redirectTimerRef.current) window.clearTimeout(redirectTimerRef.current);
 
+      // redirect after 3s
+      if (redirectTimerRef.current) window.clearTimeout(redirectTimerRef.current);
       redirectTimerRef.current = window.setTimeout(() => {
         navigate("/dashboard", { replace: true });
       }, 3000);
-
     } catch (e: any) {
-      // try to extract API error list
       const apiErrorList: ApiErrorItem[] | undefined =
         e?.debug?.response_json?.error_list || e?.response?.data?.error_list;
 
@@ -437,22 +411,14 @@ export const KYCAdd = () => {
         e?.message ||
         "KYC submission failed";
 
-      // ✅ show error on related input (id_no, mobile, email etc.)
-      const mapped = applyApiErrorsToFields(apiErrorList);
+      applyApiErrorsToFields(apiErrorList);
 
-      // ✅ banner always
       setBanner({
         type: "error",
         title: "Your KYC submission has been disapproved due to the following reason(s):",
         message: genericMsg,
         debug: e?.debug,
       });
-
-      // if not mapped, at least show a general “form” error near top (already done)
-      // and keep user data as-is (so they can fix & resubmit)
-      if (!mapped) {
-        // optional: focus/scroll to top; RHF doesn't auto focus without Controller
-      }
     } finally {
       window.scrollTo({ top: 0, behavior: "smooth" });
     }
@@ -467,8 +433,7 @@ export const KYCAdd = () => {
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
-  const BannerIcon =
-    banner?.type === "success" ? CheckCircle2 : banner?.type === "error" ? AlertCircle : Info;
+  const BannerIcon = banner?.type === "success" ? CheckCircle2 : banner?.type === "error" ? AlertCircle : Info;
 
   return (
     <div className="flex min-h-screen">
@@ -478,7 +443,6 @@ export const KYCAdd = () => {
 
         <main className="flex-1 p-6 md:p-8 bg-background">
           <form onSubmit={handleSubmit(onValidSubmit, onInvalidSubmit)} className="space-y-8">
-            {/* TOP BANNER */}
             {banner && (
               <Alert
                 className={
@@ -493,9 +457,7 @@ export const KYCAdd = () => {
                   <BannerIcon className="h-5 w-5 mt-0.5" />
                   <div className="w-full">
                     <AlertTitle className="font-semibold">{banner.title}</AlertTitle>
-                    <AlertDescription
-                      className={`mt-1 text-sm ${banner.type === "error" ? "text-red-700" : ""}`}
-                    >
+                    <AlertDescription className={`mt-1 text-sm ${banner.type === "error" ? "text-red-700" : ""}`}>
                       {banner.message}
                     </AlertDescription>
                   </div>
@@ -548,24 +510,15 @@ export const KYCAdd = () => {
                   <Label>{t("kycAdd.firstName")} (नेपालीमा) *</Label>
                   <Input className="mt-2" {...register("first_name_nep")} onInput={nepaliInputHandler("first_name_nep")} />
                   {(errors.first_name_nep || npErrors.first_name_nep) && (
-                    <p className="text-xs text-red-500 mt-1">
-                      {errors.first_name_nep?.message || npErrors.first_name_nep}
-                    </p>
+                    <p className="text-xs text-red-500 mt-1">{errors.first_name_nep?.message || npErrors.first_name_nep}</p>
                   )}
                 </div>
 
                 <div>
                   <Label>{t("kycAdd.middleName")} (नेपालीमा)</Label>
-                  <Input
-                    className="mt-2"
-                    {...register("middle_name_nep")}
-                    onInput={nepaliInputHandler("middle_name_nep")}
-                    placeholder="optional"
-                  />
+                  <Input className="mt-2" {...register("middle_name_nep")} onInput={nepaliInputHandler("middle_name_nep")} placeholder="optional" />
                   {(errors.middle_name_nep || npErrors.middle_name_nep) && (
-                    <p className="text-xs text-red-500 mt-1">
-                      {errors.middle_name_nep?.message || npErrors.middle_name_nep}
-                    </p>
+                    <p className="text-xs text-red-500 mt-1">{errors.middle_name_nep?.message || npErrors.middle_name_nep}</p>
                   )}
                 </div>
 
@@ -573,9 +526,7 @@ export const KYCAdd = () => {
                   <Label>{t("kycAdd.lastName")} (नेपालीमा) *</Label>
                   <Input className="mt-2" {...register("last_name_nep")} onInput={nepaliInputHandler("last_name_nep")} />
                   {(errors.last_name_nep || npErrors.last_name_nep) && (
-                    <p className="text-xs text-red-500 mt-1">
-                      {errors.last_name_nep?.message || npErrors.last_name_nep}
-                    </p>
+                    <p className="text-xs text-red-500 mt-1">{errors.last_name_nep?.message || npErrors.last_name_nep}</p>
                   )}
                 </div>
               </div>
@@ -584,7 +535,6 @@ export const KYCAdd = () => {
             {/* IDENTIFICATION */}
             <div>
               <h3 className="text-lg font-semibold mb-4">{t("kycAdd.identification") || "Identification"}</h3>
-
               <div className="grid md:grid-cols-3 gap-4">
                 <div>
                   <IdentificationType
@@ -597,11 +547,7 @@ export const KYCAdd = () => {
 
                 <div>
                   <Label>{t("kycAdd.idNumber") || "ID Number"} *</Label>
-                  <Input
-                    className={`mt-2 ${errors.id_no ? "border-red-500 focus-visible:ring-red-500" : ""}`}
-                    {...register("id_no")}
-                  />
-                  {/* ✅ This will show Zod OR API error (setError) */}
+                  <Input className={`mt-2 ${errors.id_no ? "border-red-500 focus-visible:ring-red-500" : ""}`} {...register("id_no")} />
                   {errors.id_no && <p className="text-xs text-red-500 mt-1">{errors.id_no.message}</p>}
                 </div>
 
@@ -634,9 +580,7 @@ export const KYCAdd = () => {
                   <Input
                     className={`mt-2 ${errors.mobile ? "border-red-500 focus-visible:ring-red-500" : ""}`}
                     inputMode="numeric"
-                    {...register("mobile", {
-                      setValueAs: (v) => String(v ?? "").replace(/\D/g, "").slice(0, 10),
-                    })}
+                    {...register("mobile", { setValueAs: (v) => String(v ?? "").replace(/\D/g, "").slice(0, 10) })}
                   />
                   {errors.mobile && <p className="text-xs text-red-500 mt-1">{errors.mobile.message}</p>}
                 </div>
@@ -668,14 +612,9 @@ export const KYCAdd = () => {
             {/* PERMANENT ADDRESS */}
             <div>
               <h3 className="text-lg font-semibold mb-4">{t("kycAdd.permanentAddress")}</h3>
-
               <div className="grid md:grid-cols-3 gap-4">
                 <ProvinceDistrictMunicipality
-                  value={{
-                    province: watch("province"),
-                    district: watch("district"),
-                    local_level: watch("local_level"),
-                  }}
+                  value={{ province: watch("province"), district: watch("district"), local_level: watch("local_level") }}
                   onChange={(v) => {
                     setValue("province", v.province, { shouldValidate: true, shouldDirty: true });
                     setValue("district", v.district, { shouldValidate: true, shouldDirty: true });
@@ -709,13 +648,7 @@ export const KYCAdd = () => {
 
                 <div>
                   <Label>{t("kycAdd.wardNumber")} *</Label>
-                  <Input
-                    className="mt-2"
-                    inputMode="numeric"
-                    {...register("ward_no", {
-                      setValueAs: (v) => String(v ?? "").replace(/\D/g, ""),
-                    })}
-                  />
+                  <Input className="mt-2" inputMode="numeric" {...register("ward_no", { setValueAs: (v) => String(v ?? "").replace(/\D/g, "") })} />
                   {errors.ward_no && <p className="text-xs text-red-500 mt-1">{errors.ward_no.message}</p>}
                 </div>
 
@@ -730,7 +663,6 @@ export const KYCAdd = () => {
             {/* RELATION + OCCUPATION */}
             <div>
               <h3 className="text-lg font-semibold mb-4">{t("kycAdd.relation") || "Relation"}</h3>
-
               <div className="grid md:grid-cols-3 gap-4">
                 <div>
                   <Label>{t("kycAdd.fatherName") || "Father Name"} *</Label>
@@ -757,10 +689,7 @@ export const KYCAdd = () => {
                 </div>
 
                 <div>
-                  <Occupation
-                    value={watch("occupation")}
-                    onChange={(v) => setValue("occupation", v, { shouldDirty: true, shouldValidate: true })}
-                  />
+                  <Occupation value={watch("occupation")} onChange={(v) => setValue("occupation", v, { shouldDirty: true, shouldValidate: true })} />
                   {errors.occupation && <p className="text-xs text-red-500 mt-1">{errors.occupation.message}</p>}
                 </div>
 
@@ -779,9 +708,7 @@ export const KYCAdd = () => {
                   <Checkbox
                     id="politically_involved"
                     checked={!!watch("politically_involved")}
-                    onCheckedChange={(v) =>
-                      setValue("politically_involved", v === true, { shouldDirty: true, shouldValidate: true })
-                    }
+                    onCheckedChange={(v) => setValue("politically_involved", v === true, { shouldDirty: true, shouldValidate: true })}
                   />
                   <Label htmlFor="politically_involved" className="cursor-pointer select-none">
                     {t("kycAdd.politicallyInvolved") || "Politically Involved?"}
@@ -790,10 +717,7 @@ export const KYCAdd = () => {
 
                 <div>
                   <Label>{t("kycAdd.docType") || "Document Type"} *</Label>
-                  <Select
-                    value={watch("doc_type")}
-                    onValueChange={(v) => setValue("doc_type", v as any, { shouldDirty: true, shouldValidate: true })}
-                  >
+                  <Select value={watch("doc_type")} onValueChange={(v) => setValue("doc_type", v as any, { shouldDirty: true, shouldValidate: true })}>
                     <SelectTrigger className="mt-2">
                       <SelectValue placeholder="Select" />
                     </SelectTrigger>
@@ -892,7 +816,6 @@ export const KYCAdd = () => {
                       </div>
 
                       {err && <p className="text-xs text-red-500 mt-2">{err}</p>}
-
                       {attachmentKey === PHOTO_KEY && !uploads[PHOTO_KEY]?.file && (
                         <p className="text-xs text-muted-foreground mt-2">Profile photo is required.</p>
                       )}
@@ -902,7 +825,6 @@ export const KYCAdd = () => {
               </div>
             </div>
 
-            {/* SUBMIT */}
             <div className="flex justify-end">
               <Button type="submit" size="lg" className="bg-primary hover:bg-primary/90" disabled={isSubmitting}>
                 {isSubmitting ? "Submitting..." : t("common.submit")}
