@@ -42,6 +42,7 @@ import ForgotPasswordPage from "./pages/forgot/ForgotPassword";
 import ForgotPasswordVerifyOtpPage from "./pages/forgot/ForgotPasswordVerifyOtpPage";
 import ResetPasswordPage from "./pages/changePassword/ResetPasswordPage";
 import KycTestPage from "./pages/kyc/kyctest";
+import ResubmitKycForm from "./pages/kyc/ResubmitKycForm";
 
 const queryClient = new QueryClient();
 
@@ -78,6 +79,7 @@ const App = () => (
               <Route path="/my-policies" element={<MyPolicies />} />
               <Route path="/kyc-check" element={<KYCCheck />} />
               <Route path="/kyc-add" element={<KYCAdd />} />
+              <Route path="/kyc-resubmit" element={<ResubmitKycForm />} />
               <Route path="/kyc-add-page" element={<KYCAddPage />} />
               <Route path="/kyc-add-corporate" element={<KYCAddCorporate />} />
               <Route path="/buy-policies" element={<BuyPolicies />} />
