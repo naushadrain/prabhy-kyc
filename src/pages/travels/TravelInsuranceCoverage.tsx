@@ -17,10 +17,10 @@ export const TravelInsuranceCoverage = () => {
   const { t } = useLanguage();
 
   const steps = [
-    { number: 1, label: 'Insurance Plan', status: 'completed' },
-    { number: 2, label: 'Coverage Plan', status: 'inProcess' },
-    { number: 3, label: 'Coverage Details', status: 'pending' },
-    { number: 4, label: 'Instant Quotes', status: 'pending' },
+    // { number: 1, label: 'Insurance Plan', status: 'completed' },
+    { number: 1, label: 'Coverage Plan', status: 'inProcess' },
+    { number: 2, label: 'Coverage Details', status: 'pending' },
+    { number: 3, label: 'Instant Quotes', status: 'pending' },
   ];
 
   return (
