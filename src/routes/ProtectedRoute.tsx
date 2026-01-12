@@ -3,9 +3,9 @@ import { Navigate, Outlet, useLocation } from "react-router-dom";
 import { isTokenExpired, msUntilTokenExpiry } from "@/api/auth/tokenExpiry";
 import { refreshToken } from "@/api/session/refreshTokenClient";
 
-const CHECK_EVERY_MS = 3 * 60 * 1000;      // ✅ every 3 minutes just CHECK
-const REFRESH_BEFORE_EXP_MS = 25 * 1000;   // ✅ refresh 25s before expiry
-const MIN_DELAY_MS = 5 * 1000;             // safety
+const CHECK_EVERY_MS = 3 * 60 * 1000; // ✅ every 3 minutes => ALWAYS refresh
+const REFRESH_BEFORE_EXP_MS = 25 * 1000; // ✅ refresh 25s before expiry
+const MIN_DELAY_MS = 5 * 1000; // safety
 
 function logout() {
   localStorage.removeItem("access_token");
@@ -38,6 +38,7 @@ export const ProtectedRoute = () => {
   }, []);
 
   // ✅ refresh helper
+  // mustSucceed=false => don't force logout if refresh temporarily fails
   const doRefresh = React.useCallback(async (mustSucceed: boolean) => {
     if (refreshingRef.current) return;
     refreshingRef.current = true;
@@ -66,7 +67,7 @@ export const ProtectedRoute = () => {
     }
   }, []);
 
-  // ✅ Check current token state (no refresh unless needed)
+  // ✅ Check current token state (used on boot + exact timer safety)
   const checkAndRefreshIfNeeded = React.useCallback(async () => {
     const current = localStorage.getItem("access_token");
     if (!current) {
@@ -75,20 +76,19 @@ export const ProtectedRoute = () => {
       return;
     }
 
-    // already expired -> must refresh
+    // expired -> must refresh
     if (isTokenExpired(current)) {
       await doRefresh(true);
       return;
     }
 
-    // near expiry -> must refresh
+    // near expiry -> refresh
     const ms = msUntilTokenExpiry(current);
     if (ms != null && ms <= REFRESH_BEFORE_EXP_MS) {
       await doRefresh(true);
       return;
     }
 
-    // still valid
     setToken(current);
   }, [doRefresh]);
 
@@ -105,18 +105,18 @@ export const ProtectedRoute = () => {
     };
   }, [checkAndRefreshIfNeeded]);
 
-  // ✅ Every 3 minutes: ONLY CHECK (refresh only if needed)
+  // ✅ Every 3 minutes: ALWAYS refresh (THIS is what you asked)
   React.useEffect(() => {
     if (!ready) return;
 
     const id = window.setInterval(() => {
-      checkAndRefreshIfNeeded();
+      doRefresh(false); // ✅ always refresh, but do not force logout on temporary error
     }, CHECK_EVERY_MS);
 
     return () => window.clearInterval(id);
-  }, [ready, checkAndRefreshIfNeeded]);
+  }, [ready, doRefresh]);
 
-  // ✅ Refresh BEFORE expiry (precise timer)
+  // ✅ Refresh BEFORE expiry (precise timer) - keep for safety
   React.useEffect(() => {
     if (!ready || !token) return;
 
@@ -132,18 +132,18 @@ export const ProtectedRoute = () => {
     return () => window.clearTimeout(id);
   }, [ready, token, doRefresh]);
 
-  // ✅ If user comes back to tab -> re-check immediately
+  // ✅ If user comes back to tab -> refresh immediately (optional but useful)
   React.useEffect(() => {
     if (!ready) return;
 
     const onVis = () => {
       if (document.visibilityState === "visible") {
-        checkAndRefreshIfNeeded();
+        doRefresh(false); // ✅ refresh every time user returns
       }
     };
     document.addEventListener("visibilitychange", onVis);
     return () => document.removeEventListener("visibilitychange", onVis);
-  }, [ready, checkAndRefreshIfNeeded]);
+  }, [ready, doRefresh]);
 
   if (!ready) return null;
 
