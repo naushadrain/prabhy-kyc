@@ -13,7 +13,7 @@ interface InsuranceCardProps {
 
 export const InsuranceCard = ({ type, title, subtitle, to }: InsuranceCardProps) => {
   const navigate = useNavigate();
-  
+
   const icons = {
     motor: motorIcon,
     travel: travelIcon,
@@ -29,17 +29,19 @@ export const InsuranceCard = ({ type, title, subtitle, to }: InsuranceCardProps)
   };
 
   return (
-    <Card 
-      className="p-6 hover:shadow-lg transition-shadow cursor-pointer h-full" 
-      onClick={handleClick}
-    >
-      <div className="mb-4">
-        <h3 className="text-lg font-bold">{title}</h3>
-      </div>
-      <p className="text-sm text-muted-foreground mb-6">{subtitle}</p>
-      <div className="flex items-center justify-center py-6">
-        <img src={iconSrc} alt={type} className="w-20 h-20" style={{ filter: 'brightness(0) saturate(100%) invert(25%) sepia(100%) saturate(7491%) hue-rotate(345deg) brightness(95%) contrast(91%)' }} />
-      </div>
-    </Card>
+    <>
+      <Card
+        className="p-6 hover:shadow-lg transition-shadow cursor-pointer h-full"
+        onClick={handleClick}
+      >
+        <div className="mb-4">
+          <h3 className="text-lg font-bold">{title}</h3>
+        </div>
+        <p className="text-sm text-muted-foreground mb-6">{subtitle}</p>
+        <div className="flex items-center justify-center py-6">
+          <img src={iconSrc} alt={type} className="w-20 h-20" style={{ filter: 'brightness(0) saturate(100%) invert(25%) sepia(100%) saturate(7491%) hue-rotate(345deg) brightness(95%) contrast(91%)' }} />
+        </div>
+      </Card>
+    </>
   );
 };

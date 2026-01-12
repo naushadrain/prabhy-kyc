@@ -1,13 +1,13 @@
 import { Link, useLocation } from 'react-router-dom';
-import { 
-  ShoppingCart, 
-  User, 
-  CreditCard, 
-  Lock, 
-  FileText, 
-  ClipboardList, 
-  HelpCircle, 
-  Phone, 
+import {
+  ShoppingCart,
+  User,
+  CreditCard,
+  Lock,
+  FileText,
+  ClipboardList,
+  HelpCircle,
+  Phone,
   History,
   Users,
   Link as LinkIcon,
@@ -30,9 +30,9 @@ export const Sidebar = () => {
 
   const navItems: NavItem[] = [
     { icon: ShoppingCart, label: t('nav.buyPolicies'), path: '/dashboard' },
-    { 
-      icon: User, 
-      label: t('nav.kyc'), 
+    {
+      icon: User,
+      label: t('nav.kyc'),
       path: '/kyc-check',
       children: [
         { icon: Users, label: t('nav.kycAdd'), path: '/kyc-add' },
@@ -41,18 +41,18 @@ export const Sidebar = () => {
       ]
     },
     { icon: CreditCard, label: t('nav.draftPolicyPayment'), path: '/draft-policy' },
-    { 
-      icon: Lock, 
-      label: t('nav.myPolicies'), 
+    {
+      icon: Lock,
+      label: t('nav.myPolicies'),
       path: '/my-policies',
       children: [
         { icon: FileText, label: t('nav.myPolicies'), path: '/my-policies' },
         { icon: File, label: t('nav.myDraftPolicy'), path: '/my-draft-policy' },
       ]
     },
-    { 
-      icon: ClipboardList, 
-      label: t('nav.claim'), 
+    {
+      icon: ClipboardList,
+      label: t('nav.claim'),
       path: '/claim',
       children: [
         { icon: FileText, label: t('nav.claimIntimate'), path: '/claim' },
@@ -67,26 +67,26 @@ export const Sidebar = () => {
   return (
     <aside className="w-64 bg-sidebar border-r border-sidebar-border min-h-screen">
       <div className="p-6">
-        <img 
+        <img
           src={logo}
-          alt="Prabhu Insurance" 
+          alt="Prabhu Insurance"
           className="h-12 w-auto"
         />
       </div>
-      
+
       <nav className="px-3 space-y-1">
         {navItems.map((item) => {
-          const isActive = location.pathname === item.path || 
+          const isActive = location.pathname === item.path ||
             (item.children && item.children.some(child => location.pathname === child.path));
-          
+
           return (
             <div key={item.path}>
               <Link
                 to={item.path}
                 className={cn(
                   "flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors",
-                  isActive 
-                    ? "bg-primary text-primary-foreground" 
+                  isActive
+                    ? "bg-primary text-primary-foreground"
                     : "text-sidebar-foreground hover:bg-sidebar-accent"
                 )}
               >
@@ -96,7 +96,7 @@ export const Sidebar = () => {
                   <span className="ml-auto">▾</span>
                 )}
               </Link>
-              
+
               {item.children && isActive && (
                 <div className="ml-6 mt-1 space-y-1">
                   {item.children.map((child) => (

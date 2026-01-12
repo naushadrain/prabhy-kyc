@@ -1,35 +1,69 @@
 // src/api/session/refreshTokenClient.ts
 import { buildSignatureForBody } from "@/api/session/signature";
+import { setTokens } from "@/api/auth/tokenStore"; // adjust path if different
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL as string;
 
-export async function refreshToken(): Promise<string | null> {
-  const refresh = localStorage.getItem("refresh_token");
-  if (!refresh) return null;
+function safeJsonParse(text: string) {
+  try {
+    return text ? JSON.parse(text) : {};
+  } catch {
+    return {};
+  }
+}
 
-  const bodyObj = { refresh_token: refresh, grant_type: "refresh_token" };
+export async function refreshToken(): Promise<string | null> {
+  if (!API_BASE_URL) throw new Error("VITE_API_BASE_URL is not set");
+
+  const accessToken = localStorage.getItem("access_token") || "";
+  const refreshToken = localStorage.getItem("refresh_token") || "";
+
+  if (!refreshToken) return null;
+
+  // ✅ Body exactly as your API requires
+  const bodyObj = {
+    grant_type: "refresh-token",
+    access_token: accessToken,
+    refresh_token: refreshToken,
+  };
+
   const jsonBody = JSON.stringify(bodyObj);
 
+  // ✅ signature built from body
   const { unixTs, signature } = buildSignatureForBody(jsonBody);
 
   const res = await fetch(`${API_BASE_URL}/v1/common/refresh-token`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-      "verify-signature": `${unixTs}.${signature}`,
       Accept: "*/*",
+      "verify-signature": `${unixTs}.${signature}`,
+
+      // ✅ Bearer token (as you requested)
+      ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
     },
     body: jsonBody,
   });
 
   const text = await res.text();
-  let data: any = {};
-  try { data = text ? JSON.parse(text) : {}; } catch {}
+  const data = safeJsonParse(text);
 
-  if (!res.ok || data?.error_list?.length) return null;
+  // ✅ API error handling (same style as login)
+  if (data?.error_list?.length) return null;
+  if (!res.ok) return null;
 
-  if (data.access_token) localStorage.setItem("access_token", data.access_token);
-  if (data.refresh_token) localStorage.setItem("refresh_token", data.refresh_token);
+  // ✅ Save new tokens (some APIs rotate refresh_token too)
+  const newAccess = data?.access_token || null;
+  const newRefresh = data?.refresh_token || refreshToken;
 
-  return data.access_token || null;
+  if (!newAccess) return null;
+
+  // Prefer your tokenStore so expiry stays consistent everywhere
+  setTokens({
+    access_token: newAccess,
+    refresh_token: newRefresh,
+    expires_in: data?.expires_in, // if provided
+  });
+
+  return newAccess;
 }

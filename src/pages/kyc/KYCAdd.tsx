@@ -15,7 +15,6 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Upload, X, AlertCircle, CheckCircle2, Info } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { z } from "zod";
 
 // catalogue components
 import { ProvinceDistrictMunicipality } from "./getcatalogue/ProvinceDistrictMunicipality";
@@ -24,8 +23,15 @@ import { Honour } from "./getcatalogue/Honour";
 import { IdentificationType } from "./getcatalogue/IdentificationType";
 import { Occupation } from "./getcatalogue/Occupation";
 
-// helpers
-import { getDobMinMaxYMD, adIsoToBsYMD, isNepaliOnly } from "./validation/kycSchema";
+// schema + helpers
+import {
+  kycSchema,
+  type KycFormValues,
+  type OptionalDocType,
+  getDobMinMaxYMD,
+  adIsoToBsYMD,
+  normalizeSpaces,
+} from "./validation/kycSchema";
 
 // API
 import { submitCustomerKyc, type CustomerKycFormEntity } from "@/api/kyc/customerKycClient";
@@ -36,15 +42,16 @@ import { kycRejectForm } from "@/api/kyc/kycRejectForm";
    Upload config
 ========================= */
 type UploadItem = { file: File; previewUrl: string };
+
 const ALLOWED_MIME = ["image/png", "image/jpeg"];
 const MAX_FILE_MB = 1;
 
-/** ✅ REQUIRED: Profile + Citizenship front/back */
+/** REQUIRED */
 const PHOTO_KEY = "Photo *";
 const CTZ_FRONT_KEY = "Citizenship / Front *";
 const CTZ_BACK_KEY = "Citizenship / Back *";
 
-/** optional */
+/** optional (will show only when checkbox + dropdown selected) */
 const PASS_FRONT_KEY = "Passport / Front (Optional)";
 const PASS_BACK_KEY = "Passport / Back (Optional)";
 const NID_FRONT_KEY = "NID / Front (Optional)";
@@ -52,29 +59,18 @@ const NID_BACK_KEY = "NID / Back (Optional)";
 const DL_FRONT_KEY = "Driving License / Front (Optional)";
 const DL_BACK_KEY = "Driving License / Back (Optional)";
 
-const attachments = [
-  PHOTO_KEY,
-  CTZ_FRONT_KEY,
-  CTZ_BACK_KEY,
-  PASS_FRONT_KEY,
-  PASS_BACK_KEY,
-  NID_FRONT_KEY,
-  NID_BACK_KEY,
-  DL_FRONT_KEY,
-  DL_BACK_KEY,
-] as const;
+const REQUIRED_ATTACHMENTS = [PHOTO_KEY, CTZ_FRONT_KEY, CTZ_BACK_KEY] as const;
 
-type BannerState =
-  | { type: "info" | "success" | "error"; title: string; message: string; debug?: any }
-  | null;
-
+type BannerState = { type: "info" | "success" | "error"; title: string; message: string; debug?: any } | null;
 type ApiErrorItem = { error_code?: string; error_message?: string };
 
-type DocType = "citizenship" | "passport" | "nid";
+type KycNote = { note_Type?: string; comments?: string; date_Posted?: string };
 
 type StatusApi = {
-  kyc_Status?: string; // backend uses this
+  kyc_Status?: string;
   process_result?: boolean;
+  note_List?: KycNote[];
+  total_data_no?: number;
   error_list?: ApiErrorItem[];
 };
 
@@ -92,7 +88,6 @@ function normalizeStatusText(s: any) {
 
 function shouldShowStatusAlert(status: string) {
   const low = status.toLowerCase();
-  // ✅ per your rule: if "KYC not completed" or Unknown => DO NOT show alert
   if (!status || low === "unknown") return false;
   if (low === "kyc not completed") return false;
   return ["pending", "rejected", "approved", "verified"].includes(low);
@@ -102,7 +97,6 @@ function buildStatusBanner(status: string): BannerState {
   if (!shouldShowStatusAlert(status)) return null;
 
   const low = status.toLowerCase();
-
   if (low === "pending") {
     return {
       type: "info",
@@ -110,7 +104,6 @@ function buildStatusBanner(status: string): BannerState {
       message: "We received your KYC. Our team is reviewing it. Editing is locked until a decision is made.",
     };
   }
-
   if (low === "rejected") {
     return {
       type: "error",
@@ -118,7 +111,6 @@ function buildStatusBanner(status: string): BannerState {
       message: "Your KYC was rejected. Please correct the highlighted fields/documents and submit again.",
     };
   }
-
   if (low === "approved" || low === "verified") {
     return {
       type: "success",
@@ -126,7 +118,6 @@ function buildStatusBanner(status: string): BannerState {
       message: "Your KYC has been approved. You cannot edit or submit again.",
     };
   }
-
   return null;
 }
 
@@ -134,167 +125,6 @@ function isLockedByStatus(status: string) {
   const low = status.toLowerCase();
   return low === "pending" || low === "approved" || low === "verified";
 }
-
-function normalizeNepaliTwoWords(input: string) {
-  const cleaned = String(input ?? "")
-    .replace(/\s+/g, " ")
-    .trim();
-  const parts = cleaned.split(" ").filter(Boolean);
-  return { cleaned, parts };
-}
-
-function isStrictNepaliLettersOnly(s: string) {
-  return /^[\u0900-\u097F\s]+$/.test(s); // Devanagari + spaces only
-}
-
-/* =========================
-   Form type + schema
-   ✅ Fixes your issue:
-   - tole_nep is OPTIONAL (no forced error)
-   - issue_date_bs & dob_bs optional (auto-filled from AD)
-   - father_name_nep matches backend: Nepali only + EXACT 2 words
-========================= */
-type KycFormValues = {
-  honour: string;
-  gender: string;
-
-  first_name: string;
-  middle_name: string;
-  last_name: string;
-
-  first_name_nep: string;
-  middle_name_nep: string;
-  last_name_nep: string;
-
-  id_type: string;
-  id_no: string;
-  issued_district: string;
-
-  issue_date_ad: string; // yyyy-mm-dd
-  issue_date_bs: string; // auto
-
-  dob_ad: string;
-  dob_bs: string; // auto
-
-  mobile: string;
-  email: string;
-
-  province: string;
-  district: string;
-  local_level: string;
-  ward_no: string;
-
-  tole: string;
-  tole_nep: string; // OPTIONAL
-  residence_country: string;
-
-  temp_address: string;
-  temp_address_nep: string;
-
-  father_name: string;
-  father_name_nep: string; // REQUIRED (2 words nepali)
-  father_citizenship_no: string;
-  father_citizenship_issued_district: string;
-
-  occupation: string;
-  industry: string;
-
-  politically_involved: boolean;
-  party_inspection_category: string;
-  risk_factors: string;
-
-  doc_type: DocType;
-};
-
-const kycFormSchema: z.ZodType<KycFormValues> = z
-  .object({
-    honour: z.string().min(1, "Honour is required"),
-    gender: z.string().min(1, "Gender is required"),
-
-    first_name: z.string().min(1, "First name (English) is required"),
-    middle_name: z.string().optional().default(""),
-    last_name: z.string().min(1, "Last name (English) is required"),
-
-    first_name_nep: z
-      .string()
-      .min(1, "पहिलो नाम (नेपाली) आवश्यक छ")
-      .refine((v) => isNepaliOnly(v), "कृपया केवल नेपाली अक्षरहरू प्रयोग गर्नुहोस्।"),
-    middle_name_nep: z.string().optional().default(""),
-    last_name_nep: z
-      .string()
-      .min(1, "थर (नेपाली) आवश्यक छ")
-      .refine((v) => isNepaliOnly(v), "कृपया केवल नेपाली अक्षरहरू प्रयोग गर्नुहोस्।"),
-
-    id_type: z.string().min(1, "Identification Type is required"),
-    id_no: z.string().min(1, "ID Number is required"),
-    issued_district: z.string().min(1, "Issued District is required"),
-
-    issue_date_ad: z.string().min(1, "Issue Date (A.D) is required"),
-    issue_date_bs: z.string().optional().default(""),
-
-    dob_ad: z.string().min(1, "Date of Birth (A.D) is required"),
-    dob_bs: z.string().optional().default(""),
-
-    mobile: z
-      .string()
-      .min(10, "Mobile must be 10 digits")
-      .max(10, "Mobile must be 10 digits")
-      .regex(/^\d{10}$/, "Mobile must be digits only"),
-    email: z.string().email("Invalid email"),
-
-    province: z.string().min(1, "Province is required"),
-    district: z.string().min(1, "District is required"),
-    local_level: z.string().min(1, "Local level is required"),
-    ward_no: z.string().min(1, "Ward No is required").regex(/^\d+$/, "Ward No must be numeric"),
-
-    tole: z.string().min(1, "Tole is required"),
-    // ✅ OPTIONAL: if user types, must be Nepali; otherwise empty OK
-    tole_nep: z
-      .string()
-      .optional()
-      .default("")
-      .refine((v) => !v || isNepaliOnly(v), "टोल (नेपालीमा) मा केवल नेपाली अक्षरहरू हुनुपर्छ।"),
-
-    residence_country: z.string().min(1, "Residence Country is required"),
-
-    temp_address: z.string().optional().default(""),
-    temp_address_nep: z.string().optional().default(""),
-
-    father_name: z.string().min(1, "Father Name is required"),
-    father_name_nep: z
-      .string()
-      .min(1, "Father Name (नेपाली) is required")
-      .superRefine((v, ctx) => {
-        const { cleaned, parts } = normalizeNepaliTwoWords(v);
-        if (!cleaned) return;
-        if (!isStrictNepaliLettersOnly(cleaned)) {
-          ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Only Nepali letters are allowed." });
-          return;
-        }
-        if (parts.length !== 2) {
-          ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Must be exactly 2 words (e.g., राम थापा)." });
-        }
-      }),
-
-    father_citizenship_no: z.string().optional().default(""),
-    father_citizenship_issued_district: z.string().optional().default(""),
-
-    occupation: z.string().min(1, "Occupation is required"),
-    industry: z.string().optional().default(""),
-
-    politically_involved: z.boolean().default(false),
-    party_inspection_category: z.string().default("Low"),
-    risk_factors: z.string().default("1"),
-
-    doc_type: z.enum(["citizenship", "passport", "nid"]).default("citizenship"),
-  })
-  .transform((v) => ({
-    ...v,
-    // normalize spaces for Nepali names so backend doesn't fail on double spaces
-    father_name_nep: normalizeNepaliTwoWords(v.father_name_nep).cleaned,
-    // optional: normalize tole_nep spaces
-    tole_nep: String(v.tole_nep ?? "").replace(/\s+/g, " ").trim(),
-  }));
 
 /* =========================
    Prefill mappers (GET details)
@@ -352,6 +182,7 @@ function mapApiToFormValues(api: any, fallback: KycFormValues): KycFormValues {
 
     father_name: rel?.father_Name ?? fallback.father_name,
     father_name_nep: rel?.father_Name_nep ?? fallback.father_name_nep,
+
     father_citizenship_no: rel?.father_citizenship_no ?? fallback.father_citizenship_no,
     father_citizenship_issued_district:
       rel?.father_citizenship_issued_district ?? fallback.father_citizenship_issued_district,
@@ -363,7 +194,11 @@ function mapApiToFormValues(api: any, fallback: KycFormValues): KycFormValues {
     party_inspection_category: d?.party_inspection_category ?? fallback.party_inspection_category,
     risk_factors: d?.risk_factors ?? fallback.risk_factors,
 
-    doc_type: (d?.doc_type as DocType) || fallback.doc_type,
+    doc_type: d?.doc_type ?? fallback.doc_type,
+
+    // optional docs UI controls
+    add_optional_docs: fallback.add_optional_docs,
+    optional_doc_type: fallback.optional_doc_type,
   };
 }
 
@@ -406,6 +241,7 @@ export const KYCAdd = () => {
   const [banner, setBanner] = useState<BannerState>(null);
 
   const [statusText, setStatusText] = useState<string>("Unknown");
+  const [statusNotes, setStatusNotes] = useState<KycNote[]>([]);
   const [statusLoading, setStatusLoading] = useState(false);
 
   const [prefillLoading, setPrefillLoading] = useState(false);
@@ -417,40 +253,58 @@ export const KYCAdd = () => {
   const defaultValues: KycFormValues = {
     honour: "",
     gender: "",
+
     first_name: "",
     middle_name: "",
     last_name: "",
+
     first_name_nep: "",
     middle_name_nep: "",
     last_name_nep: "",
+
     id_type: "",
     id_no: "",
     issued_district: "",
+
     issue_date_ad: "",
     issue_date_bs: "",
+
     dob_ad: "",
     dob_bs: "",
+
     mobile: "",
     email: "",
+
     province: "",
     district: "",
     local_level: "",
+
     ward_no: "",
     tole: "",
-    tole_nep: "", // ✅ optional
+    tole_nep: "",
+
     residence_country: "NEPAL",
+
     temp_address: "",
     temp_address_nep: "",
+
     father_name: "",
     father_name_nep: "",
+
     father_citizenship_no: "",
     father_citizenship_issued_district: "",
+
     occupation: "",
     industry: "",
+
     politically_involved: false,
     party_inspection_category: "Low",
     risk_factors: "1",
+
     doc_type: "citizenship",
+
+    add_optional_docs: false,
+    optional_doc_type: undefined,
   };
 
   const {
@@ -463,13 +317,17 @@ export const KYCAdd = () => {
     handleSubmit,
     formState: { errors, isSubmitting },
   } = useForm<KycFormValues>({
-    resolver: zodResolver(kycFormSchema),
-    mode: "onSubmit", // ✅ prevents random “some fields missing” alerts while typing
+    resolver: zodResolver(kycSchema),
+    mode: "onSubmit",
     defaultValues,
   });
 
+  // watch optional doc controls
+  const addOptionalDocs = !!watch("add_optional_docs");
+  const optionalDocType = watch("optional_doc_type");
+
   /* =========================
-     1) KYC STATUS (alert rules)
+     1) KYC STATUS (alert rules) + NOTE LIST
 ========================= */
   useEffect(() => {
     let mounted = true;
@@ -477,14 +335,19 @@ export const KYCAdd = () => {
       try {
         setStatusLoading(true);
         const res: StatusApi = await kycStatus();
+
         const st = normalizeStatusText(res?.kyc_Status);
+        const notes = Array.isArray(res?.note_List) ? res.note_List : [];
+
         if (!mounted) return;
         setStatusText(st);
         setBanner(buildStatusBanner(st));
+        setStatusNotes(notes);
       } catch {
         if (!mounted) return;
         setStatusText("Unknown");
         setBanner(null);
+        setStatusNotes([]);
       } finally {
         if (mounted) setStatusLoading(false);
       }
@@ -496,7 +359,6 @@ export const KYCAdd = () => {
 
   /* =========================
      2) GET DETAILS (prefill values/images)
-     - if user is new this may fail; ignore silently
 ========================= */
   useEffect(() => {
     let mounted = true;
@@ -509,7 +371,7 @@ export const KYCAdd = () => {
 
         const mapped = mapApiToFormValues(meta, defaultValues);
 
-        // ✅ ALWAYS derive BS from AD to avoid mismatch
+        // ALWAYS derive BS from AD to avoid mismatch
         if (mapped.issue_date_ad) {
           try {
             mapped.issue_date_bs = adIsoToBsYMD(mapped.issue_date_ad);
@@ -520,6 +382,9 @@ export const KYCAdd = () => {
             mapped.dob_bs = adIsoToBsYMD(mapped.dob_ad);
           } catch {}
         }
+
+        // normalize father_name_nep spaces
+        mapped.father_name_nep = normalizeSpaces(mapped.father_name_nep);
 
         reset(mapped, { keepDefaultValues: true });
         clearErrors();
@@ -562,36 +427,11 @@ export const KYCAdd = () => {
   }, [issueAD, setValue]);
 
   /* =========================
-     Nepali typing helper (UI-only)
-========================= */
-  const [npErrors, setNpErrors] = useState<Record<string, string>>({});
-  const setNpError = (key: string, message?: string) => {
-    setNpErrors((prev) => {
-      const next = { ...prev };
-      if (!message) delete next[key];
-      else next[key] = message;
-      return next;
-    });
-  };
-
-  const nepaliInputHandler =
-    (key: string) => (e: React.FormEvent<HTMLInputElement>) => {
-      const v = e.currentTarget.value;
-      if (!isNepaliOnly(v)) setNpError(key, "कृपया केवल नेपाली अक्षरहरू प्रयोग गर्नुहोस्।");
-      else setNpError(key, undefined);
-    };
-
-  /* =========================
      Upload state + validation
 ========================= */
   const [uploads, setUploads] = useState<Record<string, UploadItem | null>>({});
   const [uploadErrors, setUploadErrors] = useState<Record<string, string>>({});
   const inputRefs = useRef<Record<string, HTMLInputElement | null>>({});
-
-  const openPicker = (key: string) => {
-    if (formDisabled) return;
-    inputRefs.current[key]?.click();
-  };
 
   const setUploadError = (key: string, message?: string) => {
     setUploadErrors((prev) => {
@@ -615,6 +455,11 @@ export const KYCAdd = () => {
     return () => cleanupAllPreviews();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  const openPicker = (key: string) => {
+    if (formDisabled) return;
+    inputRefs.current[key]?.click();
+  };
 
   const acceptFile = (key: string, file: File) => {
     if (!ALLOWED_MIME.includes(file.type)) {
@@ -662,7 +507,6 @@ export const KYCAdd = () => {
 
   /* =========================
      API error -> field mapper
-     ✅ includes Father_Name_nep error
 ========================= */
   const applyApiErrorsToFields = (list: ApiErrorItem[] | undefined) => {
     if (!list?.length) return false;
@@ -672,7 +516,6 @@ export const KYCAdd = () => {
       const raw = item?.error_message || "";
       const msg = raw.toLowerCase();
 
-      // common fields
       if (msg.includes("mobile")) {
         setError("mobile", { type: "server", message: raw });
         mappedAny = true;
@@ -683,13 +526,12 @@ export const KYCAdd = () => {
         mappedAny = true;
         continue;
       }
-      if (msg.includes("father_name_nep") || msg.includes("father_name_nep".replace("_", "")) || msg.includes("relation.father_name_nep")) {
+      if (msg.includes("father_name_nep") || msg.includes("relation.father_name_nep")) {
         setError("father_name_nep", { type: "server", message: raw });
         mappedAny = true;
         continue;
       }
 
-      // doc errors (backend messages vary)
       if (msg.includes("customer_image.image_profile")) {
         setUploadError(PHOTO_KEY, raw);
         mappedAny = true;
@@ -714,10 +556,25 @@ export const KYCAdd = () => {
     cleanupAllPreviews();
     setUploads({});
     setUploadErrors({});
-    setNpErrors({});
     clearErrors();
     reset(defaultValues);
   };
+
+  /* =========================
+     Visible attachments (Required + Optional by dropdown)
+========================= */
+  const visibleAttachments = useMemo(() => {
+    const base = [...REQUIRED_ATTACHMENTS] as string[];
+
+    if (!addOptionalDocs) return base;
+    if (!optionalDocType) return base;
+
+    if (optionalDocType === "passport") return [...base, PASS_FRONT_KEY, PASS_BACK_KEY];
+    if (optionalDocType === "nid") return [...base, NID_FRONT_KEY, NID_BACK_KEY];
+    if (optionalDocType === "driving_license") return [...base, DL_FRONT_KEY, DL_BACK_KEY];
+
+    return base;
+  }, [addOptionalDocs, optionalDocType]);
 
   /* =========================
      Submit
@@ -734,23 +591,34 @@ export const KYCAdd = () => {
       return;
     }
 
-    // UI-only Nepali typing errors
-    if (Object.keys(npErrors).length) {
-      setBanner({ type: "error", title: "Validation error", message: "कृपया नेपाली फिल्डहरू सही गर्नुहोस्।" });
-      window.scrollTo({ top: 0, behavior: "smooth" });
-      return;
-    }
-
-    // ✅ Required docs: profile + citizenship front/back
-    const requiredDocKeys = [PHOTO_KEY, CTZ_FRONT_KEY, CTZ_BACK_KEY] as const;
+    // Required docs
     let docOk = true;
 
-    for (const k of requiredDocKeys) {
+    for (const k of REQUIRED_ATTACHMENTS) {
       const hasNew = Boolean(uploads[k]?.file);
       const hasOld = Boolean(existingImages[k]);
       if (!hasNew && !hasOld) {
         setUploadError(k, "This document is required.");
         docOk = false;
+      }
+    }
+
+    // Optional docs become REQUIRED only if user enabled optional-docs checkbox
+    if (values.add_optional_docs && values.optional_doc_type) {
+      const requiredOptKeys =
+        values.optional_doc_type === "passport"
+          ? [PASS_FRONT_KEY, PASS_BACK_KEY]
+          : values.optional_doc_type === "nid"
+            ? [NID_FRONT_KEY, NID_BACK_KEY]
+            : [DL_FRONT_KEY, DL_BACK_KEY];
+
+      for (const k of requiredOptKeys) {
+        const hasNew = Boolean(uploads[k]?.file);
+        const hasOld = Boolean(existingImages[k]);
+        if (!hasNew && !hasOld) {
+          setUploadError(k, "This document is required when optional documents are enabled.");
+          docOk = false;
+        }
       }
     }
 
@@ -769,7 +637,11 @@ export const KYCAdd = () => {
     setBanner({ type: "info", title: "Submitting…", message: "Submitting your KYC. Please wait." });
     window.scrollTo({ top: 0, behavior: "smooth" });
 
-    const payload: CustomerKycFormEntity = {
+    // Keep payload type-safe but allow extra optional doc fields
+    const payload: CustomerKycFormEntity & {
+      dl_front?: File | null;
+      dl_back?: File | null;
+    } = {
       honour: values.honour,
 
       first_name_nep: values.first_name_nep,
@@ -792,12 +664,17 @@ export const KYCAdd = () => {
       local_level: values.local_level,
       ward_no: values.ward_no,
 
+      tole: values.tole,
+      // if your API supports tole_nep, add it in CustomerKycFormEntity and send it:
+      // tole_nep: values.tole_nep?.trim() || "",
+
       residence_country: values.residence_country || "NEPAL",
       mobile: values.mobile,
       email: values.email || "",
 
       father_name: values.father_name,
-      father_name_nep: values.father_name_nep, // ✅ already normalized + validated (2 words)
+      father_name_nep: normalizeSpaces(values.father_name_nep),
+
       father_citizenship_no: values.father_citizenship_no || "",
       father_citizenship_issued_district: values.father_citizenship_issued_district || "",
 
@@ -810,12 +687,7 @@ export const KYCAdd = () => {
       party_inspection_category: values.party_inspection_category,
       risk_factors: values.risk_factors,
 
-      doc_type: values.doc_type as DocType,
-
-      // ✅ OPTIONAL field: send null/empty if not provided (backend-friendly)
-      // If your API supports tole_nep separately, include it in your customerKycClient mapping.
-      // (If your CustomerKycFormEntity has tole_nep, add it there too.)
-      // tole_nep: values.tole_nep?.trim() ? values.tole_nep.trim() : null,
+      doc_type: values.doc_type,
 
       // docs
       image_profile: uploads[PHOTO_KEY]?.file ?? null,
@@ -824,8 +696,13 @@ export const KYCAdd = () => {
 
       passport_front: uploads[PASS_FRONT_KEY]?.file ?? null,
       passport_back: uploads[PASS_BACK_KEY]?.file ?? null,
+
       nid_front: uploads[NID_FRONT_KEY]?.file ?? null,
       nid_back: uploads[NID_BACK_KEY]?.file ?? null,
+
+      // optional if your backend supports
+      dl_front: uploads[DL_FRONT_KEY]?.file ?? null,
+      dl_back: uploads[DL_BACK_KEY]?.file ?? null,
     };
 
     try {
@@ -908,6 +785,25 @@ export const KYCAdd = () => {
               </Alert>
             )}
 
+            {/* ✅ show API note_List */}
+            {!!statusNotes.length && (
+              <div className="rounded-lg border p-4 bg-muted/20">
+                <div className="font-semibold mb-2">KYC Notes</div>
+                <div className="space-y-2">
+                  {statusNotes
+                    .slice()
+                    .reverse()
+                    .map((n, idx) => (
+                      <div key={idx} className="rounded-md border bg-white p-3">
+                        <div className="text-sm font-medium">{n.note_Type || "Note"}</div>
+                        <div className="text-sm text-muted-foreground mt-1">{n.comments || "-"}</div>
+                        <div className="text-xs text-muted-foreground mt-2">{n.date_Posted || "-"}</div>
+                      </div>
+                    ))}
+                </div>
+              </div>
+            )}
+
             {/* BASIC INFO */}
             <div>
               <h3 className="text-lg font-semibold mb-4">{t("kycAdd.basicInfo")}</h3>
@@ -951,26 +847,20 @@ export const KYCAdd = () => {
 
                 <div>
                   <Label>पहिलो नाम (नेपाली) *</Label>
-                  <Input className="mt-2" {...register("first_name_nep")} onInput={nepaliInputHandler("first_name_nep")} />
-                  {(errors.first_name_nep || npErrors.first_name_nep) && (
-                    <p className="text-xs text-red-500 mt-1">{errors.first_name_nep?.message || npErrors.first_name_nep}</p>
-                  )}
+                  <Input className="mt-2" {...register("first_name_nep")} />
+                  {errors.first_name_nep && <p className="text-xs text-red-500 mt-1">{errors.first_name_nep.message}</p>}
                 </div>
 
                 <div>
                   <Label>बीचको नाम (नेपाली)</Label>
-                  <Input className="mt-2" {...register("middle_name_nep")} onInput={nepaliInputHandler("middle_name_nep")} placeholder="optional" />
-                  {(errors.middle_name_nep || npErrors.middle_name_nep) && (
-                    <p className="text-xs text-red-500 mt-1">{errors.middle_name_nep?.message || npErrors.middle_name_nep}</p>
-                  )}
+                  <Input className="mt-2" {...register("middle_name_nep")} placeholder="optional" />
+                  {errors.middle_name_nep && <p className="text-xs text-red-500 mt-1">{errors.middle_name_nep.message}</p>}
                 </div>
 
                 <div>
                   <Label>थर (नेपाली) *</Label>
-                  <Input className="mt-2" {...register("last_name_nep")} onInput={nepaliInputHandler("last_name_nep")} />
-                  {(errors.last_name_nep || npErrors.last_name_nep) && (
-                    <p className="text-xs text-red-500 mt-1">{errors.last_name_nep?.message || npErrors.last_name_nep}</p>
-                  )}
+                  <Input className="mt-2" {...register("last_name_nep")} />
+                  {errors.last_name_nep && <p className="text-xs text-red-500 mt-1">{errors.last_name_nep.message}</p>}
                 </div>
               </div>
             </div>
@@ -1080,10 +970,8 @@ export const KYCAdd = () => {
 
                   <div>
                     <Label>टोल (नेपालीमा) (Optional)</Label>
-                    <Input className="mt-2" {...register("tole_nep")} onInput={nepaliInputHandler("tole_nep")} />
-                    {(errors.tole_nep || npErrors.tole_nep) && (
-                      <p className="text-xs text-red-500 mt-1">{errors.tole_nep?.message || npErrors.tole_nep}</p>
-                    )}
+                    <Input className="mt-2" {...register("tole_nep")} />
+                    {errors.tole_nep && <p className="text-xs text-red-500 mt-1">{errors.tole_nep.message}</p>}
                   </div>
 
                   <div>
@@ -1116,17 +1004,10 @@ export const KYCAdd = () => {
                   <Input
                     className="mt-2"
                     {...register("father_name_nep", {
-                      setValueAs: (v) => normalizeNepaliTwoWords(String(v ?? "")).cleaned,
+                      setValueAs: (v) => normalizeSpaces(String(v ?? "")),
                     })}
-                    onBlur={(e) => {
-                      const cleaned = normalizeNepaliTwoWords(e.target.value).cleaned;
-                      setValue("father_name_nep", cleaned, { shouldValidate: true, shouldDirty: true });
-                    }}
-                    onInput={nepaliInputHandler("father_name_nep")}
                   />
-                  {(errors.father_name_nep || npErrors.father_name_nep) && (
-                    <p className="text-xs text-red-500 mt-1">{errors.father_name_nep?.message || npErrors.father_name_nep}</p>
-                  )}
+                  {errors.father_name_nep && <p className="text-xs text-red-500 mt-1">{errors.father_name_nep.message}</p>}
                 </div>
 
                 <div>
@@ -1140,10 +1021,7 @@ export const KYCAdd = () => {
                 </div>
 
                 <div>
-                  <Occupation
-                    value={watch("occupation")}
-                    onChange={(v) => setValue("occupation", v, { shouldDirty: true, shouldValidate: true })}
-                  />
+                  <Occupation value={watch("occupation")} onChange={(v) => setValue("occupation", v, { shouldDirty: true, shouldValidate: true })} />
                   {errors.occupation && <p className="text-xs text-red-500 mt-1">{errors.occupation.message}</p>}
                 </div>
 
@@ -1171,10 +1049,7 @@ export const KYCAdd = () => {
 
                 <div>
                   <Label>Document Type</Label>
-                  <Select
-                    value={watch("doc_type")}
-                    onValueChange={(v) => setValue("doc_type", v as DocType, { shouldDirty: true, shouldValidate: true })}
-                  >
+                  <Select value={watch("doc_type")} onValueChange={(v) => setValue("doc_type", v as any, { shouldDirty: true, shouldValidate: true })}>
                     <SelectTrigger className="mt-2">
                       <SelectValue placeholder="Select" />
                     </SelectTrigger>
@@ -1193,13 +1068,65 @@ export const KYCAdd = () => {
             <div>
               <h3 className="text-lg font-semibold mb-2">{t("kycAdd.attachments")}</h3>
               <p className="text-sm text-muted-foreground">
-                {locked
-                  ? "Uploads are locked while your KYC is under review/approved."
-                  : "Required: Photo + Citizenship Front/Back. Others are optional."}
+                {locked ? "Uploads are locked while your KYC is under review/approved." : "Required: Photo + Citizenship Front/Back."}
               </p>
 
+              {/* hidden register so zod can validate these fields */}
+              <input type="hidden" {...register("add_optional_docs")} />
+              <input type="hidden" {...register("optional_doc_type")} />
+
+              {/* ✅ Optional docs checkbox + dropdown */}
+              {!locked && (
+                <div className="mt-4 rounded-lg border p-4">
+                  <div className="flex items-center gap-2">
+                    <Checkbox
+                      id="add_optional_docs"
+                      checked={addOptionalDocs}
+                      onCheckedChange={(v) => {
+                        const checked = v === true;
+                        setValue("add_optional_docs", checked, { shouldDirty: true, shouldValidate: true });
+                        if (!checked) {
+                          setValue("optional_doc_type", undefined, { shouldDirty: true, shouldValidate: true });
+
+                          // clear optional upload errors when disabled
+                          [PASS_FRONT_KEY, PASS_BACK_KEY, NID_FRONT_KEY, NID_BACK_KEY, DL_FRONT_KEY, DL_BACK_KEY].forEach((k) => {
+                            setUploadError(k, undefined);
+                          });
+                        }
+                      }}
+                    />
+                    <Label htmlFor="add_optional_docs" className="cursor-pointer">
+                      Add optional documents?
+                    </Label>
+                  </div>
+
+                  {addOptionalDocs && (
+                    <div className="mt-3 max-w-sm">
+                      <Label>Optional Document Type *</Label>
+                      <Select
+                        value={(optionalDocType as OptionalDocType | undefined) ?? ""}
+                        onValueChange={(v) => setValue("optional_doc_type", v as OptionalDocType, { shouldDirty: true, shouldValidate: true })}
+                      >
+                        <SelectTrigger className="mt-2">
+                          <SelectValue placeholder="Select optional document" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="passport">Passport</SelectItem>
+                          <SelectItem value="nid">NID</SelectItem>
+                          <SelectItem value="driving_license">Driving License</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      {errors.optional_doc_type && <p className="text-xs text-red-500 mt-1">{errors.optional_doc_type.message}</p>}
+                      <p className="text-xs text-muted-foreground mt-2">
+                        If you enable this, the selected optional document Front/Back becomes required.
+                      </p>
+                    </div>
+                  )}
+                </div>
+              )}
+
               <div className={`space-y-4 mt-4 ${formDisabled ? "opacity-60 pointer-events-none" : ""}`}>
-                {attachments.map((attachmentKey) => {
+                {visibleAttachments.map((attachmentKey) => {
                   const item = uploads[attachmentKey] ?? null;
                   const err = uploadErrors[attachmentKey];
                   const existingUrl = existingImages[attachmentKey];
@@ -1247,9 +1174,7 @@ export const KYCAdd = () => {
                           <div className="flex items-center justify-between">
                             <div>
                               <p className="text-sm font-medium">Drop file here</p>
-                              <p className="text-xs text-muted-foreground">
-                                {existingUrl ? "Existing image loaded from API" : "or click to upload"}
-                              </p>
+                              <p className="text-xs text-muted-foreground">{existingUrl ? "Existing image loaded from API" : "or click to upload"}</p>
                             </div>
                             <Upload className="h-5 w-5 text-muted-foreground" />
                           </div>
@@ -1297,7 +1222,7 @@ export const KYCAdd = () => {
               </div>
             </div>
 
-            {/* ✅ hide submit when Pending/Approved/Verified */}
+            {/* hide submit when Pending/Approved/Verified */}
             {!locked && (
               <div className="flex justify-end">
                 <Button type="submit" size="lg" className="bg-primary hover:bg-primary/90" disabled={isSubmitting || statusLoading || prefillLoading}>

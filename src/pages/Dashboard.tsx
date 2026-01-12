@@ -77,13 +77,13 @@ export const Dashboard = () => {
   }, []);
 
   // -----------------------------
-  // ✅ status normalize
+  //  status normalize
   const statusRaw = kycData?.kyc_Status ?? "Unknown";
   const status = String(statusRaw).trim().toLowerCase();
 
   const isRejected = status === "rejected" || status === "failed";
 
-  // ✅ pick latest note that has comments
+  //  pick latest note that has comments
   const latestNoteWithMessage = useMemo(() => {
     const withComments = (kycNotes || [])
       .filter((n) => String(n?.comments ?? "").trim().length > 0)
@@ -102,27 +102,27 @@ export const Dashboard = () => {
     .toLowerCase();
 
   // -----------------------------
-  // ✅ helper: tailwind styles
+  //  helper: tailwind styles
   const stylesFor = (variant: "success" | "warning" | "danger" | "info") => {
     return variant === "success"
       ? {
-          alert: "mb-6 bg-emerald-50 border-emerald-200",
-          text: "text-emerald-700",
-        }
+        alert: "mb-6 bg-emerald-50 border-emerald-200",
+        text: "text-emerald-700",
+      }
       : variant === "danger"
-      ? {
+        ? {
           alert: "mb-6 bg-destructive/10 border-destructive",
           text: "text-destructive",
         }
-      : variant === "warning"
-      ? {
-          alert: "mb-6 bg-amber-50 border-amber-200",
-          text: "text-amber-700",
-        }
-      : { alert: "mb-6 bg-muted/50 border-muted", text: "text-foreground/80" };
+        : variant === "warning"
+          ? {
+            alert: "mb-6 bg-amber-50 border-amber-200",
+            text: "text-amber-700",
+          }
+          : { alert: "mb-6 bg-muted/50 border-muted", text: "text-foreground/80" };
   };
 
-  // ✅ status -> UI mapping
+  //  status -> UI mapping
   const statusUi = useMemo(() => {
     let variant: "success" | "warning" | "danger" | "info" = "info";
     let message = "KYC status is not available right now...";
@@ -135,7 +135,7 @@ export const Dashboard = () => {
     } else if (status === "rejected" || status === "failed") {
       variant = "danger";
       message = "Your KYC was rejected. Please re-submit your documents...";
-      Icon = XCircle; // ✅ important
+      Icon = XCircle; //  important
     } else if (
       status === "pending" ||
       status === "under review" ||
@@ -159,7 +159,7 @@ export const Dashboard = () => {
     return { variant, message, Icon, styles: stylesFor(variant) };
   }, [status, statusRaw]);
 
-  // ✅ notes -> UI mapping (only used if noteMessage exists)
+  //  notes -> UI mapping (only used if noteMessage exists)
   const notesUi = useMemo(() => {
     let variant: "success" | "warning" | "danger" | "info" = "info";
     let Icon = Info;
@@ -177,7 +177,7 @@ export const Dashboard = () => {
       noteType.includes("error")
     ) {
       variant = "danger";
-      Icon = XCircle; // ✅ important
+      Icon = XCircle; //  important
     } else if (
       noteType.includes("pending") ||
       noteType.includes("review") ||
@@ -196,7 +196,7 @@ export const Dashboard = () => {
     return { variant, message: noteMessage, Icon, styles: stylesFor(variant) };
   }, [noteType, noteMessage, statusUi.variant, statusUi.Icon]);
 
-  // ✅ FINAL: show notes alert if message exists, otherwise status alert
+  //  FINAL: show notes alert if message exists, otherwise status alert
   const ui = noteMessage ? notesUi : statusUi;
 
   const statusLabel =
@@ -229,7 +229,7 @@ export const Dashboard = () => {
             <div className="mb-6 text-sm opacity-70">Loading KYC info...</div>
           )}
 
-          {/* ✅ Alert (notes first, else status) + ✅ Resubmit button when rejected */}
+          {/*  Alert (notes first, else status) +  Resubmit button when rejected */}
           {!error && !loading && (
             <Alert className={ui.styles.alert}>
               <ui.Icon className={`h-4 w-4 ${ui.styles.text}`} />
@@ -237,13 +237,13 @@ export const Dashboard = () => {
                 <div className="flex flex-col gap-3">
                   <div>{noteMessage ? noteMessage : ui.message}</div>
 
-                  {/* ✅ show resubmit only when rejected/failed */}
+                  {/*  show resubmit only when rejected/failed */}
                   {isRejected && (
                     <div>
                       <Button
                         type="button"
                         variant="destructive"
-                        onClick={() => navigate("/kyc-resubmit")}
+                        onClick={() => navigate("/kyc-add")}
                       >
                         Re-submit KYC
                       </Button>
@@ -259,16 +259,19 @@ export const Dashboard = () => {
               type="motor"
               title={t("insurance.motor")}
               subtitle={`${t("insurance.vehicle")} • KYC: ${statusLabel}`}
+              to="/motor-insurance-plan"
             />
             <InsuranceCard
               type="travel"
               title={t("insurance.travel")}
               subtitle={t("insurance.travelIns")}
+              to="/travel-insurance"
             />
             <InsuranceCard
               type="home"
               title={t("insurance.home")}
               subtitle={t("insurance.homeIns")}
+              to="/home-insurance"
             />
           </div>
         </main>
