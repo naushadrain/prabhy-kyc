@@ -55,7 +55,7 @@ export const Login = () => {
   const [notice, setNotice] = useState<Notice | null>(null);
   const redirectTimerRef = useRef<number | null>(null);
 
-  // ✅ Mobile insurance toggle
+  //  Mobile insurance toggle
   const [showInsuranceOnMobile, setShowInsuranceOnMobile] = useState(false);
 
   const mobileWatch = watch("mobile");
@@ -94,7 +94,7 @@ export const Login = () => {
 
       redirectTimerRef.current = window.setTimeout(() => {
         navigate("/dashboard");
-      }, 3000);
+      }, 1000);
     } catch (err: any) {
       const apiMsg =
         err?.message ||
@@ -111,7 +111,7 @@ export const Login = () => {
         {/* ================= LEFT SIDE (INSURANCE) ================= */}
         <div className="order-2 md:order-1 flex-1 px-4 pb-10 pt-2 sm:px-8 md:px-10 md:py-12 lg:px-16 lg:py-16">
           <div className="mx-auto w-full max-w-5xl">
-            {/* ✅ Mobile: show all cards one-by-one (single column) */}
+            {/*  Mobile: show all cards one-by-one (single column) */}
             <div className="grid grid-cols-1 gap-4 md:hidden">
               <InsuranceCard
                 type="motor"
@@ -130,7 +130,7 @@ export const Login = () => {
               />
             </div>
 
-            {/* ✅ md+ : normal grid */}
+            {/*  md+ : normal grid */}
             <div className="hidden md:grid grid-cols-2 lg:grid-cols-3 gap-6">
               <InsuranceCard type="motor" title={t("insurance.motor")} subtitle={t("insurance.vehicle")} />
               <InsuranceCard type="travel" title={t("insurance.travel")} subtitle={t("insurance.travelIns")} />
@@ -154,8 +154,8 @@ export const Login = () => {
             {(clientErrorMessage || notice) && (
               <Alert
                 className={`mb-4 ${notice?.type === "success"
-                    ? "border-green-500/40 bg-green-500/10"
-                    : "border-red-500/40 bg-red-500/10"
+                  ? "border-green-500/40 bg-green-500/10"
+                  : "border-red-500/40 bg-red-500/10"
                   }`}
               >
                 {notice?.type === "success" ? (

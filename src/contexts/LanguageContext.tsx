@@ -13,8 +13,8 @@ const translations = {
     // Common
     'common.submit': 'SUBMIT',
     'common.next': 'NEXT',
-    'common.signIn': 'SIGN IN',
-    'common.signUp': 'Sign Up',
+    'common.signIn': 'Login',
+    'common.signUp': 'Register',
     'common.sendMessage': 'SEND MESSAGE',
     // Auth
     'auth.signIn': 'Sign In',
