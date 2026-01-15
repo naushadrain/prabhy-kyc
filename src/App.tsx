@@ -43,6 +43,7 @@ import ForgotPasswordVerifyOtpPage from "./pages/forgot/ForgotPasswordVerifyOtpP
 import ResetPasswordPage from "./pages/changePassword/ResetPasswordPage";
 import KycTestPage from "./pages/kyc/kyctest";
 import ResubmitKycForm from "./pages/kyc/ResubmitKycForm";
+import { TravelInsuranceInstantQuotes } from "./pages/travels/TravelInsuranceInstantQuotes ";
 
 const queryClient = new QueryClient();
 
@@ -92,6 +93,8 @@ const App = () => (
               <Route path="/travel-insurance" element={<TravelInsurance />} />
               <Route path="/travel-insurance-coverage" element={<TravelInsuranceCoverage />} />
               <Route path="/travel-insurance-details" element={<TravelInsuranceDetails />} />
+              <Route path="/travel-insurance-history" element={<TransactionHistory />} />
+              <Route path="/travel-insurance-instant-quotes" element={<TravelInsuranceInstantQuotes />} />
             </Route>
 
             {/* Catch-all */}

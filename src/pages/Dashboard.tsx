@@ -265,7 +265,7 @@ export const Dashboard = () => {
               type="travel"
               title={t("insurance.travel")}
               subtitle={t("insurance.travelIns")}
-              to="/travel-insurance"
+              to="/travel-insurance-coverage"
             />
             <InsuranceCard
               type="home"
