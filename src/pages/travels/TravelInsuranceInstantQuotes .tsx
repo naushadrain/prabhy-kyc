@@ -365,7 +365,7 @@ export const TravelInsuranceInstantQuotes = () => {
           vat_amount: Number(v.vat_amount),
           total_amount: Number(v.total_amount),
         },
-        child_info: v.have_children ? v.child_info : [],
+        child_info: v.have_children ? v.child_info.map((child) => ({ children_name: child.children_name, children_dob: child.children_dob, children_passport: child.children_passport })) : []
       };
 
       const resp = await createTravelPolicy(payload);
@@ -373,19 +373,16 @@ export const TravelInsuranceInstantQuotes = () => {
       const err = extractApiError(resp);
       if (resp?.process_result === false || err) {
         setSubmitAlert({ type: "error", text: err || "Policy creation failed." });
-        window.alert(err || "Policy creation failed.");
         return;
       }
 
       setSubmitAlert({ type: "success", text: "Travel policy created successfully " });
-      window.alert("Travel policy created successfully ");
 
       // optional: navigate success page
       // navigate("/travel-policy-success");
     } catch (e: any) {
       const msg = e?.message ?? "Request failed";
       setSubmitAlert({ type: "error", text: msg });
-      window.alert(msg);
     } finally {
       setSubmitLoading(false);
     }
@@ -397,7 +394,7 @@ export const TravelInsuranceInstantQuotes = () => {
 
   const submitDisabled =
     submitLoading || premiumLoading || isSubmitting || !!premiumError || !premiumSnapshot;
-const [sidebarOpen, setSidebarOpen] = useState<boolean>(false);
+  const [sidebarOpen, setSidebarOpen] = useState<boolean>(false);
   return (
     <div className="flex min-h-screen">
       <Sidebar open={sidebarOpen} onClose={() => setSidebarOpen(false)} />
@@ -415,11 +412,10 @@ const [sidebarOpen, setSidebarOpen] = useState<boolean>(false);
             {/* Submit Alert */}
             {submitAlert && (
               <div
-                className={`mb-6 rounded-lg border p-4 text-sm ${
-                  submitAlert.type === "success"
-                    ? "border-green-200 bg-green-50 text-green-700"
-                    : "border-red-200 bg-red-50 text-red-700"
-                }`}
+                className={`mb-6 rounded-lg border p-4 text-sm ${submitAlert.type === "success"
+                  ? "border-green-200 bg-green-50 text-green-700"
+                  : "border-red-200 bg-red-50 text-red-700"
+                  }`}
               >
                 {submitAlert.text}
               </div>
@@ -670,10 +666,10 @@ const [sidebarOpen, setSidebarOpen] = useState<boolean>(false);
                 errors.travel_area_id ||
                 errors.travel_area_plan_id ||
                 errors.period_id) && (
-                <p className="text-xs text-red-600">
-                  Missing IDs from Step-1 / Step-2. Please go back and select required dropdowns.
-                </p>
-              )}
+                  <p className="text-xs text-red-600">
+                    Missing IDs from Step-1 / Step-2. Please go back and select required dropdowns.
+                  </p>
+                )}
             </form>
           </div>
         </main>

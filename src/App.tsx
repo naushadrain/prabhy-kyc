@@ -41,7 +41,6 @@ import { KYCAddPage } from "./pages/KYCAddPage";
 import ForgotPasswordPage from "./pages/forgot/ForgotPassword";
 import ForgotPasswordVerifyOtpPage from "./pages/forgot/ForgotPasswordVerifyOtpPage";
 import ResetPasswordPage from "./pages/changePassword/ResetPasswordPage";
-import KycTestPage from "./pages/kyc/kyctest";
 import ResubmitKycForm from "./pages/kyc/ResubmitKycForm";
 import { TravelInsuranceInstantQuotes } from "./pages/travels/TravelInsuranceInstantQuotes ";
 
@@ -70,7 +69,6 @@ const App = () => (
             {/* Protected routes */}
             <Route element={<ProtectedRoute />}>
               <Route path="/dashboard" element={<Dashboard />} />
-              <Route path="/kyc-test" element={<KycTestPage />} />
               <Route path="/claim" element={<Claim />} />
               <Route path="/claim-tracking" element={<ClaimTracking />} />
               <Route path="/claim-intimate" element={<ClaimIntimate />} />

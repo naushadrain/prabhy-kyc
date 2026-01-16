@@ -27,7 +27,7 @@ export const getTravelCataloguesPlane = async () => {
   const headers = await makeAuthHeaders();
 
   const res = await fetch(
-    `${API_BASE_URL}/v1/Travel/get-travel-catalogues?class_id=81&catalogue_type=1`,
+    `${API_BASE_URL}/v1/Travel/get-travel-plans?class_id=81`,
     { method: "GET", headers }
   );
 
@@ -39,7 +39,7 @@ export const getTravelCataloguesArea = async (areaPlanId: string) => {
   const headers = await makeAuthHeaders();
 
   const res = await fetch(
-    `${API_BASE_URL}/v1/Travel/get-travel-catalogues?class_id=81&catalogue_type=2&area_plan_id=${encodeURIComponent(
+    `${API_BASE_URL}/v1/Travel/get-travel-area?class_id=81&plan_id=${encodeURIComponent(
       areaPlanId
     )}`,
     { method: "GET", headers }
@@ -56,7 +56,7 @@ export const getTravelCataloguesPackage = async (
   const headers = await makeAuthHeaders();
 
   const res = await fetch(
-    `${API_BASE_URL}/v1/Travel/get-travel-catalogues?class_id=81&catalogue_type=3&area_id=${encodeURIComponent(
+    `${API_BASE_URL}/v1/Travel/get-travel-packages?class_id=81&area_id=${encodeURIComponent(
       areaId
     )}&area_plan_id=${encodeURIComponent(areaPlanId)}`,
     { method: "GET", headers }
@@ -71,10 +71,7 @@ export async function getTravelPeriod(planId: string | number, days: string | nu
   const headers = await makeAuthHeaders();
 
   const url =
-    `${API_BASE_URL}/v1/Travel/get-travel-period` +
-    `?class_id=${encodeURIComponent(81)}` +
-    `&plan_id=${encodeURIComponent(String(planId))}` +
-    `&days=${encodeURIComponent(String(days))}`;
+    `${API_BASE_URL}/v1/Travel/get-travel-period?class_id=81&plan_id=${planId}&days=${days}`;
 
   const res = await fetch(url, { method: "GET", headers });
 

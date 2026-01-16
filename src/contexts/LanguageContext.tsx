@@ -310,7 +310,7 @@ const translations = {
     'common.signIn': 'साइन इन',
     'common.signUp': 'साइन अप',
     'common.sendMessage': 'सन्देश पठाउनुहोस्',
-
+    'kycAdd.idIssueDistrict': 'पहिचान जारी जिल्ला',
     // Auth
     'auth.signIn': 'साइन इन',
     'auth.signUp': 'साइन अप',

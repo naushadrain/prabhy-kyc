@@ -566,37 +566,8 @@ const [sidebarOpen, setSidebarOpen] = useState<boolean>(false);
                 </div>
               </div>
 
-              {/* Period API status box */}
-              <div className="rounded-lg border p-3 mb-4">
-                <div className="text-sm font-medium">Travel Period API</div>
-                <div className="mt-1 text-xs text-muted-foreground">
-                  plan_id: <span className="font-mono">{planId || "—"}</span> | days:{" "}
-                  <span className="font-mono">{typeof noOfDays === "number" ? noOfDays : "—"}</span>
-                </div>
-
-                {periodLoading && (
-                  <p className="mt-2 text-sm text-muted-foreground">Loading period...</p>
-                )}
-
-                {periodError && (
-                  <p className="mt-2 text-sm text-red-600">{periodError}</p>
-                )}
-
-                {!periodLoading && !periodError && periodId && (
-                  <p className="mt-2 text-sm">
-                     Selected Period: <span className="font-medium">{periodSelectedLabel}</span>{" "}
-                    (period_id: <span className="font-mono">{periodId}</span>)
-                  </p>
-                )}
-
-                {periodResp && (
-                  <pre className="mt-3 text-xs bg-muted p-2 rounded overflow-auto">
-                    {JSON.stringify(periodResp, null, 2)}
-                  </pre>
-                )}
-              </div>
-
-              <div className="flex items-center gap-3 mb-4">
+              
+              {/* <div className="flex items-center gap-3 mb-4">
                 <Switch id="one-way" />
                 <Label htmlFor="one-way">One Way Trip Charge</Label>
               </div>
@@ -604,14 +575,14 @@ const [sidebarOpen, setSidebarOpen] = useState<boolean>(false);
               <div className="flex items-center gap-3 mb-4">
                 <Switch id="loading" />
                 <Label htmlFor="loading">Loading Charge</Label>
-              </div>
+              </div> */}
 
-              <div className="bg-orange-50 border border-orange-200 rounded-lg p-3 flex items-start gap-2">
+              {/* <div className="bg-orange-50 border border-orange-200 rounded-lg p-3 flex items-start gap-2">
                 <AlertTriangle className="w-5 h-5 text-orange-600 mt-0.5 flex-shrink-0" />
                 <p className="text-sm text-orange-700">
                   Note: No of Days must be below 180 days
                 </p>
-              </div>
+              </div> */}
             </div>
 
             {/* KYC Section */}
