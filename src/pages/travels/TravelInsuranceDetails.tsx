@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import { Sidebar } from "@/components/Sidebar";
 import { Header } from "@/components/Header";
 import { useLanguage } from "@/contexts/LanguageContext";
@@ -458,12 +458,12 @@ export const TravelInsuranceDetails = () => {
     periodLoading ||
     !!periodError ||
     !periodId;
-
+const [sidebarOpen, setSidebarOpen] = useState<boolean>(false);
   return (
     <div className="flex min-h-screen">
-      <Sidebar />
+      <Sidebar open={sidebarOpen} onClose={() => setSidebarOpen(false)} />
       <div className="flex-1 flex flex-col">
-        <Header />
+        <Header onMenuClick={() => setSidebarOpen(true)} />
         <main className="flex-1 p-8 bg-background">
           {/* Stepper */}
           <div className="mb-12">

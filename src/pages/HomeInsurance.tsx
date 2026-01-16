@@ -20,6 +20,7 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { ChevronLeft, ArrowRight } from 'lucide-react';
+import { useState } from 'react';
 
 export const HomeInsurance = () => {
   const { t } = useLanguage();
@@ -30,12 +31,12 @@ export const HomeInsurance = () => {
     { number: 3, label: t('homeInsurance.step3'), status: 'pending' },
     { number: 4, label: t('homeInsurance.step4'), status: 'pending' },
   ];
-
+const [sidebarOpen, setSidebarOpen] = useState<boolean>(false);
   return (
     <div className="flex min-h-screen">
-      <Sidebar />
+      <Sidebar open={sidebarOpen} onClose={() => setSidebarOpen(false)} />
       <div className="flex-1 flex flex-col">
-        <Header />
+        <Header onMenuClick={() => setSidebarOpen(true)} />
         <main className="flex-1 p-8 bg-background">
           {/* Stepper */}
           <div className="mb-12">

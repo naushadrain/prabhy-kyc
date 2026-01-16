@@ -1,11 +1,6 @@
 import React from "react";
 import { Navigate, Outlet, useLocation } from "react-router-dom";
 import { isTokenExpired, msUntilTokenExpiry } from "@/api/auth/tokenExpiry";
-import { refreshToken } from "@/api/session/refreshTokenClient";
-
-const CHECK_EVERY_MS = 3 * 60 * 1000; // ✅ every 3 minutes => ALWAYS refresh
-const REFRESH_BEFORE_EXP_MS = 25 * 1000; // ✅ refresh 25s before expiry
-const MIN_DELAY_MS = 5 * 1000; // safety
 
 function logout() {
   localStorage.removeItem("access_token");
@@ -22,12 +17,15 @@ export const ProtectedRoute = () => {
   );
   const [forceLogin, setForceLogin] = React.useState(false);
 
-  const refreshingRef = React.useRef(false);
-
   // ✅ keep token synced across tabs/windows
   React.useEffect(() => {
     const onStorage = (e: StorageEvent) => {
-      if (e.key === "access_token") setToken(e.newValue);
+      if (e.key === "access_token") {
+        setToken(e.newValue);
+        if (!e.newValue) {
+          setForceLogin(true);
+        }
+      }
       if (e.key === "refresh_token" && !e.newValue) {
         setToken(null);
         setForceLogin(true);
@@ -37,113 +35,88 @@ export const ProtectedRoute = () => {
     return () => window.removeEventListener("storage", onStorage);
   }, []);
 
-  // ✅ refresh helper
-  // mustSucceed=false => don't force logout if refresh temporarily fails
-  const doRefresh = React.useCallback(async (mustSucceed: boolean) => {
-    if (refreshingRef.current) return;
-    refreshingRef.current = true;
+  // ✅ boot check: token exist? expired?
+  React.useEffect(() => {
+    const current = localStorage.getItem("access_token");
 
-    try {
-      const newToken = await refreshToken();
-
-      // refresh failed
-      if (!newToken) {
-        const current = localStorage.getItem("access_token");
-
-        // logout only if we MUST succeed OR token already expired
-        if (mustSucceed || !current || isTokenExpired(current)) {
-          logout();
-          setToken(null);
-          setForceLogin(true);
-        }
-        return;
-      }
-
-      // refresh success
-      setToken(newToken);
-      setForceLogin(false);
-    } finally {
-      refreshingRef.current = false;
+    if (!current) {
+      setToken(null);
+      setForceLogin(true);
+      setReady(true);
+      return;
     }
+
+    // expired -> logout
+    if (isTokenExpired(current)) {
+      logout();
+      setToken(null);
+      setForceLogin(true);
+      setReady(true);
+      return;
+    }
+
+    // valid
+    setToken(current);
+    setForceLogin(false);
+    setReady(true);
   }, []);
 
-  // ✅ Check current token state (used on boot + exact timer safety)
-  const checkAndRefreshIfNeeded = React.useCallback(async () => {
-    const current = localStorage.getItem("access_token");
-    if (!current) {
+  // ✅ auto logout exactly when token expires (timer)
+  React.useEffect(() => {
+    if (!ready || !token) return;
+
+    // if already expired
+    if (isTokenExpired(token)) {
+      logout();
       setToken(null);
       setForceLogin(true);
       return;
     }
 
-    // expired -> must refresh
-    if (isTokenExpired(current)) {
-      await doRefresh(true);
-      return;
-    }
-
-    // near expiry -> refresh
-    const ms = msUntilTokenExpiry(current);
-    if (ms != null && ms <= REFRESH_BEFORE_EXP_MS) {
-      await doRefresh(true);
-      return;
-    }
-
-    setToken(current);
-  }, [doRefresh]);
-
-  // ✅ Initial boot
-  React.useEffect(() => {
-    let mounted = true;
-    (async () => {
-      await checkAndRefreshIfNeeded();
-      if (!mounted) return;
-      setReady(true);
-    })();
-    return () => {
-      mounted = false;
-    };
-  }, [checkAndRefreshIfNeeded]);
-
-  // ✅ Every 3 minutes: ALWAYS refresh (THIS is what you asked)
-  React.useEffect(() => {
-    if (!ready) return;
-
-    const id = window.setInterval(() => {
-      doRefresh(false); // ✅ always refresh, but do not force logout on temporary error
-    }, CHECK_EVERY_MS);
-
-    return () => window.clearInterval(id);
-  }, [ready, doRefresh]);
-
-  // ✅ Refresh BEFORE expiry (precise timer) - keep for safety
-  React.useEffect(() => {
-    if (!ready || !token) return;
-
     const ms = msUntilTokenExpiry(token);
     if (ms == null) return;
 
-    const delay = Math.max(ms - REFRESH_BEFORE_EXP_MS, MIN_DELAY_MS);
+    // small safety buffer so it logs out just before expiry
+    const buffer = 1000; // 1 sec
+    const delay = Math.max(0, ms - buffer);
 
     const id = window.setTimeout(() => {
-      doRefresh(true); // must succeed near expiry
+      logout();
+      setToken(null);
+      setForceLogin(true);
     }, delay);
 
     return () => window.clearTimeout(id);
-  }, [ready, token, doRefresh]);
+  }, [ready, token]);
 
-  // ✅ If user comes back to tab -> refresh immediately (optional but useful)
+  // ✅ if user returns to tab, re-check (important)
   React.useEffect(() => {
     if (!ready) return;
 
     const onVis = () => {
-      if (document.visibilityState === "visible") {
-        doRefresh(false); // ✅ refresh every time user returns
+      if (document.visibilityState !== "visible") return;
+
+      const current = localStorage.getItem("access_token");
+      if (!current) {
+        setToken(null);
+        setForceLogin(true);
+        return;
       }
+
+      if (isTokenExpired(current)) {
+        logout();
+        setToken(null);
+        setForceLogin(true);
+        return;
+      }
+
+      setToken(current);
+      setForceLogin(false);
     };
+
     document.addEventListener("visibilitychange", onVis);
     return () => document.removeEventListener("visibilitychange", onVis);
-  }, [ready, doRefresh]);
+  }, [ready]);
 
   if (!ready) return null;
 

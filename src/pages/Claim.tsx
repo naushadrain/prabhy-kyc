@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Label } from '@/components/ui/label';
 import { ArrowRight } from 'lucide-react';
+import { useState } from 'react';
 
 export const Claim = () => {
   const { t } = useLanguage();
@@ -16,12 +17,12 @@ export const Claim = () => {
     { number: 4, label: t('claim.step4'), status: 'pending' },
     { number: 5, label: t('claim.step5'), status: 'pending' },
   ];
-
+const [sidebarOpen, setSidebarOpen] = useState<boolean>(false);
   return (
     <div className="flex min-h-screen">
-      <Sidebar />
+      <Sidebar open={sidebarOpen} onClose={() => setSidebarOpen(false)} />
       <div className="flex-1 flex flex-col">
-        <Header />
+        <Header onMenuClick={() => setSidebarOpen(true)} />
         <main className="flex-1 p-8">
           {/* Stepper */}
           <div className="mb-12">

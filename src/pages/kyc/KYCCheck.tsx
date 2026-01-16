@@ -5,15 +5,16 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Search, ArrowLeft } from 'lucide-react';
+import { useState } from 'react';
 
 export const KYCCheck = () => {
   const { t } = useLanguage();
-
+const [sidebarOpen, setSidebarOpen] = useState<boolean>(false);
   return (
     <div className="flex min-h-screen">
-      <Sidebar />
+      <Sidebar open={sidebarOpen} onClose={() => setSidebarOpen(false)} />
       <div className="flex-1 flex flex-col">
-        <Header />
+        <Header onMenuClick={() => setSidebarOpen(true)} />
         <main className="flex-1 p-8 bg-background">
           <div className="max-w-2xl">
             <Button variant="ghost" className="mb-6 gap-2">

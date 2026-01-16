@@ -5,6 +5,7 @@ import { Card } from '@/components/ui/card';
 import { ChevronLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Link } from 'react-router-dom';
+import { useState } from 'react';
 
 export const MotorInsurancePlan = () => {
   const { t } = useLanguage();
@@ -22,12 +23,13 @@ export const MotorInsurancePlan = () => {
     { id: 'private', title: 'Private Vehicle', icon: '🚗' },
     { id: 'commercial', title: 'Commercial Vehicle', icon: '🚚' },
   ];
-
+  const [sidebarOpen, setSidebarOpen] = useState<boolean>(false);
   return (
     <div className="flex min-h-screen">
-      <Sidebar />
+      <Sidebar open={sidebarOpen} onClose={() => setSidebarOpen(false)} />
       <div className="flex-1 flex flex-col">
-        <Header />
+        <Header onMenuClick={() => setSidebarOpen(true)} />
+
         <main className="flex-1 p-8 bg-background">
           {/* Stepper */}
           <div className="mb-12">
@@ -35,19 +37,17 @@ export const MotorInsurancePlan = () => {
               {steps.map((step, index) => (
                 <div key={step.number} className="flex items-center flex-1">
                   <div className="flex flex-col items-center">
-                    <div className={`w-12 h-12 rounded-full flex items-center justify-center mb-2 ${
-                      step.status === 'inProcess' 
-                        ? 'bg-primary text-primary-foreground' 
+                    <div className={`w-12 h-12 rounded-full flex items-center justify-center mb-2 ${step.status === 'inProcess'
+                        ? 'bg-primary text-primary-foreground'
                         : 'bg-muted text-muted-foreground'
-                    }`}>
+                      }`}>
                       {step.status === 'inProcess' ? '✓' : step.number}
                     </div>
                     <span className="text-xs text-center max-w-[120px] font-medium">
                       STEP {step.number}
                     </span>
-                    <span className={`text-xs mt-1 ${
-                      step.status === 'inProcess' ? 'text-primary' : 'text-orange-500'
-                    }`}>
+                    <span className={`text-xs mt-1 ${step.status === 'inProcess' ? 'text-primary' : 'text-orange-500'
+                      }`}>
                       {step.status === 'inProcess' ? t('claim.inProcess') : t('claim.pending')}
                     </span>
                     <span className="text-xs text-center max-w-[120px] mt-1">{step.label}</span>

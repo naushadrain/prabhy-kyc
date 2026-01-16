@@ -4,6 +4,7 @@ import { useLanguage } from '@/contexts/LanguageContext';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { ChevronLeft } from 'lucide-react';
+import { useState } from 'react';
 
 export const VehicleInsurancePlan = () => {
   const { t } = useLanguage();
@@ -15,12 +16,12 @@ export const VehicleInsurancePlan = () => {
     { number: 4, label: 'Vehicles Details', status: 'pending' },
     { number: 5, label: 'KYC Details', status: 'pending' },
   ];
-
+const [sidebarOpen, setSidebarOpen] = useState<boolean>(false);
   return (
     <div className="flex min-h-screen">
-      <Sidebar />
+      <Sidebar open={sidebarOpen} onClose={() => setSidebarOpen(false)} />
       <div className="flex-1 flex flex-col">
-        <Header />
+        <Header onMenuClick={() => setSidebarOpen(true)} />
         <main className="flex-1 p-8 bg-background">
           {/* Stepper */}
           <div className="mb-12">

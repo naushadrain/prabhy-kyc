@@ -19,15 +19,16 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { ChevronLeft, ChevronRight, Plus } from 'lucide-react';
+import { useState } from 'react';
 
 export const ClaimTracking = () => {
   const { t } = useLanguage();
-
+  const [sidebarOpen, setSidebarOpen] = useState<boolean>(false);
   return (
     <div className="flex min-h-screen">
-      <Sidebar />
+      <Sidebar open={sidebarOpen} onClose={() => setSidebarOpen(false)} />
       <div className="flex-1 flex flex-col">
-        <Header />
+        <Header onMenuClick={() => setSidebarOpen(true)} />
         <main className="flex-1 p-8 bg-background">
           <div className="flex justify-between items-center mb-6">
             <h1 className="text-2xl font-bold">{t('claimTracking.title')}</h1>
@@ -38,13 +39,13 @@ export const ClaimTracking = () => {
 
           <Tabs defaultValue="self" className="w-full">
             <TabsList className="bg-muted">
-              <TabsTrigger 
-                value="self" 
+              <TabsTrigger
+                value="self"
                 className="data-[state=active]:bg-background data-[state=active]:border-b-2 data-[state=active]:border-primary"
               >
                 {t('claimTracking.selfList')}
               </TabsTrigger>
-              <TabsTrigger 
+              <TabsTrigger
                 value="others"
                 className="data-[state=active]:bg-background data-[state=active]:border-b-2 data-[state=active]:border-primary"
               >

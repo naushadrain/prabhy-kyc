@@ -7,6 +7,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { User, MapPin } from 'lucide-react';
+import { useState } from 'react';
 
 export const KYCAddCorporate = () => {
   const { t } = useLanguage();
@@ -18,12 +19,12 @@ export const KYCAddCorporate = () => {
     { number: 4, label: t('kycCorporate.step4'), status: 'pending' },
     { number: 5, label: t('kycCorporate.step5'), status: 'pending' },
   ];
-
+  const [sidebarOpen, setSidebarOpen] = useState<boolean>(false);
   return (
     <div className="flex min-h-screen">
-      <Sidebar />
+      <Sidebar open={sidebarOpen} onClose={() => setSidebarOpen(false)} />
       <div className="flex-1 flex flex-col">
-        <Header />
+        <Header onMenuClick={() => setSidebarOpen(true)} />
         <main className="flex-1 p-8 bg-background">
           {/* Stepper */}
           <div className="mb-8">
@@ -31,19 +32,17 @@ export const KYCAddCorporate = () => {
               {steps.map((step, index) => (
                 <div key={step.number} className="flex items-center flex-1">
                   <div className="flex flex-col items-center">
-                    <div className={`w-12 h-12 rounded-full flex items-center justify-center mb-2 ${
-                      step.status === 'completed'
+                    <div className={`w-12 h-12 rounded-full flex items-center justify-center mb-2 ${step.status === 'completed'
                         ? 'bg-green-500 text-white'
-                        : step.status === 'inProcess' 
-                        ? 'bg-primary text-primary-foreground' 
-                        : 'bg-muted text-muted-foreground'
-                    }`}>
+                        : step.status === 'inProcess'
+                          ? 'bg-primary text-primary-foreground'
+                          : 'bg-muted text-muted-foreground'
+                      }`}>
                       {step.number}
                     </div>
                     <span className="text-xs text-center max-w-[100px] font-medium">{step.label}</span>
-                    <span className={`text-xs mt-1 ${
-                      step.status === 'completed' ? 'text-green-500' : step.status === 'inProcess' ? 'text-primary' : 'text-orange-500'
-                    }`}>
+                    <span className={`text-xs mt-1 ${step.status === 'completed' ? 'text-green-500' : step.status === 'inProcess' ? 'text-primary' : 'text-orange-500'
+                      }`}>
                       {step.status === 'completed' ? t('kycCorporate.completed') : step.status === 'inProcess' ? t('claim.inProcess') : t('claim.pending')}
                     </span>
                   </div>
@@ -76,7 +75,7 @@ export const KYCAddCorporate = () => {
                     <User className="w-5 h-5" />
                     <h2 className="text-lg font-semibold">{t('kycCorporate.basicInformation')}</h2>
                   </div>
-                  
+
                   <div className="grid md:grid-cols-3 gap-4">
                     <div>
                       <Label htmlFor="fullName">{t('kycCorporate.fullName')} *</Label>
@@ -98,7 +97,7 @@ export const KYCAddCorporate = () => {
                         </SelectContent>
                       </Select>
                     </div>
-                    
+
                     <div>
                       <Label htmlFor="incomeSource">{t('kycCorporate.incomeSource')} *</Label>
                       <Select>
@@ -119,7 +118,7 @@ export const KYCAddCorporate = () => {
                       <Label htmlFor="contactPerson">{t('kycCorporate.contactPerson')} *</Label>
                       <Input id="contactPerson" className="mt-2" />
                     </div>
-                    
+
                     <div>
                       <Label htmlFor="email">{t('kycCorporate.emailAddress')} *</Label>
                       <Input id="email" type="email" className="mt-2" />
@@ -132,7 +131,7 @@ export const KYCAddCorporate = () => {
                       <Label htmlFor="mobile">{t('kycCorporate.mobileNo')} *</Label>
                       <Input id="mobile" type="tel" className="mt-2" />
                     </div>
-                    
+
                     <div>
                       <Label htmlFor="panVat">{t('kycCorporate.panVatNo')} *</Label>
                       <Input id="panVat" className="mt-2" />
@@ -145,7 +144,7 @@ export const KYCAddCorporate = () => {
                       <Label htmlFor="issueDateBS">{t('kycCorporate.issueDateBS')} *</Label>
                       <Input id="issueDateBS" className="mt-2" />
                     </div>
-                    
+
                     <div>
                       <Label htmlFor="registrationNo">{t('kycCorporate.registrationNo')} *</Label>
                       <Input id="registrationNo" className="mt-2" />
@@ -158,7 +157,7 @@ export const KYCAddCorporate = () => {
                       <Label htmlFor="regDateBS">{t('kycCorporate.regDateBS')} *</Label>
                       <Input id="regDateBS" className="mt-2" />
                     </div>
-                    
+
                     <div>
                       <Label htmlFor="regOffice">{t('kycCorporate.regOffice')} *</Label>
                       <Input id="regOffice" className="mt-2" />
@@ -172,7 +171,7 @@ export const KYCAddCorporate = () => {
                     <MapPin className="w-5 h-5" />
                     <h2 className="text-lg font-semibold">{t('kycCorporate.address')}</h2>
                   </div>
-                  
+
                   <div className="grid md:grid-cols-3 gap-4">
                     <div>
                       <Label htmlFor="country">{t('kycCorporate.country')} *</Label>
@@ -209,7 +208,7 @@ export const KYCAddCorporate = () => {
                         </SelectContent>
                       </Select>
                     </div>
-                    
+
                     <div>
                       <Label htmlFor="municipality">{t('kycCorporate.municipality')} *</Label>
                       <Input id="municipality" className="mt-2" />
@@ -230,7 +229,7 @@ export const KYCAddCorporate = () => {
                         </SelectContent>
                       </Select>
                     </div>
-                    
+
                     <div>
                       <Label htmlFor="address">{t('kycCorporate.addressField')} *</Label>
                       <Input id="address" className="mt-2" />

@@ -6,15 +6,16 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Phone, Mail, MapPin } from 'lucide-react';
 import { Facebook, Instagram } from 'lucide-react';
+import { useState } from 'react';
 
 export const Contact = () => {
   const { t } = useLanguage();
-
+const [sidebarOpen, setSidebarOpen] = useState<boolean>(false);
   return (
     <div className="flex min-h-screen">
-      <Sidebar />
+      <Sidebar open={sidebarOpen} onClose={() => setSidebarOpen(false)} />
       <div className="flex-1 flex flex-col">
-        <Header />
+        <Header onMenuClick={() => setSidebarOpen(true)} />
         <main className="flex-1 p-8">
           <div className="text-center mb-12">
             <h1 className="text-4xl font-bold mb-2">{t('contact.title')}</h1>

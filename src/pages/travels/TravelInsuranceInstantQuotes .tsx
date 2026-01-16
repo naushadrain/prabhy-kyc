@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import { useForm, useFieldArray, Controller } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -377,8 +377,8 @@ export const TravelInsuranceInstantQuotes = () => {
         return;
       }
 
-      setSubmitAlert({ type: "success", text: "Travel policy created successfully ✅" });
-      window.alert("Travel policy created successfully ✅");
+      setSubmitAlert({ type: "success", text: "Travel policy created successfully " });
+      window.alert("Travel policy created successfully ");
 
       // optional: navigate success page
       // navigate("/travel-policy-success");
@@ -397,12 +397,12 @@ export const TravelInsuranceInstantQuotes = () => {
 
   const submitDisabled =
     submitLoading || premiumLoading || isSubmitting || !!premiumError || !premiumSnapshot;
-
+const [sidebarOpen, setSidebarOpen] = useState<boolean>(false);
   return (
     <div className="flex min-h-screen">
-      <Sidebar />
+      <Sidebar open={sidebarOpen} onClose={() => setSidebarOpen(false)} />
       <div className="flex-1 flex flex-col">
-        <Header />
+        <Header onMenuClick={() => setSidebarOpen(true)} />
 
         <main className="flex-1 p-8 bg-background">
           <div className="max-w-4xl mx-auto">

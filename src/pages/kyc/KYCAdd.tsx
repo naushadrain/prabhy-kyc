@@ -375,12 +375,12 @@ export const KYCAdd = () => {
         if (mapped.issue_date_ad) {
           try {
             mapped.issue_date_bs = adIsoToBsYMD(mapped.issue_date_ad);
-          } catch {}
+          } catch { }
         }
         if (mapped.dob_ad) {
           try {
             mapped.dob_bs = adIsoToBsYMD(mapped.dob_ad);
-          } catch {}
+          } catch { }
         }
 
         // normalize father_name_nep spaces
@@ -753,12 +753,12 @@ export const KYCAdd = () => {
   };
 
   const BannerIcon = banner?.type === "success" ? CheckCircle2 : banner?.type === "error" ? AlertCircle : Info;
-
+  const [sidebarOpen, setSidebarOpen] = useState<boolean>(false);
   return (
     <div className="flex min-h-screen">
-      <Sidebar />
+      <Sidebar open={sidebarOpen} onClose={() => setSidebarOpen(false)} />
       <div className="flex-1 flex flex-col">
-        <Header />
+        <Header onMenuClick={() => setSidebarOpen(true)} />
 
         <main className="flex-1 p-6 md:p-8 bg-background">
           <form onSubmit={handleSubmit(onValidSubmit, onInvalidSubmit)} className="space-y-8">

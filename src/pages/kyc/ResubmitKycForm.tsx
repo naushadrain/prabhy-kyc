@@ -641,13 +641,13 @@ export default function ResubmitKycForm() {
   const img = apiResponse?.kyc_detail?.customer_image;
 
   const requiredLabel = (type: DocType) => (docType === type ? "required" : "optional");
-
+  const [sidebarOpen, setSidebarOpen] = useState<boolean>(false);
   return (
     <div className="flex min-h-screen">
-      <Sidebar />
+      <Sidebar open={sidebarOpen} onClose={() => setSidebarOpen(false)} />
 
       <div className="flex-1 flex flex-col">
-        <Header />
+        <Header onMenuClick={() => setSidebarOpen(true)} />
 
         <main className="flex-1 p-8">
           <h1 className="text-4xl font-bold mb-8">
@@ -1029,7 +1029,7 @@ export default function ResubmitKycForm() {
                     onChange={validateAndSetImage("passportBack", setPassportBackFile)}
                   />
 
-                 
+
                 </div>
 
                 {/* Actions */}
