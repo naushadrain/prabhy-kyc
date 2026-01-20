@@ -1,3 +1,4 @@
+// ✅ src/pages/Dashboard.tsx
 import React, { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
@@ -6,15 +7,23 @@ import { Header } from "@/components/Header";
 import { InsuranceCard } from "@/components/InsuranceCard";
 import { useLanguage } from "@/contexts/LanguageContext";
 
-import { AlertCircle, CheckCircle2, XCircle, Info } from "lucide-react";
+import { AlertCircle, CheckCircle2, XCircle, Info, ShieldAlert } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
+
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
 
 import { kycStatus } from "@/api/kyc/kycStatus";
 import { KycNotes } from "@/api/kyc/kycNotes";
 
 type KycStatusResponse = {
-  kyc_Status?: string;
+  kyc_Status?: string; // Pending | Verified | Rejected ...
   process_result?: boolean;
   [key: string]: any;
 };
@@ -30,8 +39,13 @@ export const Dashboard = () => {
   const { t } = useLanguage();
   const navigate = useNavigate();
 
-  //  sidebar open state
+  // sidebar open state
   const [sidebarOpen, setSidebarOpen] = useState(false);
+
+  // modal state
+  const [kycModalOpen, setKycModalOpen] = useState(false);
+  const [kycModalMsg, setKycModalMsg] = useState("");
+  const [pendingRoute, setPendingRoute] = useState<string | null>(null);
 
   const [loading, setLoading] = useState(false);
   const [kycData, setKycData] = useState<KycStatusResponse | null>(null);
@@ -50,7 +64,8 @@ export const Dashboard = () => {
         if (!mounted) return;
 
         if (statusRes.status === "fulfilled") {
-          const data: KycStatusResponse = (statusRes.value as any)?.data ?? (statusRes.value as any);
+          const data: KycStatusResponse =
+            (statusRes.value as any)?.data ?? (statusRes.value as any);
           setKycData(data);
         }
 
@@ -72,10 +87,21 @@ export const Dashboard = () => {
     };
   }, []);
 
+  // -----------------------------
+  // normalize status
   const statusRaw = kycData?.kyc_Status ?? "Unknown";
   const status = String(statusRaw).trim().toLowerCase();
-  const isRejected = status === "rejected" || status === "failed";
 
+  const isVerified = status === "verified" || status === "approved";
+  const isRejected = status === "rejected" || status === "failed";
+  const isPending =
+    status === "pending" ||
+    status === "under review" ||
+    status === "in review" ||
+    status === "processing" ||
+    status === "submitted";
+
+  // latest note
   const latestNoteWithMessage = useMemo(() => {
     const withComments = (kycNotes || [])
       .filter((n) => String(n?.comments ?? "").trim().length > 0)
@@ -91,6 +117,8 @@ export const Dashboard = () => {
   const noteMessage = String(latestNoteWithMessage?.comments ?? "").trim();
   const noteType = String(latestNoteWithMessage?.note_Type ?? "").trim().toLowerCase();
 
+  // -----------------------------
+  // alert styles + mapping
   const stylesFor = (variant: "success" | "warning" | "danger" | "info") => {
     return variant === "success"
       ? { alert: "mb-6 bg-emerald-50 border-emerald-200", text: "text-emerald-700" }
@@ -106,28 +134,22 @@ export const Dashboard = () => {
     let message = "KYC status is not available right now...";
     let Icon = Info;
 
-    if (status === "verified" || status === "approved") {
+    if (isVerified) {
       variant = "success";
       message = "Your KYC is verified. You can proceed with all services...";
       Icon = CheckCircle2;
-    } else if (status === "rejected" || status === "failed") {
+    } else if (isRejected) {
       variant = "danger";
       message = "Your KYC was rejected. Please re-submit your documents...";
       Icon = XCircle;
-    } else if (
-      status === "pending" ||
-      status === "under review" ||
-      status === "in review" ||
-      status === "processing" ||
-      status === "submitted"
-    ) {
+    } else if (isPending) {
       variant = "warning";
       message = "Your KYC information has been submitted and is under review...";
       Icon = AlertCircle;
     }
 
     return { variant, message, Icon, styles: stylesFor(variant) };
-  }, [status]);
+  }, [isVerified, isRejected, isPending]);
 
   const notesUi = useMemo(() => {
     let variant: "success" | "warning" | "danger" | "info" = "info";
@@ -156,13 +178,63 @@ export const Dashboard = () => {
 
   const statusLabel = statusRaw && statusRaw !== "Unknown" ? String(statusRaw) : "Unknown";
 
+  // -----------------------------
+  // ✅ Card click guard
+  function guardKycThenNavigate(to: string) {
+    // if KYC not loaded yet
+    if (loading) {
+      setKycModalMsg("Please wait… KYC status is loading.");
+      setPendingRoute(to);
+      setKycModalOpen(true);
+      return;
+    }
+
+    // if API error
+    if (error) {
+      setKycModalMsg("KYC status could not be loaded. Please try again later.");
+      setPendingRoute(null);
+      setKycModalOpen(true);
+      return;
+    }
+
+    // allow only verified
+    if (!isVerified) {
+      const msg = isRejected
+        ? "Your KYC is rejected. Please re-submit your KYC first to access all features."
+        : "Please wait. Your KYC must be verified first to access all features.";
+
+      // show note message if available
+      const finalMsg = noteMessage ? `${msg}\n\nNote: ${noteMessage}` : msg;
+
+      setKycModalMsg(finalMsg);
+      setPendingRoute(to);
+      setKycModalOpen(true);
+      return;
+    }
+
+    // verified -> go
+    navigate(to);
+  }
+
+  function closeModal() {
+    setKycModalOpen(false);
+    setPendingRoute(null);
+  }
+
+  function goToKyc() {
+    setKycModalOpen(false);
+    setPendingRoute(null);
+    // if rejected -> directly re-submit
+    navigate(isRejected ? "/kyc-add" : "/kyc-check");
+  }
+
   return (
     <div className="flex min-h-screen">
-      {/*  responsive sidebar */}
+      {/* responsive sidebar */}
       <Sidebar open={sidebarOpen} onClose={() => setSidebarOpen(false)} />
 
       <div className="flex-1 flex flex-col">
-        {/*  header with hamburger */}
+        {/* header with hamburger */}
         <Header onMenuClick={() => setSidebarOpen(true)} />
 
         <main className="flex-1 p-6 lg:p-9">
@@ -171,6 +243,7 @@ export const Dashboard = () => {
             <span className="text-secondary">Insurance Policy</span>
           </h1>
 
+          {/* Error */}
           {error && (
             <Alert className="mb-6 bg-destructive/10 border-destructive">
               <XCircle className="h-4 w-4 text-destructive" />
@@ -178,8 +251,10 @@ export const Dashboard = () => {
             </Alert>
           )}
 
+          {/* Loading */}
           {loading && <div className="mb-6 text-sm opacity-70">Loading KYC info...</div>}
 
+          {/* Alert */}
           {!error && !loading && (
             <Alert className={ui.styles.alert}>
               <ui.Icon className={`h-4 w-4 ${ui.styles.text}`} />
@@ -199,26 +274,85 @@ export const Dashboard = () => {
             </Alert>
           )}
 
+          {/* ✅ Cards (click guarded by KYC) */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <InsuranceCard
-              type="motor"
-              title={t("insurance.motor")}
-              subtitle={`${t("insurance.vehicle")} • KYC: ${statusLabel}`}
-              to="/motor-insurance-plan"
-            />
-            <InsuranceCard
-              type="travel"
-              title={t("insurance.travel")}
-              subtitle={t("insurance.travelIns")}
-              to="/travel-insurance-coverage"
-            />
-            <InsuranceCard
-              type="home"
-              title={t("insurance.home")}
-              subtitle={t("insurance.homeIns")}
-              to="/home-insurance"
-            />
+            <div
+              role="button"
+              tabIndex={0}
+              onClick={() => guardKycThenNavigate("/motor-insurance-plan")}
+              onKeyDown={(e) => e.key === "Enter" && guardKycThenNavigate("/motor-insurance-plan")}
+              className="cursor-pointer"
+            >
+              <InsuranceCard
+                type="motor"
+                title={t("insurance.motor")}
+                subtitle={`${t("insurance.vehicle")} • KYC: ${statusLabel}`}
+                to="#"
+              />
+            </div>
+
+            <div
+              role="button"
+              tabIndex={0}
+              onClick={() => guardKycThenNavigate("/travel-insurance-coverage")}
+              onKeyDown={(e) => e.key === "Enter" && guardKycThenNavigate("/travel-insurance-coverage")}
+              className="cursor-pointer"
+            >
+              <InsuranceCard
+                type="travel"
+                title={t("insurance.travel")}
+                subtitle={t("insurance.travelIns")}
+                to="#"
+              />
+            </div>
+
+            <div
+              role="button"
+              tabIndex={0}
+              onClick={() => guardKycThenNavigate("/home-insurance")}
+              onKeyDown={(e) => e.key === "Enter" && guardKycThenNavigate("/home-insurance")}
+              className="cursor-pointer"
+            >
+              <InsuranceCard
+                type="home"
+                title={t("insurance.home")}
+                subtitle={t("insurance.homeIns")}
+                to="#"
+              />
+            </div>
           </div>
+
+          {/* ✅ Modal */}
+          <Dialog open={kycModalOpen} onOpenChange={(v) => !v && closeModal()}>
+            <DialogContent className="sm:max-w-md">
+              <DialogHeader>
+                <DialogTitle className="flex items-center gap-2">
+                  <ShieldAlert className="w-5 h-5" />
+                  KYC Verification Required
+                </DialogTitle>
+              </DialogHeader>
+
+              <div className="text-sm whitespace-pre-line text-muted-foreground">
+                {kycModalMsg || "Please wait. Your KYC must be verified first to access all features."}
+              </div>
+
+              <DialogFooter className="gap-2 sm:gap-0">
+                <Button variant="outline" onClick={closeModal}>
+                  Close
+                </Button>
+
+                {/* show KYC button always (helpful) */}
+                <Button onClick={goToKyc}>
+                  {isRejected ? "Re-submit KYC" : "Go to KYC"}
+                </Button>
+
+                {/* optional: if you want, allow "Continue" only when verified */}
+                {/* {isVerified && pendingRoute && (
+                  <Button onClick={() => navigate(pendingRoute)}>Continue</Button>
+                )} */}
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
         </main>
       </div>
     </div>
