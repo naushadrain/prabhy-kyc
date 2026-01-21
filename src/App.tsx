@@ -43,6 +43,9 @@ import ForgotPasswordVerifyOtpPage from "./pages/forgot/ForgotPasswordVerifyOtpP
 import ResetPasswordPage from "./pages/changePassword/ResetPasswordPage";
 import ResubmitKycForm from "./pages/kyc/ResubmitKycForm";
 import { TravelInsuranceInstantQuotes } from "./pages/travels/TravelInsuranceInstantQuotes ";
+import Travels from "./pages/publicTravels/travels";
+import { TravelCoverage } from "./pages/publicTravels/CoverPage";
+import { PremiumSummary } from "./pages/publicTravels/PremiumSummary";
 
 const queryClient = new QueryClient();
 
@@ -65,6 +68,10 @@ const App = () => (
             <Route path="/forgot-password" element={<ForgotPasswordPage />} />
             <Route path="/reset-password" element={<ResetPasswordPage />} />
             <Route path="/faq" element={<FAQ />} />
+
+            <Route path="/travels" element={<Travels />} />
+            <Route path="/travel-coverage" element={<TravelCoverage />} />
+            <Route path="/premium-summary" element={<PremiumSummary />} />
 
             {/* Protected routes */}
             <Route element={<ProtectedRoute />}>

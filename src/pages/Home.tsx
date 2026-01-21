@@ -13,9 +13,9 @@ export const Home = () => {
       {/* Header */}
       <header className="border-b border-border px-8 py-4 flex items-center justify-between">
         <div>
-          <img 
+          <img
             src={logo}
-            alt="Prabhu Insurance" 
+            alt="Prabhu Insurance"
             className="h-12"
           />
         </div>
@@ -35,33 +35,33 @@ export const Home = () => {
         </h1>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-24">
-          <InsuranceCard 
-            type="motor" 
+          <InsuranceCard
+            type="motor"
             title={t('insurance.motor')}
             subtitle={t('insurance.vehicle')}
             to="/vehicle-insurance"
           />
-          <InsuranceCard 
-            type="travel" 
+          <InsuranceCard
+            type="travel"
             title={t('insurance.travel')}
             subtitle={t('insurance.travelIns')}
-            to="/travel-insurance"
+            to="/travel-coverage"
           />
-          <InsuranceCard 
-            type="home" 
+          <InsuranceCard
+            type="home"
             title={t('insurance.home')}
             subtitle={t('insurance.homeIns')}
             to="/home-insurance"
           />
         </div>
       </section>
-      
+
 
       {/* Why Pick Us Section */}
       <section className="bg-accent py-20">
         <div className="max-w-7xl mx-auto px-8">
           <h2 className="text-4xl font-bold text-center mb-16">{t('home.whyPickUs')}</h2>
-          
+
           <div className="grid grid-cols-1 md:grid-cols-3 gap-12">
             <div className="text-center">
               <div className="w-64 h-64 bg-blue-100 rounded-full mx-auto mb-6 flex items-center justify-center">

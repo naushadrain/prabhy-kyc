@@ -122,6 +122,7 @@ export const Login = () => {
                 type="travel"
                 title={t("insurance.travel")}
                 subtitle={t("insurance.travelIns")}
+                to="/travel-coverage"
               />
               <InsuranceCard
                 type="home"
@@ -133,7 +134,7 @@ export const Login = () => {
             {/*  md+ : normal grid */}
             <div className="hidden md:grid grid-cols-2 lg:grid-cols-3 gap-6">
               <InsuranceCard type="motor" title={t("insurance.motor")} subtitle={t("insurance.vehicle")} />
-              <InsuranceCard type="travel" title={t("insurance.travel")} subtitle={t("insurance.travelIns")} />
+              <InsuranceCard type="travel" title={t("insurance.travel")} subtitle={t("insurance.travelIns")} to="/travel-coverage" />
               <InsuranceCard type="home" title={t("insurance.home")} subtitle={t("insurance.homeIns")} />
             </div>
           </div>
