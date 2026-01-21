@@ -22,7 +22,7 @@ import { Gender } from "./getcatalogue/Gender";
 import { Honour } from "./getcatalogue/Honour";
 import { IdentificationType } from "./getcatalogue/IdentificationType";
 import { Occupation } from "./getcatalogue/Occupation";
-
+import { NEPAL_DISTRICTS_77 } from "@/lib/district";
 // schema + helpers
 import {
   kycSchema,
@@ -32,7 +32,7 @@ import {
   adIsoToBsYMD,
   normalizeSpaces,
 } from "./validation/kycSchema";
-
+import Districts from "./District";
 // API
 import { submitCustomerKyc, type CustomerKycFormEntity } from "@/api/kyc/customerKycClient";
 import { kycStatus } from "@/api/kyc/kycStatus";
@@ -115,7 +115,8 @@ function buildStatusBanner(status: string): BannerState {
     return {
       type: "success",
       title: "KYC approved",
-      message: "Your KYC has been approved. You cannot edit or submit again.",
+      // message: "Your KYC has been approved. You cannot edit or submit again.",
+      message: "",
     };
   }
   return null;
@@ -884,10 +885,34 @@ export const KYCAdd = () => {
                   {errors.id_no && <p className="text-xs text-red-500 mt-1">{errors.id_no.message}</p>}
                 </div>
 
+                {/* ✅ Replace your Issued District input with this */}
                 <div>
                   <Label>Issued District *</Label>
-                  <Input className="mt-2" {...register("issued_district")} />
-                  {errors.issued_district && <p className="text-xs text-red-500 mt-1">{errors.issued_district.message}</p>}
+
+                  <Select
+                    value={watch("issued_district") || ""}
+                    onValueChange={(v) =>
+                      setValue("issued_district", v, { shouldValidate: true, shouldDirty: true })
+                    }
+                  >
+                    <SelectTrigger className="mt-2">
+                      <SelectValue placeholder="Select district" />
+                    </SelectTrigger>
+
+                    <SelectContent className="max-h-72">
+                      {NEPAL_DISTRICTS_77.map((d) => (
+                        <SelectItem key={d} value={d}>
+                          {d}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+
+                  {errors.issued_district && (
+                    <p className="text-xs text-red-500 mt-1">
+                      {errors.issued_district.message}
+                    </p>
+                  )}
                 </div>
 
                 <div>
