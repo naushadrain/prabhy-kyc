@@ -71,7 +71,6 @@ function tryParseJson(text: string) {
 }
 
 function normalizeUnknownError(err: any): string[] {
-  // createTravelPolicy might throw text JSON
   const msg = String(err?.message ?? err ?? "").trim();
 
   if (msg.startsWith("{") || msg.startsWith("[")) {
@@ -79,7 +78,6 @@ function normalizeUnknownError(err: any): string[] {
     if (obj) return extractApiErrors(obj);
   }
 
-  // if error itself is object with error_list
   if (err && typeof err === "object") {
     const errs = extractApiErrors(err);
     if (errs.length) return errs;
@@ -88,7 +86,6 @@ function normalizeUnknownError(err: any): string[] {
   return msg ? [msg] : ["Request failed"];
 }
 
-//  map server errors to form fields (NO JSON show, only input errors)
 function mapServerErrorsToFields(
   messages: string[],
   setError: ReturnType<typeof useForm<any>>["setError"]
@@ -100,17 +97,14 @@ function mapServerErrorsToFields(
       setError("proposed_date", { type: "server", message: m });
       continue;
     }
-
     if (lower.includes("policy_info.issued_date_ad") || lower.includes("issued date")) {
       setError("issued_date_ad", { type: "server", message: m });
       continue;
     }
-
     if (lower.includes("policy_info.effective_date") || lower.includes("effective date")) {
       setError("effective_date", { type: "server", message: m });
       continue;
     }
-
     if (lower.includes("policy_info.expiry_date") || lower.includes("expiry date")) {
       setError("expiry_date", { type: "server", message: m });
       continue;
@@ -189,7 +183,6 @@ const formSchema = z
     const effective = parseISO(data.effective_date);
     const expiry = parseISO(data.expiry_date);
 
-    //  Issued Date must be till Today (not future)
     if (issuedAD && issuedAD.getTime() > today.getTime()) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
@@ -198,7 +191,6 @@ const formSchema = z
       });
     }
 
-    //  Proposed Date must not be before Issued Date
     if (issuedAD && proposed && proposed.getTime() < issuedAD.getTime()) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
@@ -207,7 +199,6 @@ const formSchema = z
       });
     }
 
-    //  Effective Date must not be before Issued Date
     if (issuedAD && effective && effective.getTime() < issuedAD.getTime()) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
@@ -216,7 +207,6 @@ const formSchema = z
       });
     }
 
-    //  Expiry Date must be after Effective Date
     if (effective && expiry && expiry.getTime() <= effective.getTime()) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
@@ -240,6 +230,9 @@ export const TravelInsuranceInstantQuotes = () => {
   const { t } = useLanguage();
   const navigate = useNavigate();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+
+  // ✅ SUCCESS dialog/banner state
+  const [successModal, setSuccessModal] = useState<null | { title: string; text: string }>(null);
 
   const {
     control,
@@ -358,70 +351,66 @@ export const TravelInsuranceInstantQuotes = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [haveChildren]);
 
- function round2(n: any) {
-  const x = Number(n ?? 0);
-  if (!Number.isFinite(x)) return 0;
-  return Math.round((x + Number.EPSILON) * 100) / 100;
-}
+  function round2(n: any) {
+    const x = Number(n ?? 0);
+    if (!Number.isFinite(x)) return 0;
+    return Math.round((x + Number.EPSILON) * 100) / 100;
+  }
 
-function applyPremium(resp: any) {
-  setPremiumSnapshot(resp);
+  function applyPremium(resp: any) {
+    setPremiumSnapshot(resp);
 
-  //  always store with 2 decimals
-  const rate = round2(resp?.rate);
-  const currencyPremium = round2(resp?.currency_amount);
-  const premiumNpr = round2(resp?.premium_in_npr);
+    const rate = round2(resp?.rate);
+    const currencyPremium = round2(resp?.currency_amount);
+    const premiumNpr = round2(resp?.premium_in_npr);
 
-  const currencySuminsured = round2(resp?.currency_suminsured);
-  const suminsuredNpr = round2(resp?.suminsured_in_npr);
+    const currencySuminsured = round2(resp?.currency_suminsured);
+    const suminsuredNpr = round2(resp?.suminsured_in_npr);
 
-  const discountAmt = round2(resp?.direct_discount_amount);
-  const taxableRaw = premiumNpr - discountAmt;
-  const taxable = round2(taxableRaw > 0 ? taxableRaw : premiumNpr);
+    const discountAmt = round2(resp?.direct_discount_amount);
+    const taxableRaw = premiumNpr - discountAmt;
+    const taxable = round2(taxableRaw > 0 ? taxableRaw : premiumNpr);
 
-  const stamp = round2(resp?.stamp_duty);
-  const vatPercent = round2(resp?.vat_percent);
-  const vatAmount = round2(resp?.vat_amount);
-  const total = round2(resp?.total_premium_with_vat);
+    const stamp = round2(resp?.stamp_duty);
+    const vatPercent = round2(resp?.vat_percent);
+    const vatAmount = round2(resp?.vat_amount);
+    const total = round2(resp?.total_premium_with_vat);
 
-  setValue("currency_rate", rate, { shouldValidate: true });
-  setValue("currency_premium", currencyPremium, { shouldValidate: true });
-  setValue("premium", premiumNpr, { shouldValidate: true });
+    setValue("currency_rate", rate, { shouldValidate: true });
+    setValue("currency_premium", currencyPremium, { shouldValidate: true });
+    setValue("premium", premiumNpr, { shouldValidate: true });
 
-  setValue("currency_suminsured", currencySuminsured, { shouldValidate: true });
-  setValue("total_suminsured", suminsuredNpr, { shouldValidate: true });
+    setValue("currency_suminsured", currencySuminsured, { shouldValidate: true });
+    setValue("total_suminsured", suminsuredNpr, { shouldValidate: true });
 
-  setValue("suminsured", suminsuredNpr, { shouldValidate: true });
-  setValue("premium_amount", premiumNpr, { shouldValidate: true });
+    setValue("suminsured", suminsuredNpr, { shouldValidate: true });
+    setValue("premium_amount", premiumNpr, { shouldValidate: true });
 
-  //  FIX: taxable_amount only 2 decimals
-  setValue("taxable_amount", taxable, { shouldValidate: true });
+    setValue("taxable_amount", taxable, { shouldValidate: true });
 
-  setValue("stamp_duty", stamp, { shouldValidate: true });
-  setValue("vat_percent", vatPercent, { shouldValidate: true });
-  setValue("vat_amount", vatAmount, { shouldValidate: true });
-  setValue("total_amount", total, { shouldValidate: true });
+    setValue("stamp_duty", stamp, { shouldValidate: true });
+    setValue("vat_percent", vatPercent, { shouldValidate: true });
+    setValue("vat_amount", vatAmount, { shouldValidate: true });
+    setValue("total_amount", total, { shouldValidate: true });
 
-  // optional persist
-  localStorage.setItem(
-    "travel.premiumSnapshot",
-    JSON.stringify({
-      ...resp,
-      rate,
-      currency_amount: currencyPremium,
-      premium_in_npr: premiumNpr,
-      currency_suminsured: currencySuminsured,
-      suminsured_in_npr: suminsuredNpr,
-      direct_discount_amount: discountAmt,
-      stamp_duty: stamp,
-      vat_percent: vatPercent,
-      vat_amount: vatAmount,
-      total_premium_with_vat: total,
-      taxable_amount: taxable,
-    })
-  );
-}
-
+    localStorage.setItem(
+      "travel.premiumSnapshot",
+      JSON.stringify({
+        ...resp,
+        rate,
+        currency_amount: currencyPremium,
+        premium_in_npr: premiumNpr,
+        currency_suminsured: currencySuminsured,
+        suminsured_in_npr: suminsuredNpr,
+        direct_discount_amount: discountAmt,
+        stamp_duty: stamp,
+        vat_percent: vatPercent,
+        vat_amount: vatAmount,
+        total_premium_with_vat: total,
+        taxable_amount: taxable,
+      })
+    );
+  }
 
   /* auto premium */
   React.useEffect(() => {
@@ -532,10 +521,10 @@ function applyPremium(resp: any) {
         },
         child_info: v.have_children
           ? v.child_info.map((c) => ({
-              children_name: c.children_name,
-              children_dob: c.children_dob,
-              children_passport: c.children_passport,
-            }))
+            children_name: c.children_name,
+            children_dob: c.children_dob,
+            children_passport: c.children_passport,
+          }))
           : [],
       };
 
@@ -543,19 +532,22 @@ function applyPremium(resp: any) {
 
       const serverMessages = extractApiErrors(resp);
       if (resp?.process_result === false || serverMessages.length) {
-        //  show errors on inputs only (no JSON)
         mapServerErrorsToFields(serverMessages, setError);
         setSubmitBanner("Please correct highlighted fields.");
         return;
       }
 
-      //  success => reset + clear + redirect
+      // ✅ SUCCESS: show modal/banner first
+      setSuccessModal({
+        title: "Success",
+        text: "Travel policy created successfully.",
+      });
+
+      // ✅ reset & clear (do NOT redirect yet)
       reset();
       localStorage.removeItem("travel.coveragePlan");
       localStorage.removeItem("travel.coverageDetails");
       localStorage.removeItem("travel.premiumSnapshot");
-
-      navigate("/dashboard", { replace: true });
     } catch (err: any) {
       const msgs = normalizeUnknownError(err);
       mapServerErrorsToFields(msgs, setError);
@@ -591,8 +583,29 @@ function applyPremium(resp: any) {
 
             <h1 className="text-2xl font-bold mb-6">Instant Quotes</h1>
 
-            {/* only small banner - no JSON, no list */}
-            {submitBanner && (
+            {/* ✅ TOP SUCCESS ALERT (with OK button) */}
+            {successModal && (
+              <div className="mb-6 rounded-lg border border-green-200 bg-green-50 p-4 text-sm text-green-800">
+                <div className="flex items-start justify-between gap-3">
+                  <div>
+                    <div className="font-semibold">{successModal.title}</div>
+                    <div className="mt-1">{successModal.text}</div>
+                  </div>
+                  <Button
+                    type="button"
+                    onClick={() => {
+                      setSuccessModal(null);
+                      navigate("/dashboard", { replace: true });
+                    }}
+                  >
+                    OK
+                  </Button>
+                </div>
+              </div>
+            )}
+
+            {/* small error banner */}
+            {submitBanner && !successModal && (
               <div className="mb-6 rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-700">
                 {submitBanner}
               </div>
@@ -653,31 +666,41 @@ function applyPremium(resp: any) {
                   <div>
                     <Label>Issued Date (BS) *</Label>
                     <Input className="mt-2" {...register("issued_date_bs")} placeholder="2082-09-03" />
-                    {errors.issued_date_bs && <p className="mt-1 text-xs text-red-600">{errors.issued_date_bs.message}</p>}
+                    {errors.issued_date_bs && (
+                      <p className="mt-1 text-xs text-red-600">{errors.issued_date_bs.message}</p>
+                    )}
                   </div>
 
                   <div>
                     <Label>Issued Date (AD) *</Label>
                     <Input type="date" className="mt-2" {...register("issued_date_ad")} max={maxIssued} />
-                    {errors.issued_date_ad && <p className="mt-1 text-xs text-red-600">{errors.issued_date_ad.message}</p>}
+                    {errors.issued_date_ad && (
+                      <p className="mt-1 text-xs text-red-600">{errors.issued_date_ad.message}</p>
+                    )}
                   </div>
 
                   <div>
                     <Label>Proposed Date *</Label>
                     <Input type="date" className="mt-2" {...register("proposed_date")} min={minProposed} />
-                    {errors.proposed_date && <p className="mt-1 text-xs text-red-600">{errors.proposed_date.message}</p>}
+                    {errors.proposed_date && (
+                      <p className="mt-1 text-xs text-red-600">{errors.proposed_date.message}</p>
+                    )}
                   </div>
 
                   <div>
                     <Label>Effective Date *</Label>
                     <Input type="date" className="mt-2" {...register("effective_date")} min={minEffective} />
-                    {errors.effective_date && <p className="mt-1 text-xs text-red-600">{errors.effective_date.message}</p>}
+                    {errors.effective_date && (
+                      <p className="mt-1 text-xs text-red-600">{errors.effective_date.message}</p>
+                    )}
                   </div>
 
                   <div>
                     <Label>Expiry Date *</Label>
                     <Input type="date" className="mt-2" {...register("expiry_date")} min={minExpiry} />
-                    {errors.expiry_date && <p className="mt-1 text-xs text-red-600">{errors.expiry_date.message}</p>}
+                    {errors.expiry_date && (
+                      <p className="mt-1 text-xs text-red-600">{errors.expiry_date.message}</p>
+                    )}
                   </div>
                 </CardContent>
               </Card>
@@ -691,25 +714,33 @@ function applyPremium(resp: any) {
                   <div>
                     <Label>Passport Number *</Label>
                     <Input className="mt-2" {...register("passport_number")} />
-                    {errors.passport_number && <p className="mt-1 text-xs text-red-600">{errors.passport_number.message}</p>}
+                    {errors.passport_number && (
+                      <p className="mt-1 text-xs text-red-600">{errors.passport_number.message}</p>
+                    )}
                   </div>
 
                   <div>
                     <Label>Date of Birth (AD) *</Label>
                     <Input type="date" className="mt-2" {...register("date_of_birth_AD")} />
-                    {errors.date_of_birth_AD && <p className="mt-1 text-xs text-red-600">{errors.date_of_birth_AD.message}</p>}
+                    {errors.date_of_birth_AD && (
+                      <p className="mt-1 text-xs text-red-600">{errors.date_of_birth_AD.message}</p>
+                    )}
                   </div>
 
                   <div>
                     <Label>Phone Number *</Label>
                     <Input className="mt-2" {...register("phone_number")} />
-                    {errors.phone_number && <p className="mt-1 text-xs text-red-600">{errors.phone_number.message}</p>}
+                    {errors.phone_number && (
+                      <p className="mt-1 text-xs text-red-600">{errors.phone_number.message}</p>
+                    )}
                   </div>
 
                   <div>
                     <Label>Country Code *</Label>
                     <Input className="mt-2" {...register("country_code")} placeholder="CA" />
-                    {errors.country_code && <p className="mt-1 text-xs text-red-600">{errors.country_code.message}</p>}
+                    {errors.country_code && (
+                      <p className="mt-1 text-xs text-red-600">{errors.country_code.message}</p>
+                    )}
                   </div>
 
                   <div className="md:col-span-2 mt-2 flex items-center gap-3">
@@ -760,7 +791,9 @@ function applyPremium(resp: any) {
                             <Label>Child Name *</Label>
                             <Input className="mt-2" {...register(`child_info.${idx}.children_name`)} />
                             {errors.child_info?.[idx]?.children_name && (
-                              <p className="mt-1 text-xs text-red-600">{errors.child_info[idx]?.children_name?.message}</p>
+                              <p className="mt-1 text-xs text-red-600">
+                                {errors.child_info[idx]?.children_name?.message}
+                              </p>
                             )}
                           </div>
 
@@ -768,7 +801,9 @@ function applyPremium(resp: any) {
                             <Label>Child DOB *</Label>
                             <Input type="date" className="mt-2" {...register(`child_info.${idx}.children_dob`)} />
                             {errors.child_info?.[idx]?.children_dob && (
-                              <p className="mt-1 text-xs text-red-600">{errors.child_info[idx]?.children_dob?.message}</p>
+                              <p className="mt-1 text-xs text-red-600">
+                                {errors.child_info[idx]?.children_dob?.message}
+                              </p>
                             )}
                           </div>
 
@@ -776,7 +811,9 @@ function applyPremium(resp: any) {
                             <Label>Child Passport *</Label>
                             <Input className="mt-2" {...register(`child_info.${idx}.children_passport`)} />
                             {errors.child_info?.[idx]?.children_passport && (
-                              <p className="mt-1 text-xs text-red-600">{errors.child_info[idx]?.children_passport?.message}</p>
+                              <p className="mt-1 text-xs text-red-600">
+                                {errors.child_info[idx]?.children_passport?.message}
+                              </p>
                             )}
                           </div>
                         </div>
@@ -786,30 +823,6 @@ function applyPremium(resp: any) {
                 </Card>
               )}
 
-              {/* hidden required fields */}
-              <input type="hidden" {...register("bank_code")} />
-              <input type="hidden" {...register("department_id")} />
-              <input type="hidden" {...register("class_id")} />
-              <input type="hidden" {...register("age_band_id")} />
-              <input type="hidden" {...register("travel_package_id")} />
-              <input type="hidden" {...register("travel_area_id")} />
-              <input type="hidden" {...register("travel_area_plan_id")} />
-              <input type="hidden" {...register("period_id")} />
-              <input type="hidden" {...register("currency_id")} />
-
-              <input type="hidden" {...register("currency_rate")} />
-              <input type="hidden" {...register("currency_premium")} />
-              <input type="hidden" {...register("premium")} />
-              <input type="hidden" {...register("currency_suminsured")} />
-              <input type="hidden" {...register("total_suminsured")} />
-              <input type="hidden" {...register("suminsured")} />
-              <input type="hidden" {...register("premium_amount")} />
-              <input type="hidden" {...register("taxable_amount")} />
-              <input type="hidden" {...register("stamp_duty")} />
-              <input type="hidden" {...register("vat_percent")} />
-              <input type="hidden" {...register("vat_amount")} />
-              <input type="hidden" {...register("total_amount")} />
-
               {/* actions */}
               <div className="flex gap-4">
                 <Button type="button" variant="outline" onClick={handleBack} className="gap-2">
@@ -817,7 +830,7 @@ function applyPremium(resp: any) {
                   BACK
                 </Button>
 
-                <Button type="submit" disabled={submitDisabled}>
+                <Button type="submit" disabled={submitDisabled || !!successModal}>
                   {submitLoading ? "Submitting..." : "SUBMIT"}
                 </Button>
               </div>
