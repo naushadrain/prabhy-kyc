@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { Sidebar } from "@/components/Sidebar";
 import { Header } from "@/components/Header";
 import { useLanguage } from "@/contexts/LanguageContext";
@@ -22,7 +22,6 @@ import {
 
 type CatalogueItem = { value: string; data: string };
 
-//  type for router state
 type CoverageState = {
   planValue?: string;
   areaValue?: string;
@@ -33,9 +32,11 @@ export const TravelInsuranceCoverage = () => {
   const { t } = useLanguage();
   const navigate = useNavigate();
   const location = useLocation();
+  const [sidebarOpen, setSidebarOpen] = useState<boolean>(false);
 
   const handleBack = () => navigate("/dashboard");
 
+  // Step status management
   const steps = [
     { number: 1, label: "Coverage Plan", status: "inProcess" },
     { number: 2, label: "Coverage Details", status: "pending" },
@@ -43,34 +44,32 @@ export const TravelInsuranceCoverage = () => {
   ];
 
   // -------------------- PLAN --------------------
-  const [planList, setPlanList] = React.useState<CatalogueItem[]>([]);
-  const [planValue, setPlanValue] = React.useState<string>("");
-  const [loadingPlans, setLoadingPlans] = React.useState<boolean>(true);
-  const [planError, setPlanError] = React.useState<string | null>(null);
+  const [planList, setPlanList] = useState<CatalogueItem[]>([]);
+  const [planValue, setPlanValue] = useState<string>("");
+  const [loadingPlans, setLoadingPlans] = useState<boolean>(true);
+  const [planError, setPlanError] = useState<string | null>(null);
 
   // -------------------- AREA --------------------
-  const [areaList, setAreaList] = React.useState<CatalogueItem[]>([]);
-  const [areaValue, setAreaValue] = React.useState<string>("");
-  const [loadingAreas, setLoadingAreas] = React.useState<boolean>(false);
-  const [areaError, setAreaError] = React.useState<string | null>(null);
+  const [areaList, setAreaList] = useState<CatalogueItem[]>([]);
+  const [areaValue, setAreaValue] = useState<string>("");
+  const [loadingAreas, setLoadingAreas] = useState<boolean>(false);
+  const [areaError, setAreaError] = useState<string | null>(null);
 
   // -------------------- PACKAGE --------------------
-  const [packageList, setPackageList] = React.useState<CatalogueItem[]>([]);
-  const [packageValue, setPackageValue] = React.useState<string>("");
-  const [loadingPackages, setLoadingPackages] = React.useState<boolean>(false);
-  const [packageError, setPackageError] = React.useState<string | null>(null);
+  const [packageList, setPackageList] = useState<CatalogueItem[]>([]);
+  const [packageValue, setPackageValue] = useState<string>("");
+  const [loadingPackages, setLoadingPackages] = useState<boolean>(false);
+  const [packageError, setPackageError] = useState<string | null>(null);
 
-  // -------------------- loaders --------------------
-  const loadAreas = React.useCallback(async (areaPlanId: string) => {
+  // Load areas
+  const loadAreas = useCallback(async (areaPlanId: string) => {
+    if (!areaPlanId) return;
+    
     try {
       setLoadingAreas(true);
       setAreaError(null);
-
       const res = await getTravelCataloguesArea(areaPlanId);
-      const list: CatalogueItem[] = Array.isArray(res?.catalogue_list)
-        ? res.catalogue_list
-        : [];
-
+      const list = Array.isArray(res?.catalogue_list) ? res.catalogue_list : [];
       setAreaList(list);
     } catch (e: any) {
       setAreaList([]);
@@ -80,109 +79,124 @@ export const TravelInsuranceCoverage = () => {
     }
   }, []);
 
-  const loadPackages = React.useCallback(
-    async (areaId: string, areaPlanId: string) => {
-      try {
-        setLoadingPackages(true);
-        setPackageError(null);
+  // Load packages
+  const loadPackages = useCallback(async (areaId: string, areaPlanId: string) => {
+    if (!areaId || !areaPlanId) return;
+    
+    try {
+      setLoadingPackages(true);
+      setPackageError(null);
+      const res = await getTravelCataloguesPackage(areaId, areaPlanId);
+      const list = Array.isArray(res?.catalogue_list) ? res.catalogue_list : [];
+      setPackageList(list);
+    } catch (e: any) {
+      setPackageList([]);
+      setPackageError(e?.message ?? "Failed to load packages");
+    } finally {
+      setLoadingPackages(false);
+    }
+  }, []);
 
-        const res = await getTravelCataloguesPackage(areaId, areaPlanId);
-        const list: CatalogueItem[] = Array.isArray(res?.catalogue_list)
-          ? res.catalogue_list
-          : [];
-
-        setPackageList(list);
-      } catch (e: any) {
-        setPackageList([]);
-        setPackageError(e?.message ?? "Failed to load packages");
-      } finally {
-        setLoadingPackages(false);
-      }
-    },
-    []
-  );
-
-  // -------------------- initial load + restore from router state --------------------
-  React.useEffect(() => {
+  // Initial load and restore from localStorage/state
+  useEffect(() => {
     let mounted = true;
 
-    (async () => {
+    const initializeData = async () => {
       try {
         setLoadingPlans(true);
-        setPlanError(null);
-
+        
+        // Load plans
         const res = await getTravelCataloguesPlane();
-        const list: CatalogueItem[] = Array.isArray(res?.catalogue_list)
-          ? res.catalogue_list
-          : [];
-
         if (!mounted) return;
+        
+        const plans = Array.isArray(res?.catalogue_list) ? res.catalogue_list : [];
+        setPlanList(plans);
 
-        setPlanList(list);
+        // Try to get saved values from localStorage first
+        const savedState = localStorage.getItem("travel.coveragePlan");
+        let savedValues: CoverageState = {};
+        
+        if (savedState) {
+          try {
+            savedValues = JSON.parse(savedState);
+          } catch (e) {
+            console.error("Failed to parse saved state:", e);
+          }
+        }
 
-        //  restore selections from location.state (when coming back)
+        // Get values from location.state (if coming back from next page)
         const state = (location.state || {}) as CoverageState;
 
-        const restoredPlan = state.planValue ?? "";
-        const restoredArea = state.areaValue ?? "";
-        const restoredPackage = state.packageValue ?? "";
+        // Determine which values to use (state overrides localStorage)
+        const restoredPlan = state.planValue || savedValues.planValue || "";
+        const restoredArea = state.areaValue || savedValues.areaValue || "";
+        const restoredPackage = state.packageValue || savedValues.packageValue || "";
 
-        // set restored values
+        // Set values
         setPlanValue(restoredPlan);
         setAreaValue(restoredArea);
         setPackageValue(restoredPackage);
 
-        //  reload dependent lists so restored values appear in dropdown
+        // Load dependent dropdowns if needed
         if (restoredPlan) {
           await loadAreas(restoredPlan);
-        } else {
-          setAreaList([]);
         }
 
         if (restoredPlan && restoredArea) {
           await loadPackages(restoredArea, restoredPlan);
-        } else {
-          setPackageList([]);
         }
+
       } catch (e: any) {
         if (!mounted) return;
         setPlanError(e?.message ?? "Failed to load plans");
       } finally {
-        if (!mounted) return;
-        setLoadingPlans(false);
+        if (mounted) setLoadingPlans(false);
       }
-    })();
+    };
+
+    initializeData();
 
     return () => {
       mounted = false;
     };
   }, [location.state, loadAreas, loadPackages]);
 
-  // -------------------- handlers --------------------
-  const onPlanChange = async (v: string) => {
-    setPlanValue(v);
+  // Save to localStorage whenever values change
+  useEffect(() => {
+    if (planValue || areaValue || packageValue) {
+      localStorage.setItem("travel.coveragePlan", JSON.stringify({
+        planValue,
+        areaValue,
+        packageValue,
+      }));
+    }
+  }, [planValue, areaValue, packageValue]);
 
-    // reset dependent dropdowns
-    setAreaList([]);
+  // Handlers
+  const onPlanChange = async (value: string) => {
+    setPlanValue(value);
     setAreaValue("");
-    setAreaError(null);
-
-    setPackageList([]);
     setPackageValue("");
-    setPackageError(null);
-
-    if (v) await loadAreas(v);
+    setAreaList([]);
+    setPackageList([]);
+    
+    if (value) {
+      await loadAreas(value);
+    }
   };
 
-  const onAreaChange = async (v: string) => {
-    setAreaValue(v);
-
-    // reset packages
-    setPackageList([]);
+  const onAreaChange = async (value: string) => {
+    setAreaValue(value);
     setPackageValue("");
-    setPackageError(null);
+    setPackageList([]);
+    
+    if (value && planValue) {
+      await loadPackages(value, planValue);
+    }
+  };
 
-    if (v && planValue) await loadPackages(v, planValue);
+  const onPackageChange = (value: string) => {
+    setPackageValue(value);
   };
 
   const nextDisabled =
@@ -206,49 +220,46 @@ export const TravelInsuranceCoverage = () => {
     };
 
     localStorage.setItem("travel.coveragePlan", JSON.stringify(coveragePlanPayload));
-
-    navigate("/travel-insurance-details");
+    navigate("/travel-insurance-details", { state: coveragePlanPayload });
   };
 
-const [sidebarOpen, setSidebarOpen] = useState<boolean>(false);
+  // Check if there are any errors to display
+  const hasErrors = planError || areaError || packageError;
+
   return (
     <div className="flex min-h-screen">
       <Sidebar open={sidebarOpen} onClose={() => setSidebarOpen(false)} />
       <div className="flex-1 flex flex-col">
         <Header onMenuClick={() => setSidebarOpen(true)} />
         <main className="flex-1 p-8 bg-background">
-          {/* Stepper */}
+          {/* Stepper - Top of the page */}
           <div className="mb-12">
-            <div className="flex items-center justify-between max-w-4xl mx-auto">
+            <div className="flex items-center justify-between max-w-5xl mx-auto">
               {steps.map((step, index) => (
                 <div key={step.number} className="flex items-center flex-1">
                   <div className="flex flex-col items-center">
                     <div
-                      className={`w-12 h-12 rounded-full flex items-center justify-center mb-2 ${step.status === "completed" || step.status === "inProcess"
-                        ? "bg-primary text-primary-foreground"
-                        : "bg-muted text-muted-foreground"
-                        }`}
+                      className={`w-12 h-12 rounded-full flex items-center justify-center mb-2 ${
+                        step.status === "inProcess"
+                          ? "bg-primary text-primary-foreground"
+                          : "bg-muted text-muted-foreground"
+                      }`}
                     >
-                      {step.status === "completed" || step.status === "inProcess"
-                        ? "✓"
-                        : step.number}
+                      {step.number}
                     </div>
                     <span className="text-xs text-center max-w-[120px] font-medium">
                       STEP {step.number}
                     </span>
                     <span
-                      className={`text-xs mt-1 ${step.status === "completed"
-                        ? "text-green-600"
-                        : step.status === "inProcess"
+                      className={`text-xs mt-1 ${
+                        step.status === "inProcess"
                           ? "text-primary"
                           : "text-orange-500"
-                        }`}
+                      }`}
                     >
-                      {step.status === "completed"
-                        ? "Completed"
-                        : step.status === "inProcess"
-                          ? t("claim.inProcess")
-                          : t("claim.pending")}
+                      {step.status === "inProcess"
+                        ? "In Process"
+                        : "Pending"}
                     </span>
                     <span className="text-xs text-center max-w-[120px] mt-1">
                       {step.label}
@@ -263,80 +274,64 @@ const [sidebarOpen, setSidebarOpen] = useState<boolean>(false);
           </div>
 
           {/* Content */}
-          <div className="max-w-4xl mx-auto">
-            {/* Content */}             {/* Content */}
+          <div className="max-w-5xl mx-auto">
             <Button variant="ghost" onClick={handleBack} className="mb-6 gap-2">
-              <ChevronLeft className="w-4 h-4" />
+              <ChevronLeft className="w-4 h-4" /> Back to Dashboard
             </Button>
 
             <h1 className="text-2xl font-bold mb-2">
               Travel Medical Insurance Individual Plan
             </h1>
             <p className="text-muted-foreground mb-8">
-              Fill up your form to get a quotes.
+              Step 1 of 3: Select your coverage plan
             </p>
 
-            {/* Errors (optional) */}
-            {planError && (
-              <div className="mb-4 rounded-md border border-red-200 bg-red-50 p-3 text-sm text-red-700">
-                {planError}
-              </div>
-            )}
-            {areaError && (
-              <div className="mb-4 rounded-md border border-red-200 bg-red-50 p-3 text-sm text-red-700">
-                {areaError}
-              </div>
-            )}
-            {packageError && (
-              <div className="mb-4 rounded-md border border-red-200 bg-red-50 p-3 text-sm text-red-700">
-                {packageError}
+            {/* Errors - Display only once */}
+            {hasErrors && (
+              <div className="mb-6 space-y-2">
+                {planError && (
+                  <div className="rounded-md border border-red-200 bg-red-50 p-3 text-sm text-red-700">
+                    {planError}
+                  </div>
+                )}
+                {areaError && (
+                  <div className="rounded-md border border-red-200 bg-red-50 p-3 text-sm text-red-700">
+                    {areaError}
+                  </div>
+                )}
+                {packageError && (
+                  <div className="rounded-md border border-red-200 bg-red-50 p-3 text-sm text-red-700">
+                    {packageError}
+                  </div>
+                )}
               </div>
             )}
 
             <div className="bg-secondary/20 rounded-lg p-6 mb-8">
               <h2 className="text-lg font-semibold text-primary mb-3">
-                Travel Medical Insurance Term:
+                Travel Medical Insurance Terms:
               </h2>
               <div className="space-y-1 text-sm">
-                <p>Age Validation: 70(maximum)</p>
-                <p>Travel period: 180 days (6months)</p>
-                <p>
-                  For more information, please contact us at our Toll-Free number:
-                  16600150050
-                </p>
+                <p>• Maximum Age: 70 years</p>
+                <p>• Maximum Travel Period: 180 days (6 months)</p>
+                <p>• Toll-Free Support: 16600150050</p>
               </div>
             </div>
 
-            {/* API Errors */}
-            {planError && (
-              <div className="mb-4 rounded-md border border-red-200 bg-red-50 p-3 text-sm text-red-700">
-                {planError}
-              </div>
-            )}
-            {areaError && (
-              <div className="mb-4 rounded-md border border-red-200 bg-red-50 p-3 text-sm text-red-700">
-                {areaError}
-              </div>
-            )}
-            {packageError && (
-              <div className="mb-4 rounded-md border border-red-200 bg-red-50 p-3 text-sm text-red-700">
-                {packageError}
-              </div>
-            )}
-
-            <form onSubmit={(e) => e.preventDefault()}>
-              <div className="grid md:grid-cols-2 gap-4 mb-8">
-                {/* Plan */}
+            {/* Selection Form */}
+            <div className="space-y-6 mb-8">
+              <div className="grid md:grid-cols-2 gap-4">
+                {/* Plan Selection */}
                 <div>
-                  <Label>Plan</Label>
+                  <Label htmlFor="plan">Plan</Label>
                   <Select
                     value={planValue}
                     onValueChange={onPlanChange}
                     disabled={loadingPlans || !!planError}
                   >
-                    <SelectTrigger className="mt-2">
-                      <SelectValue
-                        placeholder={loadingPlans ? "Loading..." : "Please select a plan"}
+                    <SelectTrigger id="plan" className="mt-2">
+                      <SelectValue 
+                        placeholder={loadingPlans ? "Loading plans..." : "Select a plan"} 
                       />
                     </SelectTrigger>
                     <SelectContent>
@@ -349,23 +344,23 @@ const [sidebarOpen, setSidebarOpen] = useState<boolean>(false);
                   </Select>
                 </div>
 
-                {/* Area */}
+                {/* Area Selection */}
                 <div>
-                  <Label>Area</Label>
+                  <Label htmlFor="area">Area</Label>
                   <Select
                     value={areaValue}
                     onValueChange={onAreaChange}
                     disabled={!planValue || loadingAreas || !!areaError}
                   >
-                    <SelectTrigger className="mt-2">
-                      <SelectValue
+                    <SelectTrigger id="area" className="mt-2">
+                      <SelectValue 
                         placeholder={
-                          !planValue
-                            ? "Please select the plan first"
-                            : loadingAreas
-                              ? "Loading..."
-                              : "Please select an area"
-                        }
+                          !planValue 
+                            ? "Select plan first" 
+                            : loadingAreas 
+                            ? "Loading areas..." 
+                            : "Select area"
+                        } 
                       />
                     </SelectTrigger>
                     <SelectContent>
@@ -379,25 +374,25 @@ const [sidebarOpen, setSidebarOpen] = useState<boolean>(false);
                 </div>
               </div>
 
-              {/* Package */}
-              <div className="mb-8">
-                <Label>Package Type</Label>
+              {/* Package Selection */}
+              <div>
+                <Label htmlFor="package">Package Type</Label>
                 <Select
                   value={packageValue}
-                  onValueChange={setPackageValue}
+                  onValueChange={onPackageChange}
                   disabled={!planValue || !areaValue || loadingPackages || !!packageError}
                 >
-                  <SelectTrigger className="mt-2">
-                    <SelectValue
+                  <SelectTrigger id="package" className="mt-2">
+                    <SelectValue 
                       placeholder={
-                        !planValue
-                          ? "Please select the plan first"
+                        !planValue 
+                          ? "Select plan first"
                           : !areaValue
-                            ? "Please select the area first"
-                            : loadingPackages
-                              ? "Loading..."
-                              : "Please select a package"
-                      }
+                          ? "Select area first"
+                          : loadingPackages
+                          ? "Loading packages..."
+                          : "Select package"
+                      } 
                     />
                   </SelectTrigger>
                   <SelectContent>
@@ -409,35 +404,39 @@ const [sidebarOpen, setSidebarOpen] = useState<boolean>(false);
                   </SelectContent>
                 </Select>
               </div>
+            </div>
 
-              <div className="flex gap-4 mb-8">
-                <Button variant="outline" onClick={handleBack} className="gap-2">
-                  <ChevronLeft className="w-4 h-4" /> BACK
-                </Button>
+            {/* Action Buttons */}
+            <div className="flex gap-4 mb-8">
+              <Button 
+                variant="outline" 
+                onClick={handleBack} 
+                className="gap-2 min-w-[100px]"
+              >
+                <ChevronLeft className="w-4 h-4" />
+                BACK
+              </Button>
 
-                <div className={nextDisabled ? "cursor-not-allowed" : ""}>
-                  <Button
-                    className="bg-primary hover:bg-primary/90"
-                    onClick={onNext}
-                    disabled={nextDisabled}
-                    type="button"
-                  >
-                    {nextDisabled && <Ban className="w-4 h-4 mr-2" />}
-                    NEXT
-                  </Button>
-                </div>
-              </div>
-            </form>
+              <Button
+                className="bg-primary hover:bg-primary/90 gap-2 min-w-[100px]"
+                onClick={onNext}
+                disabled={nextDisabled}
+                type="button"
+              >
+                {nextDisabled && <Ban className="w-4 h-4" />}
+                NEXT
+              </Button>
+            </div>
 
+            {/* Benefits List - Simple bullet points */}
             <div className="bg-secondary/20 rounded-lg p-6">
               <h2 className="text-lg font-semibold text-primary mb-4">
                 Package Benefits Include:
               </h2>
-              <div className="space-y-2 text-sm">
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-2 text-sm">
                 <p>A – Personal Accident</p>
                 <p>B – Medical & Emergency Expenses</p>
                 <p>C – Hospital Benefits</p>
-                <p>Similarly, The following benefits will be covered under A to I Package:</p>
                 <p>D – Loss of Checked Baggage</p>
                 <p>E – Delay of Checked Baggage</p>
                 <p>F – Loss of Passport</p>
@@ -445,10 +444,10 @@ const [sidebarOpen, setSidebarOpen] = useState<boolean>(false);
                 <p>H – Travel Delay</p>
                 <p>I – Hijack</p>
                 <p>J – Cancellation & Curtailment</p>
-                <p>K – Emergency Return Home if a close family member dies</p>
+                <p>K – Emergency Return Home</p>
                 <p>L – Catastrophe</p>
                 <p>M – Legal Expenses</p>
-                <p>N – Repatriation of family member travelling with the participant</p>
+                <p>N – Repatriation of Family Member</p>
               </div>
             </div>
           </div>

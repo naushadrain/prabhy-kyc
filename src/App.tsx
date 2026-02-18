@@ -46,6 +46,7 @@ import { TravelInsuranceInstantQuotes } from "./pages/travels/TravelInsuranceIns
 import Travels from "./pages/publicTravels/travels";
 import { TravelCoverage } from "./pages/publicTravels/CoverPage";
 import { PremiumSummary } from "./pages/publicTravels/PremiumSummary";
+import { PolicyDetails } from "./pages/PolicyDetails";
 
 const queryClient = new QueryClient();
 
@@ -83,6 +84,8 @@ const App = () => (
               <Route path="/transaction-history" element={<TransactionHistory />} />
               <Route path="/my-draft-policy" element={<MyDraftPolicy />} />
               <Route path="/my-policies" element={<MyPolicies />} />
+              <Route path="/policy-details/:policyNo" element={<PolicyDetails />} />
+
               <Route path="/kyc-check" element={<KYCCheck />} />
               <Route path="/kyc-add" element={<KYCAdd />} />
               <Route path="/kyc-resubmit" element={<ResubmitKycForm />} />

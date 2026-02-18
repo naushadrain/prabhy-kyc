@@ -7,7 +7,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 import logo from "@/assets/logo.png";
 
@@ -26,7 +25,7 @@ type PeriodApiResponse = {
 };
 
 type CoverageState = {
-  planValue?: string;   // plan_id
+  planValue?: string;
   areaValue?: string;
   packageValue?: string;
 };
@@ -92,13 +91,7 @@ export default function TravelInsuranceDetails() {
   const navigate = useNavigate();
   const location = useLocation();
 
-  const steps = [
-    { number: 1, label: "Coverage Plan", status: "completed" as const },
-    { number: 2, label: "Coverage Details", status: "inProcess" as const },
-    { number: 3, label: "Instant Quotes", status: "pending" as const },
-  ];
-
-  // ✅ Load Step-1 state (router OR localStorage)
+  // Load Step-1 state (router OR localStorage)
   const [coverageState, setCoverageState] = React.useState<CoverageState>({
     planValue: "",
     areaValue: "",
@@ -107,12 +100,12 @@ export default function TravelInsuranceDetails() {
 
   React.useEffect(() => {
     const st = (location.state || {}) as CoverageState;
-
     let ls: CoverageState = {};
+    
     try {
       const raw = localStorage.getItem("travel.coveragePlan");
       if (raw) ls = JSON.parse(raw);
-    } catch {}
+    } catch { }
 
     const merged: CoverageState = {
       planValue: st.planValue ?? ls.planValue ?? "",
@@ -121,8 +114,6 @@ export default function TravelInsuranceDetails() {
     };
 
     setCoverageState(merged);
-
-    // ✅ persist for refresh safety
     localStorage.setItem("travel.coveragePlan", JSON.stringify(merged));
   }, [location.state]);
 
@@ -130,14 +121,14 @@ export default function TravelInsuranceDetails() {
   const todayStr = React.useMemo(() => todayISO(), []);
 
   function handleBack() {
-    // ✅ ALWAYS go back to Step-1 with state
-    navigate("/travel-insurance-coverage", { state: coverageState });
+    navigate("/travel-coverage", { state: coverageState });
   }
 
   // ---------------- Step-2 Fields ----------------
   const [travelFrom, setTravelFrom] = React.useState("");
   const [travelTo, setTravelTo] = React.useState("");
   const [noOfDays, setNoOfDays] = React.useState<number | "">("");
+  const [numberOfTravelers, setNumberOfTravelers] = React.useState<number>(1);
 
   const [travelFromError, setTravelFromError] = React.useState<string | null>(null);
   const [travelToError, setTravelToError] = React.useState<string | null>(null);
@@ -162,6 +153,28 @@ export default function TravelInsuranceDetails() {
   const [loadingAgeBands, setLoadingAgeBands] = React.useState(false);
   const [ageBandsError, setAgeBandsError] = React.useState<string | null>(null);
 
+  // Load saved details from localStorage on mount
+  React.useEffect(() => {
+    try {
+      const saved = localStorage.getItem("travel.coverageDetails");
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        setTravelFrom(parsed.travelFrom || "");
+        setTravelTo(parsed.travelTo || "");
+        setNoOfDays(parsed.noOfDays || "");
+        setNumberOfTravelers(parsed.numberOfTravelers || 1);
+        setDob(parsed.dob || "");
+        setAge(parsed.age || "");
+        setPeriodId(parsed.period_id || "");
+        setAgeBandValue(parsed.age_band_id || "");
+        setPhoneNumber(parsed.phone_number || "");
+        setPassportNumber(parsed.passport_number || "");
+      }
+    } catch (error) {
+      console.error("Error loading saved details:", error);
+    }
+  }, []);
+
   // Load age bands
   React.useEffect(() => {
     let mounted = true;
@@ -176,6 +189,13 @@ export default function TravelInsuranceDetails() {
 
         if (!mounted) return;
         setAgeBandList(list);
+        
+        // Re-calculate age band if DOB is already set
+        if (dob) {
+          const yrs = calcAgeYears(dob);
+          const bandVal = findAgeBandValue(list, yrs);
+          setAgeBandValue(bandVal);
+        }
       } catch (e: any) {
         if (!mounted) return;
         setAgeBandsError(e?.message ?? "Failed to load age bands");
@@ -188,13 +208,12 @@ export default function TravelInsuranceDetails() {
     return () => {
       mounted = false;
     };
-  }, []);
+  }, [dob]);
 
   // handlers
   const onChangeTravelFrom = (v: string) => {
     setTravelFrom(v);
     setTravelFromError(null);
-
     setPeriodError(null);
     setPeriodId("");
 
@@ -217,7 +236,6 @@ export default function TravelInsuranceDetails() {
   const onChangeTravelTo = (v: string) => {
     setTravelTo(v);
     setTravelToError(null);
-
     setPeriodError(null);
     setPeriodId("");
 
@@ -266,6 +284,12 @@ export default function TravelInsuranceDetails() {
     } else {
       setAgeBandValue("");
     }
+  };
+
+  const onChangeNumberOfTravelers = (value: string) => {
+    const numValue = parseInt(value) || 1;
+    const clampedValue = Math.min(10, Math.max(1, numValue));
+    setNumberOfTravelers(clampedValue);
   };
 
   // Load period when planId + days ready
@@ -380,6 +404,7 @@ export default function TravelInsuranceDetails() {
       travelFrom,
       travelTo,
       noOfDays,
+      numberOfTravelers,
       dob,
       age,
       period_id: periodId,
@@ -405,67 +430,51 @@ export default function TravelInsuranceDetails() {
 
   return (
     <div className="min-h-screen bg-background">
-      {/* ✅ Top bar */}
-      <header className="border-b bg-white">
-        <div className="px-4 sm:px-6 lg:px-8 py-3 flex items-center justify-between">
-          <img src={logo} alt="Prabhu Insurance" className="h-10 w-auto" />
+      {/* Top bar */}
+      <header className="sticky top-0 z-50 border-b bg-white/90 backdrop-blur">
+        <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
+          <div className="h-16 flex items-center justify-between gap-3">
+            <div className="flex items-center gap-3 min-w-0">
+              <img src={logo} alt="Prabhu Insurance" className="h-9 w-auto shrink-0" />
+              <div className="hidden sm:block min-w-0">
+                <div className="text-sm font-semibold leading-4 truncate">Prabhu Insurance</div>
+                <div className="text-xs text-muted-foreground truncate">
+                  Travel Medical Insurance
+                </div>
+              </div>
+            </div>
 
-          <Link to="/login">
-            <Button className="gap-2">
-              <LogIn className="h-4 w-4" />
-              {t("nav.login")}
-            </Button>
-          </Link>
+            <div className="flex items-center gap-2 shrink-0">
+              <Link to="/login">
+                <Button size="sm" className="gap-2">
+                  <LogIn className="h-4 w-4" />
+                  <span className="hidden sm:inline">{t("nav.login")}</span>
+                  <span className="sm:hidden">Login</span>
+                </Button>
+              </Link>
+            </div>
+          </div>
         </div>
       </header>
 
-      <main className="p-6 md:p-8">
-        {/* ✅ Stepper */}
-        <div className="mb-10">
-          <div className="flex items-center justify-between max-w-4xl mx-auto">
-            {steps.map((step, index) => (
-              <div key={step.number} className="flex items-center flex-1">
-                <div className="flex flex-col items-center">
-                  <div
-                    className={`w-12 h-12 rounded-full flex items-center justify-center mb-2 ${
-                      step.status === "completed" || step.status === "inProcess"
-                        ? "bg-primary text-primary-foreground"
-                        : "bg-muted text-muted-foreground"
-                    }`}
-                  >
-                    {step.status === "completed" || step.status === "inProcess" ? "✓" : step.number}
-                  </div>
-                  <span className="text-xs font-medium">STEP {step.number}</span>
-                  <span className="text-xs mt-1">
-                    {step.status === "completed"
-                      ? "Completed"
-                      : step.status === "inProcess"
-                      ? t("claim.inProcess")
-                      : t("claim.pending")}
-                  </span>
-                  <span className="text-xs mt-1 text-center">{step.label}</span>
-                </div>
-                {index < steps.length - 1 && <div className="flex-1 h-0.5 bg-border mx-2" />}
-              </div>
-            ))}
-          </div>
-        </div>
-
-        <div className="max-w-4xl mx-auto">
-          {/* ✅ Back arrow goes to coverage page */}
+      <main className="flex-1">
+        <div className="mx-auto max-w-4xl px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
+          {/* Back button */}
           <Button variant="ghost" onClick={handleBack} className="mb-6 gap-2">
             <ChevronLeft className="w-4 h-4" />
-            Back
+            Back to Step 1
           </Button>
 
-          <h1 className="text-2xl font-bold mb-8">Travel Medical Insurance Individual Plan</h1>
+          <h1 className="text-2xl font-bold mb-2">Travel Medical Insurance Individual Plan</h1>
+          <p className="text-sm text-muted-foreground mb-6">Step 2 of 3: Enter your travel details</p>
 
           {/* Travel Period */}
           <div className="border rounded-lg p-6 mb-6">
             <div className="grid md:grid-cols-2 gap-4 mb-4">
               <div>
-                <Label>Travel Period From</Label>
+                <Label htmlFor="travelFrom">Travel Period From</Label>
                 <Input
+                  id="travelFrom"
                   type="date"
                   className="mt-2"
                   value={travelFrom}
@@ -476,8 +485,9 @@ export default function TravelInsuranceDetails() {
               </div>
 
               <div>
-                <Label>Travel Period To</Label>
+                <Label htmlFor="travelTo">Travel Period To</Label>
                 <Input
+                  id="travelTo"
                   type="date"
                   className="mt-2"
                   value={travelTo}
@@ -491,26 +501,29 @@ export default function TravelInsuranceDetails() {
 
             <div className="grid md:grid-cols-2 gap-4">
               <div>
-                <Label>No of Days</Label>
-                <Input type="number" className="mt-2" value={noOfDays} readOnly />
+                <Label htmlFor="noOfDays">No of Days</Label>
+                <Input
+                  id="noOfDays"
+                  type="number"
+                  className="mt-2"
+                  value={noOfDays}
+                  readOnly
+                />
                 {periodLoading && <p className="text-xs mt-2 text-muted-foreground">Loading period...</p>}
                 {periodError && <p className="text-xs mt-2 text-red-600">{periodError}</p>}
               </div>
 
               <div>
-                <Label>No of Travelers</Label>
-                <Select>
-                  <SelectTrigger className="mt-2">
-                    <SelectValue placeholder="Select travelers" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="1">1</SelectItem>
-                    <SelectItem value="2">2</SelectItem>
-                    <SelectItem value="3">3</SelectItem>
-                    <SelectItem value="4">4</SelectItem>
-                    <SelectItem value="5+">5+</SelectItem>
-                  </SelectContent>
-                </Select>
+                <Label htmlFor="numberOfTravelers">Number of Travelers</Label>
+                <Input
+                  id="numberOfTravelers"
+                  type="number"
+                  min="1"
+                  max="10"
+                  value={numberOfTravelers}
+                  onChange={(e) => onChangeNumberOfTravelers(e.target.value)}
+                  className="mt-2"
+                />
               </div>
             </div>
           </div>
@@ -533,8 +546,9 @@ export default function TravelInsuranceDetails() {
 
             <div className="grid md:grid-cols-2 gap-4">
               <div>
-                <Label>DOB</Label>
+                <Label htmlFor="dob">Date of Birth</Label>
                 <Input
+                  id="dob"
                   type="date"
                   className="mt-2"
                   value={dob}
@@ -548,8 +562,15 @@ export default function TravelInsuranceDetails() {
               </div>
 
               <div>
-                <Label>Age</Label>
-                <Input type="number" className="mt-2" value={age} readOnly placeholder="Auto" />
+                <Label htmlFor="age">Age</Label>
+                <Input
+                  id="age"
+                  type="number"
+                  className="mt-2"
+                  value={age}
+                  readOnly
+                  placeholder="Auto calculated"
+                />
               </div>
             </div>
           </div>

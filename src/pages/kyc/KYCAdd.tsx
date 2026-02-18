@@ -37,7 +37,8 @@ import Districts from "./District";
 import { submitCustomerKyc, type CustomerKycFormEntity } from "@/api/kyc/customerKycClient";
 import { kycStatus } from "@/api/kyc/kycStatus";
 import { kycRejectForm } from "@/api/kyc/kycRejectForm";
-
+import { getUserInfo } from "@/api/userInfo/homePageIngo";
+import { UsersInfo } from "@/types/gotohome";
 /* =========================
    Upload config
 ========================= */
@@ -226,7 +227,7 @@ function mapApiToExistingImages(api: any) {
   return existing;
 }
 
-export const KYCAdd = () => {
+ export const  KYCAdd = () => {
   const { t } = useLanguage();
   const navigate = useNavigate();
 
@@ -403,6 +404,7 @@ export const KYCAdd = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [reset, clearErrors]);
 
+  
   /* =========================
      Auto convert AD → BS
 ========================= */
@@ -755,6 +757,69 @@ export const KYCAdd = () => {
 
   const BannerIcon = banner?.type === "success" ? CheckCircle2 : banner?.type === "error" ? AlertCircle : Info;
   const [sidebarOpen, setSidebarOpen] = useState<boolean>(false);
+ const [userData, setUserData] = useState<UsersInfo | null>(null);
+
+  /* =========================
+     3) GET USER INFO (prefill user details)
+========================= */
+useEffect(() => {
+  let mounted = true;
+
+  const fetchUserInfo = async () => {
+    try {
+      const data = await getUserInfo();
+      
+      if (!mounted || !data) return;
+
+      console.log("User Info Data:", data);
+      setUserData(data);
+
+      // Update form fields with user data
+      // Only set if fields are empty (don't override existing KYC data)
+      
+      if (data.customer_first_name && !watch("first_name")) {
+        setValue("first_name", data.customer_first_name, { shouldValidate: true });
+      }
+      
+      if (data.customer_middle_name && !watch("middle_name")) {
+        setValue("middle_name", data.customer_middle_name, { shouldValidate: true });
+      }
+      
+      if (data.customer_last_name && !watch("last_name")) {
+        setValue("last_name", data.customer_last_name, { shouldValidate: true });
+      }
+
+      // Nepali names
+      if (data.customer_first_name_nep && !watch("first_name_nep")) {
+        setValue("first_name_nep", data.customer_first_name_nep, { shouldValidate: true });
+      }
+      
+      if (data.customer_middle_name_nep && !watch("middle_name_nep")) {
+        setValue("middle_name_nep", data.customer_middle_name_nep, { shouldValidate: true });
+      }
+      
+      if (data.customer_last_name_nep && !watch("last_name_nep")) {
+        setValue("last_name_nep", data.customer_last_name_nep, { shouldValidate: true });
+      }
+
+      // Contact info
+      if (data.mobile_no && !watch("mobile")) {
+        setValue("mobile", data.mobile_no, { shouldValidate: true });
+      }
+      
+
+    } catch (error) {
+      console.error("Failed to fetch user info:", error);
+    }
+  };
+
+  fetchUserInfo();
+
+  return () => {
+    mounted = false;
+  };
+}, [setValue, watch]); // Dependencies
+
   return (
     <div className="flex min-h-screen">
       <Sidebar open={sidebarOpen} onClose={() => setSidebarOpen(false)} />
@@ -938,7 +1003,7 @@ export const KYCAdd = () => {
                   <Input
                     className={`mt-2 ${errors.mobile ? "border-red-500 focus-visible:ring-red-500" : ""}`}
                     inputMode="numeric"
-                    {...register("mobile", { setValueAs: (v) => String(v ?? "").replace(/\D/g, "").slice(0, 10) })}
+                    {...register("mobile", { setValueAs: (v) => String(v ?? "").replace(/\D/g, "").slice(0, 10) })} readOnly
                   />
                   {errors.mobile && <p className="text-xs text-red-500 mt-1">{errors.mobile.message}</p>}
                 </div>

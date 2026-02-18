@@ -76,7 +76,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ open, onClose }) => {
   // Desktop sidebar always visible, mobile uses "open"
   return (
     <>
-      {/* ✅ Mobile overlay */}
+      {/*  Mobile overlay */}
       <div
         className={cn(
           "fixed inset-0 z-40 bg-black/50 transition-opacity lg:hidden",
@@ -85,7 +85,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ open, onClose }) => {
         onClick={onClose}
       />
 
-      {/* ✅ Sidebar */}
+      {/*  Sidebar */}
       <aside
         className={cn(
           "fixed left-0 top-0 z-50 h-screen w-72 bg-sidebar border-r border-sidebar-border",
@@ -122,7 +122,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ open, onClose }) => {
               <div key={item.path}>
                 <Link
                   to={item.path}
-                  onClick={onClose} // ✅ close on mobile after click
+                  onClick={onClose} //  close on mobile after click
                   className={cn(
                     "flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors",
                     isActive
@@ -142,7 +142,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ open, onClose }) => {
                       <Link
                         key={child.path}
                         to={child.path}
-                        onClick={onClose} // ✅ close on mobile after click
+                        onClick={onClose} //  close on mobile after click
                         className={cn(
                           "flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-colors",
                           location.pathname === child.path
