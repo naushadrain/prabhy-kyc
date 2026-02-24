@@ -1,10 +1,13 @@
-// src/App.tsx (or App.jsx)
+// src/App.tsx
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { LanguageProvider } from "@/contexts/LanguageContext";
+
+// Import your token refresh provider
+import { TokenRefreshProvider } from "@/components/TokenRefreshProvider";
 
 import { Home } from "./pages/Home";
 import { Login } from "./pages/auth/Login";
@@ -54,61 +57,63 @@ const App = () => (
   <QueryClientProvider client={queryClient}>
     <LanguageProvider>
       <TooltipProvider>
-        <Toaster />
-        <Sonner />
-        <BrowserRouter>
-          <Routes>
-            {/* Public routes */}
-            <Route path="/" element={<Home />} />
-            <Route path="/login" element={<Login />} />
-            <Route path="/register" element={<Register />} />
-            <Route path="/client-register" element={<RegisterPage />} />
-            <Route path="/otp-validate" element={<OneTimeRegister />} />
-            <Route path="/verify-otp" element={<ForgotPasswordVerifyOtpPage />} />
-            <Route path="/contact" element={<Contact />} />
-            <Route path="/forgot-password" element={<ForgotPasswordPage />} />
-            <Route path="/reset-password" element={<ResetPasswordPage />} />
-            <Route path="/faq" element={<FAQ />} />
+        <TokenRefreshProvider> {/* Add this wrapper */}
+          <Toaster />
+          <Sonner />
+          <BrowserRouter>
+            <Routes>
+              {/* Public routes */}
+              <Route path="/" element={<Home />} />
+              <Route path="/login" element={<Login />} />
+              <Route path="/register" element={<Register />} />
+              <Route path="/client-register" element={<RegisterPage />} />
+              <Route path="/otp-validate" element={<OneTimeRegister />} />
+              <Route path="/verify-otp" element={<ForgotPasswordVerifyOtpPage />} />
+              <Route path="/contact" element={<Contact />} />
+              <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+              <Route path="/reset-password" element={<ResetPasswordPage />} />
+              <Route path="/faq" element={<FAQ />} />
 
-            <Route path="/travels" element={<Travels />} />
-            <Route path="/travel-coverage" element={<TravelCoverage />} />
-            <Route path="/premium-summary" element={<PremiumSummary />} />
+              <Route path="/travels" element={<Travels />} />
+              <Route path="/travel-coverage" element={<TravelCoverage />} />
+              <Route path="/premium-summary" element={<PremiumSummary />} />
 
-            {/* Protected routes */}
-            <Route element={<ProtectedRoute />}>
-              <Route path="/dashboard" element={<Dashboard />} />
-              <Route path="/claim" element={<Claim />} />
-              <Route path="/claim-tracking" element={<ClaimTracking />} />
-              <Route path="/claim-intimate" element={<ClaimIntimate />} />
-              <Route path="/change-password" element={<ChangePassword />} />
-              <Route path="/transaction-history" element={<TransactionHistory />} />
-              <Route path="/my-draft-policy" element={<MyDraftPolicy />} />
-              <Route path="/my-policies" element={<MyPolicies />} />
-              <Route path="/policy-details/:policyNo" element={<PolicyDetails />} />
+              {/* Protected routes */}
+              <Route element={<ProtectedRoute />}>
+                <Route path="/dashboard" element={<Dashboard />} />
+                <Route path="/claim" element={<Claim />} />
+                <Route path="/claim-tracking" element={<ClaimTracking />} />
+                <Route path="/claim-intimate" element={<ClaimIntimate />} />
+                <Route path="/change-password" element={<ChangePassword />} />
+                <Route path="/transaction-history" element={<TransactionHistory />} />
+                <Route path="/my-draft-policy" element={<MyDraftPolicy />} />
+                <Route path="/my-policies" element={<MyPolicies />} />
+                <Route path="/policy-details/:policyNo" element={<PolicyDetails />} />
 
-              <Route path="/kyc-check" element={<KYCCheck />} />
-              <Route path="/kyc-add" element={<KYCAdd />} />
-              <Route path="/kyc-resubmit" element={<ResubmitKycForm />} />
-              <Route path="/kyc-add-page" element={<KYCAddPage />} />
-              <Route path="/kyc-add-corporate" element={<KYCAddCorporate />} />
-              <Route path="/buy-policies" element={<BuyPolicies />} />
-              <Route path="/home-insurance" element={<HomeInsurance />} />
-              <Route path="/vehicle-insurance" element={<VehicleInsurance />} />
-              <Route path="/vehicle-insurance-plan" element={<VehicleInsurancePlan />} />
-              <Route path="/vehicle-coverage-plan" element={<VehicleCoveragePlan />} />
-              <Route path="/vehicle-coverage-plan-simple" element={<VehicleCoveragePlanSimple />} />
-              <Route path="/motor-insurance-plan" element={<MotorInsurancePlan />} />
-              <Route path="/travel-insurance" element={<TravelInsurance />} />
-              <Route path="/travel-insurance-coverage" element={<TravelInsuranceCoverage />} />
-              <Route path="/travel-insurance-details" element={<TravelInsuranceDetails />} />
-              <Route path="/travel-insurance-history" element={<TransactionHistory />} />
-              <Route path="/travel-insurance-instant-quotes" element={<TravelInsuranceInstantQuotes />} />
-            </Route>
+                <Route path="/kyc-check" element={<KYCCheck />} />
+                <Route path="/kyc-add" element={<KYCAdd />} />
+                <Route path="/kyc-resubmit" element={<ResubmitKycForm />} />
+                <Route path="/kyc-add-page" element={<KYCAddPage />} />
+                <Route path="/kyc-add-corporate" element={<KYCAddCorporate />} />
+                <Route path="/buy-policies" element={<BuyPolicies />} />
+                <Route path="/home-insurance" element={<HomeInsurance />} />
+                <Route path="/vehicle-insurance" element={<VehicleInsurance />} />
+                <Route path="/vehicle-insurance-plan" element={<VehicleInsurancePlan />} />
+                <Route path="/vehicle-coverage-plan" element={<VehicleCoveragePlan />} />
+                <Route path="/vehicle-coverage-plan-simple" element={<VehicleCoveragePlanSimple />} />
+                <Route path="/motor-insurance-plan" element={<MotorInsurancePlan />} />
+                <Route path="/travel-insurance" element={<TravelInsurance />} />
+                <Route path="/travel-insurance-coverage" element={<TravelInsuranceCoverage />} />
+                <Route path="/travel-insurance-details" element={<TravelInsuranceDetails />} />
+                <Route path="/travel-insurance-history" element={<TransactionHistory />} />
+                <Route path="/travel-insurance-instant-quotes" element={<TravelInsuranceInstantQuotes />} />
+              </Route>
 
-            {/* Catch-all */}
-            <Route path="*" element={<NotFound />} />
-          </Routes>
-        </BrowserRouter>
+              {/* Catch-all */}
+              <Route path="*" element={<NotFound />} />
+            </Routes>
+          </BrowserRouter>
+        </TokenRefreshProvider> {/* Close the wrapper */}
       </TooltipProvider>
     </LanguageProvider>
   </QueryClientProvider>

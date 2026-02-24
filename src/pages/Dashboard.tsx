@@ -1,4 +1,4 @@
-// ✅ src/pages/Dashboard.tsx
+// src/pages/Dashboard.tsx
 import React, { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
@@ -10,6 +10,7 @@ import { useLanguage } from "@/contexts/LanguageContext";
 import { AlertCircle, CheckCircle2, XCircle, Info, ShieldAlert, Wrench } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
+import { refreshToken } from "@/api/session/refreshTokenClient";
 
 import {
   Dialog,
@@ -43,7 +44,7 @@ export const Dashboard = () => {
 
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
-  // ✅ single modal that can show KYC message OR Coming Soon message
+  // single modal that can show KYC message OR Coming Soon message
   const [modalOpen, setModalOpen] = useState(false);
   const [modalKind, setModalKind] = useState<ModalKind>("kyc");
   const [modalTitle, setModalTitle] = useState("");
@@ -181,7 +182,7 @@ export const Dashboard = () => {
   const statusLabel = statusRaw && statusRaw !== "Unknown" ? String(statusRaw) : "Unknown";
 
   // -----------------------------
-  // ✅ Coming soon modal for Motor/Home
+  // Coming soon modal for Motor/Home
   function showComingSoon(featureName: string) {
     setModalKind("comingSoon");
     setModalTitle(`${featureName} - Coming Soon`);
@@ -189,7 +190,7 @@ export const Dashboard = () => {
     setModalOpen(true);
   }
 
-  // ✅ KYC guard ONLY for Travel
+  // KYC guard ONLY for Travel
   function guardKycThenNavigate(to: string) {
     if (loading) {
       setModalKind("kyc");
@@ -230,7 +231,7 @@ export const Dashboard = () => {
 
   function goToKyc() {
     setModalOpen(false);
-    navigate(isRejected ? "/kyc-add" : "/kyc-check");
+    navigate(isRejected ? "/kyc-add" : "/kyc-add");
   }
 
   return (
@@ -274,7 +275,7 @@ export const Dashboard = () => {
             </Alert>
           )}
 
-          {/* ✅ Cards */}
+          {/* Cards */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {/* Motor => Coming Soon */}
             <div
@@ -325,7 +326,7 @@ export const Dashboard = () => {
             </div>
           </div>
 
-          {/* ✅ Modal */}
+          {/* Modal */}
           <Dialog open={modalOpen} onOpenChange={(v) => !v && closeModal()}>
             <DialogContent className="sm:max-w-md">
               <DialogHeader>
@@ -348,7 +349,7 @@ export const Dashboard = () => {
                   Close
                 </Button>
 
-                {/* ✅ Only show Go to KYC button when this is KYC modal */}
+                {/* Only show Go to KYC button when this is KYC modal */}
                 {modalKind === "kyc" && (
                   <Button onClick={goToKyc}>
                     {isRejected ? "Re-submit KYC" : "Go to KYC"}

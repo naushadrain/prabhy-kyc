@@ -30,7 +30,7 @@ export async function createSession(userLoginId?: string): Promise<string> {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-      // ✅ session-id uses split-signature (as your Postman)
+      //  session-id uses split-signature (as your Postman)
       "split-signature": `${unixTs}.${signature}`,
       Accept: "*/*",
     },
@@ -47,7 +47,7 @@ export async function createSession(userLoginId?: string): Promise<string> {
     throw new Error(msg);
   }
 
-  // ✅ some APIs return process_key, others process_id — handle both
+  //  some APIs return process_key, others process_id — handle both
   const processKey: string | undefined = data?.process_key || data?.process_id;
   if (!processKey) throw new Error("process_key/process_id आएन (session failed)");
 

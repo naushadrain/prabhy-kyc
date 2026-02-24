@@ -14,7 +14,7 @@ import { logoutCustomer } from "@/api/auth/login/logoutClient";
 import { useNavigate } from "react-router-dom";
 
 type HeaderProps = {
-  onMenuClick?: () => void; // ✅ for mobile sidebar toggle
+  onMenuClick?: () => void; //  for mobile sidebar toggle
   title?: string;           // optional title if you want
 };
 
@@ -26,7 +26,7 @@ export const Header: React.FC<HeaderProps> = ({ onMenuClick, title }) => {
   const partyType = localStorage.getItem("party_type") || "INDIVIDUAL";
   const initial = (fullName?.trim()?.[0] || "G").toUpperCase();
 
-  // ✅ make time update every minute (optional)
+  //  make time update every minute (optional)
   const [now, setNow] = React.useState(() => new Date());
   React.useEffect(() => {
     const id = window.setInterval(() => setNow(new Date()), 60_000);
@@ -58,7 +58,7 @@ export const Header: React.FC<HeaderProps> = ({ onMenuClick, title }) => {
       <div className="px-4 lg:px-6 py-3 flex items-center justify-between gap-3">
         {/* LEFT */}
         <div className="flex items-center gap-3 min-w-0">
-          {/* ✅ Hamburger only for mobile/tablet */}
+          {/*  Hamburger only for mobile/tablet */}
           <Button
             type="button"
             variant="ghost"
