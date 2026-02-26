@@ -10,7 +10,6 @@ import { useLanguage } from "@/contexts/LanguageContext";
 import { AlertCircle, CheckCircle2, XCircle, Info, ShieldAlert, Wrench } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
-import { refreshToken } from "@/api/session/refreshTokenClient";
 
 import {
   Dialog,
@@ -24,7 +23,7 @@ import { kycStatus } from "@/api/kyc/kycStatus";
 import { KycNotes } from "@/api/kyc/kycNotes";
 
 type KycStatusResponse = {
-  kyc_Status?: string; // Pending | Verified | Rejected ...
+  kyc_Status?: string;
   process_result?: boolean;
   [key: string]: any;
 };
@@ -36,7 +35,7 @@ type KycNotesResponse = {
   [key: string]: any;
 };
 
-type ModalKind = "kyc" | "comingSoon";
+type ModalKind = "kyc" | "info";
 
 export const Dashboard = () => {
   const { t } = useLanguage();
@@ -44,11 +43,12 @@ export const Dashboard = () => {
 
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
-  // single modal that can show KYC message OR Coming Soon message
+  // Modal states
   const [modalOpen, setModalOpen] = useState(false);
   const [modalKind, setModalKind] = useState<ModalKind>("kyc");
   const [modalTitle, setModalTitle] = useState("");
   const [modalMsg, setModalMsg] = useState("");
+  const [targetRoute, setTargetRoute] = useState<string>("");
 
   const [loading, setLoading] = useState(false);
   const [kycData, setKycData] = useState<KycStatusResponse | null>(null);
@@ -90,8 +90,7 @@ export const Dashboard = () => {
     };
   }, []);
 
-  // -----------------------------
-  // normalize status
+  // Normalize status
   const statusRaw = kycData?.kyc_Status ?? "Unknown";
   const status = String(statusRaw).trim().toLowerCase();
 
@@ -104,7 +103,7 @@ export const Dashboard = () => {
     status === "processing" ||
     status === "submitted";
 
-  // latest note
+  // Latest note
   const latestNoteWithMessage = useMemo(() => {
     const withComments = (kycNotes || [])
       .filter((n) => String(n?.comments ?? "").trim().length > 0)
@@ -120,8 +119,7 @@ export const Dashboard = () => {
   const noteMessage = String(latestNoteWithMessage?.comments ?? "").trim();
   const noteType = String(latestNoteWithMessage?.note_Type ?? "").trim().toLowerCase();
 
-  // -----------------------------
-  // alert styles + mapping
+  // Alert styles
   const stylesFor = (variant: "success" | "warning" | "danger" | "info") => {
     return variant === "success"
       ? { alert: "mb-6 bg-emerald-50 border-emerald-200", text: "text-emerald-700" }
@@ -178,28 +176,22 @@ export const Dashboard = () => {
   }, [noteType, noteMessage, statusUi.variant, statusUi.Icon]);
 
   const ui = noteMessage ? notesUi : statusUi;
-
   const statusLabel = statusRaw && statusRaw !== "Unknown" ? String(statusRaw) : "Unknown";
 
-  // -----------------------------
-  // Coming soon modal for Motor/Home
-  function showComingSoon(featureName: string) {
-    setModalKind("comingSoon");
-    setModalTitle(`${featureName} - Coming Soon`);
-    setModalMsg("This feature is coming soon. Currently only Travel Insurance is available.");
-    setModalOpen(true);
-  }
-
-  // KYC guard ONLY for Travel
-  function guardKycThenNavigate(to: string) {
+  /**
+   * Generic function to check KYC before navigating to any service
+   */
+  function checkKycAndNavigate(route: string, serviceName: string) {
+    // If still loading KYC
     if (loading) {
       setModalKind("kyc");
       setModalTitle("Please wait");
-      setModalMsg("KYC status is loading...");
+      setModalMsg("KYC status is loading. Please wait a moment...");
       setModalOpen(true);
       return;
     }
 
+    // If there's an error loading KYC
     if (error) {
       setModalKind("kyc");
       setModalTitle("KYC not available");
@@ -208,30 +200,77 @@ export const Dashboard = () => {
       return;
     }
 
-    if (!isVerified) {
-      const msg = isRejected
-        ? "Your KYC is rejected. Please re-submit your KYC first to access Travel Insurance."
-        : "Please wait. Your KYC must be verified first to access Travel Insurance.";
+    // If KYC is verified - allow navigation
+    if (isVerified) {
+      navigate(route);
+      return;
+    }
 
-      const finalMsg = noteMessage ? `${msg}\n\nNote: ${noteMessage}` : msg;
-
+    // If KYC is rejected
+    if (isRejected) {
       setModalKind("kyc");
       setModalTitle("KYC Verification Required");
-      setModalMsg(finalMsg);
+      setModalMsg(
+        `Your KYC has been rejected. Please re-submit your KYC documents to access ${serviceName}.${
+          noteMessage ? `\n\nReason: ${noteMessage}` : ""
+        }`
+      );
+      setTargetRoute(route);
       setModalOpen(true);
       return;
     }
 
-    navigate(to);
+    // If KYC is pending
+    if (isPending) {
+      setModalKind("kyc");
+      setModalTitle("KYC Verification Pending");
+      setModalMsg(
+        `Your KYC is currently under review. You'll be able to access ${serviceName} once your KYC is verified.${
+          noteMessage ? `\n\nStatus: ${noteMessage}` : ""
+        }`
+      );
+      setTargetRoute(route);
+      setModalOpen(true);
+      return;
+    }
+
+    // If KYC status is unknown
+    setModalKind("kyc");
+    setModalTitle("KYC Required");
+    setModalMsg(`Please complete your KYC verification to access ${serviceName}.`);
+    setTargetRoute(route);
+    setModalOpen(true);
   }
+
+  // Service click handlers
+  const handleMotorClick = () => {
+    checkKycAndNavigate("/motor-insurance-plan", "Motor Insurance");
+  };
+
+  const handleTravelClick = () => {
+    checkKycAndNavigate("/travel-insurance-coverage", "Travel Insurance");
+  };
+
+  const handleHomeClick = () => {
+    checkKycAndNavigate("/home-insurance-plan", "Home Insurance");
+  };
 
   function closeModal() {
     setModalOpen(false);
+    setTargetRoute("");
   }
 
   function goToKyc() {
     setModalOpen(false);
-    navigate(isRejected ? "/kyc-add" : "/kyc-add");
+    navigate("/kyc-add");
+  }
+
+  function proceedToService() {
+    if (targetRoute) {
+      setModalOpen(false);
+      navigate(targetRoute);
+      setTargetRoute("");
+    }
   }
 
   return (
@@ -254,7 +293,12 @@ export const Dashboard = () => {
             </Alert>
           )}
 
-          {loading && <div className="mb-6 text-sm opacity-70">Loading KYC info...</div>}
+          {loading && (
+            <div className="mb-6 text-sm opacity-70 flex items-center gap-2">
+              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary"></div>
+              Loading KYC information...
+            </div>
+          )}
 
           {!error && !loading && (
             <Alert className={ui.styles.alert}>
@@ -265,8 +309,26 @@ export const Dashboard = () => {
 
                   {isRejected && (
                     <div>
-                      <Button type="button" variant="destructive" onClick={() => navigate("/kyc-add")}>
+                      <Button 
+                        type="button" 
+                        variant="destructive" 
+                        size="sm"
+                        onClick={() => navigate("/kyc-add")}
+                      >
                         Re-submit KYC
+                      </Button>
+                    </div>
+                  )}
+                  
+                  {!isVerified && !isRejected && !isPending && (
+                    <div>
+                      <Button 
+                        type="button" 
+                        variant="default" 
+                        size="sm"
+                        onClick={() => navigate("/kyc-add")}
+                      >
+                        Complete KYC
                       </Button>
                     </div>
                   )}
@@ -275,15 +337,15 @@ export const Dashboard = () => {
             </Alert>
           )}
 
-          {/* Cards */}
+          {/* Insurance Cards */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {/* Motor => Coming Soon */}
+            {/* Motor Insurance */}
             <div
               role="button"
               tabIndex={0}
-              onClick={() => showComingSoon("Motor Insurance")}
-              onKeyDown={(e) => e.key === "Enter" && showComingSoon("Motor Insurance")}
-              className="cursor-pointer"
+              onClick={handleMotorClick}
+              onKeyDown={(e) => e.key === "Enter" && handleMotorClick()}
+              className="cursor-pointer transition-transform hover:scale-105"
             >
               <InsuranceCard
                 type="motor"
@@ -293,13 +355,13 @@ export const Dashboard = () => {
               />
             </div>
 
-            {/* Travel => KYC Guard */}
+            {/* Travel Insurance */}
             <div
               role="button"
               tabIndex={0}
-              onClick={() => guardKycThenNavigate("/travel-insurance-coverage")}
-              onKeyDown={(e) => e.key === "Enter" && guardKycThenNavigate("/travel-insurance-coverage")}
-              className="cursor-pointer"
+              onClick={handleTravelClick}
+              onKeyDown={(e) => e.key === "Enter" && handleTravelClick()}
+              className="cursor-pointer transition-transform hover:scale-105"
             >
               <InsuranceCard
                 type="travel"
@@ -309,13 +371,13 @@ export const Dashboard = () => {
               />
             </div>
 
-            {/* Home => Coming Soon */}
+            {/* Home Insurance */}
             <div
               role="button"
               tabIndex={0}
-              onClick={() => showComingSoon("Home Insurance")}
-              onKeyDown={(e) => e.key === "Enter" && showComingSoon("Home Insurance")}
-              className="cursor-pointer"
+              onClick={handleHomeClick}
+              onKeyDown={(e) => e.key === "Enter" && handleHomeClick()}
+              className="cursor-pointer transition-transform hover:scale-105"
             >
               <InsuranceCard
                 type="home"
@@ -325,16 +387,15 @@ export const Dashboard = () => {
               />
             </div>
           </div>
-
-          {/* Modal */}
+          {/* Modal Dialog */}
           <Dialog open={modalOpen} onOpenChange={(v) => !v && closeModal()}>
             <DialogContent className="sm:max-w-md">
               <DialogHeader>
                 <DialogTitle className="flex items-center gap-2">
-                  {modalKind === "comingSoon" ? (
-                    <Wrench className="w-5 h-5" />
-                  ) : (
+                  {modalKind === "kyc" ? (
                     <ShieldAlert className="w-5 h-5" />
+                  ) : (
+                    <Info className="w-5 h-5" />
                   )}
                   {modalTitle || "Message"}
                 </DialogTitle>
@@ -349,10 +410,15 @@ export const Dashboard = () => {
                   Close
                 </Button>
 
-                {/* Only show Go to KYC button when this is KYC modal */}
-                {modalKind === "kyc" && (
-                  <Button onClick={goToKyc}>
-                    {isRejected ? "Re-submit KYC" : "Go to KYC"}
+                {modalKind === "kyc" && !isVerified && (
+                  <Button onClick={goToKyc} variant={isRejected ? "destructive" : "default"}>
+                    {isRejected ? "Re-submit KYC" : isPending ? "Check KYC Status" : "Go to KYC"}
+                  </Button>
+                )}
+
+                {modalKind === "kyc" && isVerified && targetRoute && (
+                  <Button onClick={proceedToService}>
+                    Proceed
                   </Button>
                 )}
               </DialogFooter>

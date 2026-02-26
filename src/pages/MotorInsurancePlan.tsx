@@ -6,7 +6,7 @@ import { ChevronLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Link } from 'react-router-dom';
 import { useState } from 'react';
-
+import { refreshToken } from '@/api/session/refreshTokenClient';
 export const MotorInsurancePlan = () => {
   const { t } = useLanguage();
 

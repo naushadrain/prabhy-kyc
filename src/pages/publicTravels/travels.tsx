@@ -462,7 +462,7 @@ export default function TravelInsuranceDetails() {
           {/* Back button */}
           <Button variant="ghost" onClick={handleBack} className="mb-6 gap-2">
             <ChevronLeft className="w-4 h-4" />
-            Back to Step 1
+            Back
           </Button>
 
           <h1 className="text-2xl font-bold mb-2">Travel Medical Insurance Individual Plan</h1>

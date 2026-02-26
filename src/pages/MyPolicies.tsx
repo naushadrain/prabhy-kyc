@@ -23,22 +23,7 @@ import { ChevronLeft, ChevronRight, Eye, Download, Printer } from 'lucide-react'
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { getPolicyList, printPolicyPdf } from '@/api/policy/policyList';
-
-// Types
-interface Policy {
-  created_date: string;
-  effective_date: string;
-  expiry_date: string;
-  policy_number: string;
-  expiry_status: string;
-  total_premium: string;
-  insured_name: string;
-  product_name: string;
-  payment_status: string;
-  policy_status: string;
-  policy_remarks: string;
-  is_draft_policy: string;
-}
+import { Policy } from '@/types/policy/types';
 
 export const MyPolicies = () => {
   const { t } = useLanguage();
@@ -134,16 +119,16 @@ export const MyPolicies = () => {
   };
 
   const handleViewPolicy = (policy: Policy) => {
-    navigate(`/policy-details/${encodeURIComponent(policy.policy_number)}`);
+    navigate(`/policy-details/${encodeURIComponent(policy.document_number)}`);
   };
 
   const handleDownloadPDF = async (policy: Policy) => {
     try {
-      const pdfBlob = await printPolicyPdf(81, policy.policy_number);
+      const pdfBlob = await printPolicyPdf(81, policy.document_number);
       const pdfUrl = URL.createObjectURL(pdfBlob);
       const link = document.createElement('a');
       link.href = pdfUrl;
-      link.download = `Policy_${policy.policy_number.replace(/[\/\\]/g, '_')}.pdf`;
+      link.download = `Policy_${policy.document_number.replace(/[\/\\]/g, '_')}.pdf`;
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
@@ -155,7 +140,7 @@ export const MyPolicies = () => {
 
   const handlePrintPDF = async (policy: Policy) => {
     try {
-      const pdfBlob = await printPolicyPdf(81, policy.policy_number);
+      const pdfBlob = await printPolicyPdf(81, policy.document_number);
       const pdfUrl = URL.createObjectURL(pdfBlob);
       const printWindow = window.open(pdfUrl, '_blank');
       if (printWindow) {
@@ -298,7 +283,7 @@ export const MyPolicies = () => {
                           <TableCell>{policy.created_date}</TableCell>
                           <TableCell>{policy.expiry_date}</TableCell>
                           <TableCell>
-                            <span className="font-mono text-sm">{policy.policy_number}</span>
+                            <span className="font-mono text-sm">{policy.document_number}</span>
                           </TableCell>
                           <TableCell className="text-right font-medium">
                             {formatCurrency(policy.total_premium)}
@@ -421,7 +406,7 @@ export const MyPolicies = () => {
                           <TableCell>{policy.created_date}</TableCell>
                           <TableCell>{policy.expiry_date}</TableCell>
                           <TableCell>
-                            <span className="font-mono text-sm">{policy.policy_number}</span>
+                            <span className="font-mono text-sm">{policy.document_number}</span>
                           </TableCell>
                           <TableCell className="text-right font-medium">
                             {formatCurrency(policy.total_premium)}

@@ -377,8 +377,8 @@ export const TravelCoverage = () => {
           {/* Actions */}
           <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 mb-8">
             <Button variant="outline" onClick={handleBack} type="button">
-              <ChevronLeft className="w-4 h-4 mr-2" />
-              Back to Dashboard
+              <ChevronLeft className="w-4 h-4" />
+              Back
             </Button>
 
             <Button
@@ -388,7 +388,7 @@ export const TravelCoverage = () => {
               type="button"
             >
               {isNextDisabled() && <Ban className="w-4 h-4 mr-2" />}
-              Continue to Next Step
+              Continue
             </Button>
           </div>
 

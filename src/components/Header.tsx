@@ -96,7 +96,9 @@ export const Header: React.FC<HeaderProps> = ({ onMenuClick, title }) => {
             <Bell className="w-5 h-5 text-primary" />
           </Button>
 
-          <Button type="button" onClick={LogoutHandler}>
+          <Button
+            type="button"
+            onClick={LogoutHandler}  className="text-sm rounded">
             LogOut
           </Button>
 
@@ -145,7 +147,7 @@ export const Header: React.FC<HeaderProps> = ({ onMenuClick, title }) => {
               {initial}
             </div>
             <span className="text-sm font-medium">
-              {`${fullName} (${partyType})`}
+              {`${fullName} `}
             </span>
           </div>
         </div>

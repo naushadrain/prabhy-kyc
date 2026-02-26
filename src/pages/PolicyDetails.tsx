@@ -24,7 +24,9 @@ import {
   Shield,
   DollarSign
 } from 'lucide-react';
-import { getPolicyDetail, PolicyDetailResponse, ScheduleItem } from '@/api/policy/policyList';
+import { getPolicyDetail } from '@/api/policy/policyList';
+import { PolicyDetailResponse,ScheduleItem } from '@/types/policy/types';
+import { backup } from 'node:sqlite';
 
 export const PolicyDetails = () => {
   const { policyNo } = useParams<{ policyNo: string }>();
@@ -129,14 +131,25 @@ export const PolicyDetails = () => {
         <Header onMenuClick={() => setSidebarOpen(true)} />
         
         <main className="flex-1 bg-background p-6">
-  <div className="max-w-7xl mx-auto">
-    {/* Policy Number Header */}
-    <div className="mb-6">
-      <h1 className="text-2xl font-bold">Policy Details</h1>
-      <p className="text-sm text-muted-foreground mt-1">
-        Policy Number: <span className="font-mono font-medium">{policy.policy_number}</span>
-      </p>
-    </div>
+  <div className="max-w-8xl mx-auto">
+      {/* Policy Number Header */}
+      <div className="mb-6">
+        <div className="flex items-center gap-2">
+          <button 
+            onClick={handleBack}
+            className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground transition-colors"
+            aria-label="Go back"
+          >
+            <ChevronLeft size={20} />
+            <span>Back</span>
+          </button>
+        </div>
+        
+        <h1 className="text-2xl font-bold mt-2">Policy Details</h1>
+        <p className="text-sm text-muted-foreground mt-1">
+          Policy Number: <span className="font-mono font-medium">{policy?.policy_number || 'N/A'}</span>
+        </p>
+      </div>
 
     {/* First Row - 2 Cards */}
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
