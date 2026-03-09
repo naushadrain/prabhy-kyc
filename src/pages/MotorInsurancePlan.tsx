@@ -4,18 +4,19 @@ import { useLanguage } from '@/contexts/LanguageContext';
 import { Card } from '@/components/ui/card';
 import { ChevronLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Link } from 'react-router-dom';
 import { useState } from 'react';
-import { refreshToken } from '@/api/session/refreshTokenClient';
+import { useNavigate } from 'react-router-dom';
+
 export const MotorInsurancePlan = () => {
   const { t } = useLanguage();
+  const navigate = useNavigate();
 
   const steps = [
     { number: 1, label: 'Insurance Plan', status: 'inProcess' },
     { number: 2, label: 'Coverage Plan', status: 'pending' },
     { number: 3, label: 'Coverage Details', status: 'pending' },
-    { number: 4, label: 'Instant Quotes', status: 'pending' },
-    { number: 5, label: 'Proceed to Pay', status: 'pending' },
+    { number: 4, label: 'Vehicle Details', status: 'pending' },
+    { number: 5, label: 'KYC Details', status: 'pending' },
   ];
 
   const insurancePlans = [
@@ -23,7 +24,14 @@ export const MotorInsurancePlan = () => {
     { id: 'private', title: 'Private Vehicle', icon: '🚗' },
     { id: 'commercial', title: 'Commercial Vehicle', icon: '🚚' },
   ];
+
   const [sidebarOpen, setSidebarOpen] = useState<boolean>(false);
+
+  const handlePlanSelect = (planId: string) => {
+    localStorage.setItem('motor.vehicleType', planId);
+    navigate('/vehicle-insurance-plan');
+  };
+
   return (
     <div className="flex min-h-screen">
       <Sidebar open={sidebarOpen} onClose={() => setSidebarOpen(false)} />
@@ -37,18 +45,24 @@ export const MotorInsurancePlan = () => {
               {steps.map((step, index) => (
                 <div key={step.number} className="flex items-center flex-1">
                   <div className="flex flex-col items-center">
-                    <div className={`w-12 h-12 rounded-full flex items-center justify-center mb-2 ${step.status === 'inProcess'
+                    <div className={`w-12 h-12 rounded-full flex items-center justify-center mb-2 ${
+                      step.status === 'completed'
+                        ? 'bg-green-500 text-white'
+                        : step.status === 'inProcess'
                         ? 'bg-primary text-primary-foreground'
                         : 'bg-muted text-muted-foreground'
-                      }`}>
-                      {step.status === 'inProcess' ? '✓' : step.number}
+                    }`}>
+                      {step.status === 'completed' ? '✓' : step.number}
                     </div>
                     <span className="text-xs text-center max-w-[120px] font-medium">
                       STEP {step.number}
                     </span>
-                    <span className={`text-xs mt-1 ${step.status === 'inProcess' ? 'text-primary' : 'text-orange-500'
-                      }`}>
-                      {step.status === 'inProcess' ? t('claim.inProcess') : t('claim.pending')}
+                    <span className={`text-xs mt-1 ${
+                      step.status === 'completed' ? 'text-green-500' :
+                      step.status === 'inProcess' ? 'text-primary' : 'text-orange-500'
+                    }`}>
+                      {step.status === 'completed' ? 'Completed' :
+                       step.status === 'inProcess' ? t('claim.inProcess') : t('claim.pending')}
                     </span>
                     <span className="text-xs text-center max-w-[120px] mt-1">{step.label}</span>
                   </div>
@@ -62,8 +76,8 @@ export const MotorInsurancePlan = () => {
 
           {/* Content */}
           <div className="max-w-5xl mx-auto">
-            <Button variant="ghost" className="mb-6 gap-2">
-              <ChevronLeft className="w-4 h-4" />
+            <Button variant="ghost" className="mb-6 gap-2" onClick={() => navigate('/dashboard')}>
+              <ChevronLeft className="w-4 h-4" /> Back
             </Button>
 
             <h1 className="text-3xl font-bold mb-2">Motor Insurance</h1>
@@ -71,14 +85,16 @@ export const MotorInsurancePlan = () => {
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
               {insurancePlans.map((plan) => (
-                <Link key={plan.id} to="/vehicle-insurance">
-                  <Card className="p-8 hover:shadow-lg transition-all cursor-pointer h-full text-center">
-                    <h3 className="text-lg font-bold mb-8">{plan.title}</h3>
-                    <div className="flex items-center justify-center py-8">
-                      <div className="text-7xl opacity-80">{plan.icon}</div>
-                    </div>
-                  </Card>
-                </Link>
+                <Card
+                  key={plan.id}
+                  className="p-8 hover:shadow-lg transition-all cursor-pointer h-full text-center border-2 hover:border-primary"
+                  onClick={() => handlePlanSelect(plan.id)}
+                >
+                  <h3 className="text-lg font-bold mb-8">{plan.title}</h3>
+                  <div className="flex items-center justify-center py-8">
+                    <div className="text-7xl opacity-80">{plan.icon}</div>
+                  </div>
+                </Card>
               ))}
             </div>
 

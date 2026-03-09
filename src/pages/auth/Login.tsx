@@ -6,14 +6,14 @@ import { Input } from "@/components/ui/input";
 import { InsuranceCard } from "@/components/InsuranceCard";
 import { useLanguage } from "@/contexts/LanguageContext";
 
-import { Eye, MessageSquare, AlertCircle, CheckCircle2 } from "lucide-react";
+import { Eye, EyeOff, MessageSquare } from "lucide-react";
 import logo from "@/assets/logo.png";
 
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 
-import { Alert, AlertDescription } from "@/components/ui/alert";
+import { toast } from "@/components/ui/sonner";
 import { loginCustomer } from "@/api/auth/login/loginClient";
 
 /* =========================
@@ -32,11 +32,6 @@ const loginSchema = z.object({
 
 type LoginFormValues = z.infer<typeof loginSchema>;
 
-type Notice = {
-  type: "error" | "success";
-  message: string;
-};
-
 export const Login = () => {
   const { t } = useLanguage();
   const navigate = useNavigate();
@@ -45,25 +40,15 @@ export const Login = () => {
     register,
     formState: { errors, isValid, isSubmitting },
     handleSubmit,
-    watch,
   } = useForm<LoginFormValues>({
     resolver: zodResolver(loginSchema),
     mode: "onChange",
     defaultValues: { mobile: "", password: "" },
   });
 
-  const [notice, setNotice] = useState<Notice | null>(null);
+  const [loginSuccess, setLoginSuccess] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
   const redirectTimerRef = useRef<number | null>(null);
-
-  //  Mobile insurance toggle
-  const [showInsuranceOnMobile, setShowInsuranceOnMobile] = useState(false);
-
-  const mobileWatch = watch("mobile");
-  const passWatch = watch("password");
-  useEffect(() => {
-    if (notice) setNotice(null);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [mobileWatch, passWatch]);
 
   useEffect(() => {
     return () => {
@@ -71,15 +56,11 @@ export const Login = () => {
     };
   }, []);
 
-  const clientErrorMessage = errors.mobile?.message || errors.password?.message || null;
-
   const onSubmit = async (values: LoginFormValues) => {
     if (redirectTimerRef.current) {
       window.clearTimeout(redirectTimerRef.current);
       redirectTimerRef.current = null;
     }
-
-    setNotice(null);
 
     try {
       const data = await loginCustomer(values.mobile, values.password);
@@ -90,7 +71,11 @@ export const Login = () => {
       localStorage.setItem("customer_name", customerName);
       localStorage.setItem("party_type", partyType);
 
-      setNotice({ type: "success", message: "Login successful." });
+      toast.success("Login successful!", {
+        description: `Welcome back, ${customerName}`,
+      });
+
+      setLoginSuccess(true);
 
       redirectTimerRef.current = window.setTimeout(() => {
         navigate("/dashboard");
@@ -101,7 +86,9 @@ export const Login = () => {
         err?.response?.data?.message ||
         "Login failed. Please try again.";
 
-      setNotice({ type: "error", message: apiMsg });
+      toast.error("Login failed", {
+        description: apiMsg,
+      });
     }
   };
 
@@ -140,7 +127,6 @@ export const Login = () => {
           </div>
         </div>
 
-
         {/* ================= RIGHT SIDE (LOGIN FORM) ================= */}
         <div className="order-1 md:order-2 w-full bg-card px-4 py-8 sm:px-8 sm:py-10 md:w-[440px] lg:w-[500px] md:border-l md:border-border">
           <div className="mx-auto w-full max-w-md">
@@ -151,25 +137,6 @@ export const Login = () => {
             <h1 className="text-2xl sm:text-3xl font-bold mb-6 text-center md:text-left">
               {t("auth.signIn")}
             </h1>
-
-            {(clientErrorMessage || notice) && (
-              <Alert
-                className={`mb-4 ${notice?.type === "success"
-                  ? "border-green-500/40 bg-green-500/10"
-                  : "border-red-500/40 bg-red-500/10"
-                  }`}
-              >
-                {notice?.type === "success" ? (
-                  <CheckCircle2 className="h-4 w-4" />
-                ) : (
-                  <AlertCircle className="h-4 w-4" />
-                )}
-
-                <AlertDescription className="text-sm">
-                  {notice?.message || clientErrorMessage}
-                </AlertDescription>
-              </Alert>
-            )}
 
             <form className="space-y-4" onSubmit={handleSubmit(onSubmit)}>
               {/* Mobile */}
@@ -188,12 +155,18 @@ export const Login = () => {
               {/* Password */}
               <div className="relative">
                 <Input
-                  type="password"
+                  type={showPassword ? "text" : "password"}
                   placeholder={t("auth.password")}
                   className={`pr-10 ${errors.password ? "border-red-500 focus-visible:ring-red-500" : ""}`}
                   {...register("password")}
                 />
-                <Eye className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword((prev) => !prev)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                >
+                  {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                </button>
               </div>
 
               <div className="text-right">
@@ -206,7 +179,7 @@ export const Login = () => {
                 className="w-full"
                 size="lg"
                 type="submit"
-                disabled={!isValid || isSubmitting || notice?.type === "success"}
+                disabled={!isValid || isSubmitting || loginSuccess}
               >
                 {isSubmitting ? "Loading..." : t("common.signIn")}
               </Button>

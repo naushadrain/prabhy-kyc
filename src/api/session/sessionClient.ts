@@ -1,5 +1,6 @@
 // src/api/sessionClient.ts
 import { buildSignatureForBody } from "./signature";
+import { getAccessToken } from "../auth/tokenStore";
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL as string; // e.g. https://insurancedemo.iremit.com.my/WebOnline
 const ENV_USER_LOGIN_ID = import.meta.env.VITE_USER_LOGIN_ID as string;
@@ -7,14 +8,12 @@ const ENV_USER_LOGIN_ID = import.meta.env.VITE_USER_LOGIN_ID as string;
 const DEVICE_OS = (import.meta.env.VITE_DEVICE_OS as string) || "online";
 const APP_VERSION = (import.meta.env.VITE_APP_VERSION as string) || "1.0.0";
 
-const STORAGE_KEY = "session_process_key";
-
-let cachedProcessKey: string | null = null;
-
 export async function createSession(userLoginId?: string): Promise<string> {
   if (!API_BASE_URL) throw new Error("VITE_API_BASE_URL is not set");
   const loginId = userLoginId || ENV_USER_LOGIN_ID;
   if (!loginId) throw new Error("VITE_USER_LOGIN_ID is not set");
+
+  const accessToken = getAccessToken();
 
   const bodyObj = {
     device_id: loginId,
@@ -26,14 +25,16 @@ export async function createSession(userLoginId?: string): Promise<string> {
   const jsonBody = JSON.stringify(bodyObj);
   const { unixTs, signature } = buildSignatureForBody(jsonBody);
 
+  const headers: Record<string, string> = {
+    "Content-Type": "application/json",
+    "split-signature": `${unixTs}.${signature}`,
+    Accept: "*/*",
+  };
+  if (accessToken) headers["Authorization"] = `Bearer ${accessToken}`;
+
   const res = await fetch(`${API_BASE_URL}/v1/common/session-id`, {
     method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      //  session-id uses split-signature (as your Postman)
-      "split-signature": `${unixTs}.${signature}`,
-      Accept: "*/*",
-    },
+    headers,
     body: jsonBody,
   });
 
@@ -51,19 +52,10 @@ export async function createSession(userLoginId?: string): Promise<string> {
   const processKey: string | undefined = data?.process_key || data?.process_id;
   if (!processKey) throw new Error("process_key/process_id आएन (session failed)");
 
-  cachedProcessKey = processKey;
-  localStorage.setItem(STORAGE_KEY, processKey);
   return processKey;
 }
 
 export async function ensureSession(userLoginId?: string): Promise<string> {
-  if (cachedProcessKey) return cachedProcessKey;
-
-  const stored = localStorage.getItem(STORAGE_KEY);
-  if (stored) {
-    cachedProcessKey = stored;
-    return stored;
-  }
-
+  // Always create a fresh session — cached sessions expire and cause "Invalid Session ID"
   return createSession(userLoginId);
 }

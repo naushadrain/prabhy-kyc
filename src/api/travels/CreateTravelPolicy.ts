@@ -1,26 +1,12 @@
 // src/api/travels/CreateTravelPolicy.ts
 import { buildSignatureForBody } from "../session/signature";
+import { getAccessToken } from "../auth/tokenStore";
+import { createSession } from "../session/sessionClient";
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL as string;
+const USER_LOGIN_ID = import.meta.env.VITE_USER_LOGIN_ID as string;
 
-function getTokenOrThrow() {
-  const raw =
-    localStorage.getItem("access_token") ||
-    localStorage.getItem("accessToken") ||
-    localStorage.getItem("token");
-
-  if (!raw) throw new Error("No access token found in localStorage");
-  return raw;
-}
-
-function buildAuthHeader(rawToken: string) {
-  // If user stored full header already ("Bearer xxx" or "Basic xxx"), keep it.
-  if (/^(Bearer|Basic)\s+/i.test(rawToken)) return rawToken;
-
-  // Otherwise use Bearer as you requested
-  return `Bearer ${rawToken}`;
-}
-
+// Matches the Postman collection entity exactly
 export type CreateTravelPolicyPayload = {
   client_info: { Bank_Code: string };
 
@@ -28,9 +14,6 @@ export type CreateTravelPolicyPayload = {
     department_id: string;
     class_id: string;
     payment_process: string;
-    proposed_date: string;
-    issued_date_ad: string;
-    issued_date_bs: string;
     effective_date: string;
     expiry_date: string;
   };
@@ -53,6 +36,8 @@ export type CreateTravelPolicyPayload = {
     total_suminsured: number;
     have_children: boolean;
     country_code: string;
+    passport_front_id: string | null;
+    passport_back_id: string | null;
   };
 
   amount_info: {
@@ -68,29 +53,39 @@ export type CreateTravelPolicyPayload = {
     total_amount: number;
   };
 
+  policy_session_id: string;
+
   child_info?: Array<{
     children_name: string;
     children_dob: string;
     children_passport: string;
+    children_passport_front_id: string | null;
+    children_passport_back_id: string | null;
   }>;
 };
 
 export async function createTravelPolicy(payload: CreateTravelPolicyPayload) {
   if (!API_BASE_URL) throw new Error("Missing env var: VITE_API_BASE_URL");
 
-  const rawToken = getTokenOrThrow();
-  const authHeader = buildAuthHeader(rawToken);
+  const accessToken = getAccessToken();
+  if (!accessToken) throw new Error("No access token found. Please login again.");
 
-  const bodyStr = JSON.stringify(payload);
+  // Fresh session tied to the logged-in user
+  const processKey = await createSession(USER_LOGIN_ID);
+  const basicToken = btoa(`${USER_LOGIN_ID}:${processKey}`);
 
-  // ✅ signature generated from body
+  // Inject the fresh session ID into the payload
+  const finalPayload = { ...payload, policy_session_id: processKey };
+
+  const bodyStr = JSON.stringify(finalPayload);
   const { unixTs, signature } = buildSignatureForBody(bodyStr);
 
   const res = await fetch(`${API_BASE_URL}/v1/Travel/create_travel_policy`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-      Authorization: authHeader,
+      Authorization: `Bearer ${accessToken}`,
+      "X-Authorization": `Basic ${basicToken}`,
       "verify-signature": `${unixTs}.${signature}`,
       "split-signature": `${unixTs}.${signature}`,
       Accept: "*/*",
@@ -98,10 +93,24 @@ export async function createTravelPolicy(payload: CreateTravelPolicyPayload) {
     body: bodyStr,
   });
 
-  if (!res.ok) {
-    const text = await res.text();
-    throw new Error(text || "Failed to create travel policy");
+  const rawText = await res.text();
+  let responseData: any = null;
+  try {
+    responseData = rawText ? JSON.parse(rawText) : null;
+  } catch {
+    responseData = null;
   }
 
-  return res.json();
+  if (!res.ok) {
+    throw {
+      status: res.status,
+      data: responseData,
+      message:
+        responseData?.error_list?.[0]?.error_message ||
+        rawText ||
+        `HTTP error ${res.status}`,
+    };
+  }
+
+  return responseData;
 }

@@ -12,19 +12,47 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { ArrowLeft, Plus, Info } from 'lucide-react';
+import { ArrowLeft, Plus, Info, X, ImagePlus } from 'lucide-react';
 import { Card } from '@/components/ui/card';
-import { useState } from 'react';
+import { useState, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
 
 export const VehicleInsurance = () => {
   const { t } = useLanguage();
+  const navigate = useNavigate();
+
+  const backRoute = '/vehicle-coverage-details';
+
+  // Blue book image previews
+  const [images, setImages] = useState<{ reg: string | null; namsari: string | null; details: string | null }>({
+    reg: null,
+    namsari: null,
+    details: null,
+  });
+
+  const inputRef = {
+    reg: useRef<HTMLInputElement>(null),
+    namsari: useRef<HTMLInputElement>(null),
+    details: useRef<HTMLInputElement>(null),
+  };
+
+  const handleImageChange = (key: 'reg' | 'namsari' | 'details', file: File | undefined) => {
+    if (!file) return;
+    const url = URL.createObjectURL(file);
+    setImages(prev => ({ ...prev, [key]: url }));
+  };
+
+  const clearImage = (key: 'reg' | 'namsari' | 'details') => {
+    setImages(prev => ({ ...prev, [key]: null }));
+    if (inputRef[key].current) inputRef[key].current.value = '';
+  };
 
   const steps = [
-    { number: 1, label: t('vehicleInsurance.step1'), status: 'completed' },
-    { number: 2, label: t('vehicleInsurance.step2'), status: 'completed' },
-    { number: 3, label: t('vehicleInsurance.step3'), status: 'completed' },
-    { number: 4, label: t('vehicleInsurance.step4'), status: 'inProcess' },
-    { number: 5, label: t('vehicleInsurance.step5'), status: 'pending' },
+    { number: 1, label: 'Insurance Plan', status: 'completed' },
+    { number: 2, label: 'Coverage Plan', status: 'completed' },
+    { number: 3, label: 'Coverage Details', status: 'completed' },
+    { number: 4, label: 'Vehicle Details', status: 'inProcess' },
+    { number: 5, label: 'KYC Details', status: 'pending' },
   ];
 const [sidebarOpen, setSidebarOpen] = useState<boolean>(false);
   return (
@@ -70,8 +98,8 @@ const [sidebarOpen, setSidebarOpen] = useState<boolean>(false);
 
           {/* Form */}
           <div className="max-w-5xl mx-auto">
-            <Button variant="ghost" className="mb-4 gap-2">
-              <ArrowLeft className="w-4 h-4" />
+            <Button variant="ghost" className="mb-4 gap-2" onClick={() => navigate(backRoute)}>
+              <ArrowLeft className="w-4 h-4" /> Back
             </Button>
 
             <h1 className="text-2xl font-bold mb-8">{t('vehicleInsurance.title')}</h1>
@@ -101,7 +129,7 @@ const [sidebarOpen, setSidebarOpen] = useState<boolean>(false);
               </RadioGroup>
 
               {/* Vehicle Number Plate Display */}
-              <Card className="p-4 max-w-sm">
+              {/* <Card className="p-4 max-w-sm">
                 <div className="bg-primary text-primary-foreground text-center font-bold text-2xl py-4 rounded">
                   बा २५ प २३८६
                 </div>
@@ -123,7 +151,7 @@ const [sidebarOpen, setSidebarOpen] = useState<boolean>(false);
                     <div>25</div>
                   </div>
                 </div>
-              </Card>
+              </Card> */}
 
               {/* Form Fields */}
               <div className="grid md:grid-cols-4 gap-4">
@@ -212,56 +240,117 @@ const [sidebarOpen, setSidebarOpen] = useState<boolean>(false);
 
               {/* File Uploads */}
               <div className="grid md:grid-cols-2 gap-6">
-                <div>
-                  <Label>{t('vehicleInsurance.blueBookVehicleReg')} *</Label>
-                  <div className="mt-2 border-2 border-dashed rounded-lg p-12 flex items-center justify-center bg-muted/50">
-                    <div className="text-center">
-                      <div className="w-24 h-24 mx-auto mb-4 bg-muted rounded flex items-center justify-center">
-                        <div className="w-16 h-16 bg-background rounded"></div>
-                      </div>
+                {/* Blue Book – Vehicle Registration */}
+                {(['reg', 'namsari'] as const).map((key) => (
+                  <div key={key}>
+                    <Label>
+                      {key === 'reg'
+                        ? t('vehicleInsurance.blueBookVehicleReg')
+                        : t('vehicleInsurance.blueBookNamsari')}{' '}
+                      *
+                    </Label>
+                    <input
+                      ref={inputRef[key]}
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={(e) => handleImageChange(key, e.target.files?.[0])}
+                    />
+                    {/* Preview / placeholder area — click to pick */}
+                    <div
+                      onClick={() => inputRef[key].current?.click()}
+                      className="mt-2 relative border-2 border-dashed rounded-lg flex items-center justify-center bg-muted/50 cursor-pointer hover:bg-muted/80 transition-colors overflow-hidden"
+                      style={{ minHeight: '160px' }}
+                    >
+                      {images[key] ? (
+                        <>
+                          <img
+                            src={images[key]!}
+                            alt="preview"
+                            className="w-full h-full object-contain max-h-48 p-2"
+                          />
+                          {/* Remove button */}
+                          <button
+                            type="button"
+                            onClick={(e) => { e.stopPropagation(); clearImage(key); }}
+                            className="absolute top-2 right-2 w-6 h-6 rounded-full bg-red-500 text-white flex items-center justify-center hover:bg-red-600 transition-colors"
+                          >
+                            <X className="w-3.5 h-3.5" />
+                          </button>
+                        </>
+                      ) : (
+                        <div className="flex flex-col items-center gap-2 text-muted-foreground py-8">
+                          <ImagePlus className="w-10 h-10 opacity-40" />
+                          <span className="text-xs">Click to upload image</span>
+                        </div>
+                      )}
                     </div>
+                    <Button
+                      type="button"
+                      className="w-full mt-2 bg-primary hover:bg-primary/90 gap-2"
+                      onClick={() => inputRef[key].current?.click()}
+                    >
+                      <Plus className="w-4 h-4" />
+                      {images[key] ? 'Replace Image' : 'Upload Image'}
+                    </Button>
                   </div>
-                  <Button className="w-full mt-2 bg-primary hover:bg-primary/90">
-                    <Plus className="w-4 h-4 mr-2" />
-                  </Button>
-                </div>
+                ))}
 
-                <div>
-                  <Label>{t('vehicleInsurance.blueBookNamsari')} *</Label>
-                  <div className="mt-2 border-2 border-dashed rounded-lg p-12 flex items-center justify-center bg-muted/50">
-                    <div className="text-center">
-                      <div className="w-24 h-24 mx-auto mb-4 bg-muted rounded flex items-center justify-center">
-                        <div className="w-16 h-16 bg-background rounded"></div>
-                      </div>
-                    </div>
-                  </div>
-                  <Button className="w-full mt-2 bg-primary hover:bg-primary/90">
-                    <Plus className="w-4 h-4 mr-2" />
-                  </Button>
-                </div>
-
+                {/* Blue Book – Vehicle Details (full width) */}
                 <div className="md:col-span-2">
                   <Label>{t('vehicleInsurance.blueBookVehicleDetails')} *</Label>
-                  <div className="mt-2 border-2 border-dashed rounded-lg p-12 flex items-center justify-center bg-muted/50">
-                    <div className="text-center">
-                      <div className="w-24 h-24 mx-auto mb-4 bg-muted rounded flex items-center justify-center">
-                        <div className="w-16 h-16 bg-background rounded"></div>
+                  <input
+                    ref={inputRef.details}
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={(e) => handleImageChange('details', e.target.files?.[0])}
+                  />
+                  <div
+                    onClick={() => inputRef.details.current?.click()}
+                    className="mt-2 relative border-2 border-dashed rounded-lg flex items-center justify-center bg-muted/50 cursor-pointer hover:bg-muted/80 transition-colors overflow-hidden"
+                    style={{ minHeight: '160px' }}
+                  >
+                    {images.details ? (
+                      <>
+                        <img
+                          src={images.details}
+                          alt="preview"
+                          className="w-full h-full object-contain max-h-48 p-2"
+                        />
+                        <button
+                          type="button"
+                          onClick={(e) => { e.stopPropagation(); clearImage('details'); }}
+                          className="absolute top-2 right-2 w-6 h-6 rounded-full bg-red-500 text-white flex items-center justify-center hover:bg-red-600 transition-colors"
+                        >
+                          <X className="w-3.5 h-3.5" />
+                        </button>
+                      </>
+                    ) : (
+                      <div className="flex flex-col items-center gap-2 text-muted-foreground py-8">
+                        <ImagePlus className="w-10 h-10 opacity-40" />
+                        <span className="text-xs">Click to upload image</span>
                       </div>
-                    </div>
+                    )}
                   </div>
-                  <Button className="w-full mt-2 bg-primary hover:bg-primary/90">
-                    <Plus className="w-4 h-4 mr-2" />
+                  <Button
+                    type="button"
+                    className="w-full mt-2 bg-primary hover:bg-primary/90 gap-2"
+                    onClick={() => inputRef.details.current?.click()}
+                  >
+                    <Plus className="w-4 h-4" />
+                    {images.details ? 'Replace Image' : 'Upload Image'}
                   </Button>
                 </div>
               </div>
 
               {/* Action Buttons */}
               <div className="flex justify-between pt-6">
-                <Button variant="outline" className="gap-2 text-primary border-primary">
+                <Button variant="outline" className="gap-2 text-primary border-primary" onClick={() => navigate(backRoute)}>
                   <ArrowLeft className="w-4 h-4" />
                   {t('vehicleInsurance.back')}
                 </Button>
-                <Button size="lg" className="bg-primary hover:bg-primary/90">
+                <Button size="lg" className="bg-primary hover:bg-primary/90" onClick={() => navigate('/motor-kyc-details')}>
                   {t('common.next')}
                 </Button>
               </div>

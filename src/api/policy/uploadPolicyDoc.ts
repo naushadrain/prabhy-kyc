@@ -1,101 +1,126 @@
 // src/api/policy/uploadPolicyDoc.ts
 import { buildSignatureForBody } from "../session/signature";
-import { createSession } from "../session/sessionClient";
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL as string;
-const USER_LOGIN_ID = import.meta.env.VITE_USER_LOGIN_ID as string;
 
 function getAccessToken() {
-  return localStorage.getItem("access_token");
+  return (
+    localStorage.getItem("access_token") ||
+    localStorage.getItem("accessToken") ||
+    ""
+  );
 }
 
+export interface UploadPolicyDocResponse {
+  process_result: boolean;
+  uploaded_id?: number;   // API returns "uploaded_id" (number), e.g. 61
+  error_list?: { error_message: string }[];
+  [key: string]: unknown;
+}
+
+/**
+ * Base upload function.
+ *
+ * FormData sent to API:
+ *   class_id    = "1"               (static)
+ *   doc_id_type = "UBB"             (static)
+ *   doc_type    = docType           e.g. "Passport", "Vehicle"
+ *   doc_id      = docId             e.g. "PF", "PB", "CPF", "CPB", "VF", "VB"
+ *   image_id    = unique per upload  {timestamp}{random}
+ *   image_file  = file blob
+ */
 export async function uploadPolicyDocument(
-  classId: string,
   docType: string,
-  docIdType: 'PF' | 'PB',
-  imageFile: File,
-  imageId?: string,
-  customImageName?: string
-) {
+  docId: string,
+  identifier: string,  // passportNo | vehicleNo — plain doc identifier
+  imageFile: File
+): Promise<UploadPolicyDocResponse> {
   if (!API_BASE_URL) throw new Error("Missing env var: VITE_API_BASE_URL");
 
-  // Create FormData
-  const formData = new FormData();
-  formData.append("class_id", classId);
-  formData.append("doc_type", docType);
-  formData.append("doc_id_type", docIdType);
-  
-  if (imageId) {
-    formData.append("image_id", imageId);
-  }
-  
-  // Use custom image name or generate one
-  const imageName = customImageName || `${docIdType}_${imageId || 'doc'}_${Date.now()}`;
-  formData.append("image_name", imageName);
-  formData.append("image_file", imageFile);
-
-  // Get session
-  const sessionProcessId = await createSession();
-  
-  // IMPORTANT: Build signature string in the format the backend expects
-  // Based on your screenshot, the fields are: class_id, doc_type, doc_id_type, image_id, image_name
-  // The signature should be built from these fields in the SAME ORDER as they appear in the request
-  const signatureFields = [
-    `class_id=${classId}`,
-    `doc_type=${docType}`,
-    `doc_id_type=${docIdType}`,
-    `image_id=${imageId || ''}`,
-    `image_name=${imageName}`
-  ];
-  
-  // Join with '&' to create a query string-like format
-  const signatureString = signatureFields.join('&');
-  
-  console.log("Signature string:", signatureString);
-  
-  // Build signature using the same function used elsewhere in your app
-  const { unixTs, signature } = buildSignatureForBody(signatureString);
-  
-  const basicToken = btoa(`${USER_LOGIN_ID}:${sessionProcessId}`);
   const accessToken = getAccessToken();
+  if (!accessToken) throw new Error("Not logged in. Please login first.");
 
-  const headers = {
-    "verify-signature": `${unixTs}.${signature}`,
-    "split-signature": `${unixTs}.${signature}`,
-    "Authorization": `Bearer ${accessToken}`,
-    "x-gateway-auth": `Basic ${basicToken}`,
-    "Accept": "*/*",
-    // Don't set Content-Type for FormData
-  };
+  // For multipart/form-data, signature body is always empty string
+  const { unixTs, signature } = buildSignatureForBody("");
+  const verifySignature = `${unixTs}.${signature}`;
 
-  console.log("Upload Headers:", {
-    "verify-signature": headers["verify-signature"],
-    "split-signature": headers["split-signature"],
-  });
+  // image_id — numeric only, unique per upload.
+  const uniqueImageId = String(Date.now()) + String(Math.floor(Math.random() * 10000)).padStart(4, "0");
+
+  const formData = new FormData();
+  formData.append("class_id",    "1");
+  formData.append("doc_id_type", "UBB");
+  formData.append("doc_type",    docType);
+  formData.append("doc_id",      docId);
+  formData.append("image_id",    uniqueImageId);
+  formData.append("image_file",  imageFile);
 
   const res = await fetch(`${API_BASE_URL}/v1/Policy/upload-policy-doc`, {
     method: "POST",
-    headers,
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+      "verify-signature": verifySignature,
+      Accept: "*/*",
+      // DO NOT set Content-Type — browser sets multipart boundary automatically
+    },
     body: formData,
   });
 
-  const responseText = await res.text();
-  console.log("Upload Response:", responseText);
-  
-  let responseData;
+  const rawText = await res.text();
+  let responseData: UploadPolicyDocResponse = { process_result: false };
   try {
-    responseData = responseText ? JSON.parse(responseText) : {};
+    responseData = rawText ? JSON.parse(rawText) : { process_result: false };
   } catch {
-    responseData = { message: responseText };
+    responseData = { process_result: false };
   }
+
+  if (res.status === 401) throw new Error("401 Unauthorized — token invalid or expired");
 
   if (!res.ok) {
     throw {
       status: res.status,
       data: responseData,
-      message: responseData?.message || `HTTP error ${res.status}`
+      message:
+        responseData?.error_list?.[0]?.error_message ||
+        rawText ||
+        `HTTP error ${res.status}`,
     };
   }
 
   return responseData;
 }
+
+/* ─────────────────────────────────────────────────────────────────────────────
+ *  Named helpers
+ *  doc_id mapping:
+ *    PF  = Passport Front        (main traveller)
+ *    PB  = Passport Back         (main traveller)
+ *    CPF = Child Passport Front
+ *    CPB = Child Passport Back
+ *    VF  = Vehicle Front
+ *    VB  = Vehicle Back
+ * ───────────────────────────────────────────────────────────────────────────── */
+
+/** Main traveller — Passport Front */
+export const uploadPassportFront = (passportNo: string, file: File) =>
+  uploadPolicyDocument("Passport", "PF", passportNo, file);
+
+/** Main traveller — Passport Back */
+export const uploadPassportBack = (passportNo: string, file: File) =>
+  uploadPolicyDocument("Passport", "PB", passportNo, file);
+
+/** Child — Passport Front */
+export const uploadChildPassportFront = (passportNo: string, file: File) =>
+  uploadPolicyDocument("Passport", "CPF", passportNo, file);
+
+/** Child — Passport Back */
+export const uploadChildPassportBack = (passportNo: string, file: File) =>
+  uploadPolicyDocument("Passport", "CPB", passportNo, file);
+
+/** Vehicle — Front */
+export const uploadVehicleFront = (vehicleNo: string, file: File) =>
+  uploadPolicyDocument("Vehicle", "VF", vehicleNo, file);
+
+/** Vehicle — Back */
+export const uploadVehicleBack = (vehicleNo: string, file: File) =>
+  uploadPolicyDocument("Vehicle", "VB", vehicleNo, file);

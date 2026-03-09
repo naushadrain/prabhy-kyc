@@ -14,15 +14,17 @@ import {
 } from '@/components/ui/select';
 import { ChevronLeft } from 'lucide-react';
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 
 export const VehicleCoveragePlan = () => {
   const { t } = useLanguage();
+  const navigate = useNavigate();
 
   const steps = [
     { number: 1, label: 'Insurance Plan', status: 'completed' },
-    { number: 2, label: 'Coverage Plan', status: 'inProcess' },
-    { number: 3, label: 'Coverage Details', status: 'pending' },
-    { number: 4, label: 'Vehicles Details', status: 'pending' },
+    { number: 2, label: 'Coverage Plan', status: 'completed' },
+    { number: 3, label: 'Coverage Details', status: 'inProcess' },
+    { number: 4, label: 'Vehicle Details', status: 'pending' },
     { number: 5, label: 'KYC Details', status: 'pending' },
   ];
 const [sidebarOpen, setSidebarOpen] = useState<boolean>(false);
@@ -69,11 +71,11 @@ const [sidebarOpen, setSidebarOpen] = useState<boolean>(false);
 
           {/* Form */}
           <div className="max-w-5xl mx-auto">
-            <Button variant="ghost" className="mb-4 gap-2">
-              <ChevronLeft className="w-4 h-4" />
+            <Button variant="ghost" className="mb-4 gap-2" onClick={() => navigate('/vehicle-insurance-plan')}>
+              <ChevronLeft className="w-4 h-4" /> Back
             </Button>
 
-            <h1 className="text-2xl font-bold mb-8">Coverage Plan</h1>
+            <h1 className="text-2xl font-bold mb-8">Coverage Plan — Comprehensive</h1>
 
             <div className="space-y-6">
               <div className="grid md:grid-cols-2 gap-4">
@@ -194,12 +196,12 @@ const [sidebarOpen, setSidebarOpen] = useState<boolean>(false);
 
               {/* Action Buttons */}
               <div className="flex justify-between pt-6">
-                <Button variant="outline" className="gap-2 text-primary border-primary">
+                <Button variant="outline" className="gap-2 text-primary border-primary" onClick={() => navigate('/vehicle-insurance-plan')}>
                   <ChevronLeft className="w-4 h-4" />
                   BACK
                 </Button>
-                <Button size="lg" className="bg-destructive hover:bg-destructive/90 text-white px-8">
-                  CALCULATE
+                <Button size="lg" className="bg-primary hover:bg-primary/90 text-white px-8" onClick={() => navigate('/vehicle-coverage-details')}>
+                  NEXT
                 </Button>
               </div>
             </div>

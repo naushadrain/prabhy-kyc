@@ -8,7 +8,6 @@ import { InsuranceCard } from "@/components/InsuranceCard";
 import { useLanguage } from "@/contexts/LanguageContext";
 
 import { AlertCircle, CheckCircle2, XCircle, Info, ShieldAlert, Wrench } from "lucide-react";
-import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 
 import {
@@ -119,15 +118,32 @@ export const Dashboard = () => {
   const noteMessage = String(latestNoteWithMessage?.comments ?? "").trim();
   const noteType = String(latestNoteWithMessage?.note_Type ?? "").trim().toLowerCase();
 
-  // Alert styles
+  // Alert styles — matched to project primary (red) theme
   const stylesFor = (variant: "success" | "warning" | "danger" | "info") => {
-    return variant === "success"
-      ? { alert: "mb-6 bg-emerald-50 border-emerald-200", text: "text-emerald-700" }
-      : variant === "danger"
-        ? { alert: "mb-6 bg-destructive/10 border-destructive", text: "text-destructive" }
-        : variant === "warning"
-          ? { alert: "mb-6 bg-amber-50 border-amber-200", text: "text-amber-700" }
-          : { alert: "mb-6 bg-muted/50 border-muted", text: "text-foreground/80" };
+    if (variant === "success") return {
+      alert:   "mb-6 border-l-4 border-l-primary border-primary/30 bg-primary/10",
+      text:    "text-primary",
+      badge:   "bg-green-600 text-white border border-green-600",
+      icon:    "text-primary",
+    };
+    if (variant === "danger") return {
+      alert:   "mb-6 border-l-4 border-l-primary border-primary/30 bg-primary/5",
+      text:    "text-primary",
+      badge:   "bg-primary/10 text-primary border border-primary/30",
+      icon:    "text-primary",
+    };
+    if (variant === "warning") return {
+      alert:   "mb-6 border-l-4 border-l-orange-500 border-orange-200 bg-orange-50",
+      text:    "text-orange-800",
+      badge:   "bg-orange-100 text-orange-700 border border-orange-200",
+      icon:    "text-orange-500",
+    };
+    return {
+      alert:   "mb-6 border-l-4 border-l-muted-foreground/40 border-border bg-muted/40",
+      text:    "text-muted-foreground",
+      badge:   "bg-muted text-muted-foreground border border-border",
+      icon:    "text-muted-foreground",
+    };
   };
 
   const statusUi = useMemo(() => {
@@ -252,7 +268,7 @@ export const Dashboard = () => {
   };
 
   const handleHomeClick = () => {
-    checkKycAndNavigate("/home-insurance-plan", "Home Insurance");
+    checkKycAndNavigate("/home-insurance", "Home Insurance");
   };
 
   function closeModal() {
@@ -286,55 +302,67 @@ export const Dashboard = () => {
             <span className="text-secondary">Insurance Policy</span>
           </h1>
 
+          {/* ── KYC Status Banner ───────────────────────────── */}
           {error && (
-            <Alert className="mb-6 bg-destructive/10 border-destructive">
-              <XCircle className="h-4 w-4 text-destructive" />
-              <AlertDescription className="text-destructive">{error}</AlertDescription>
-            </Alert>
+            <div className="mb-6 flex items-start gap-3 rounded-lg border-l-4 border-l-primary border-primary/30 bg-primary/5 px-4 py-3.5">
+              <XCircle className="h-5 w-5 text-primary mt-0.5 shrink-0" />
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-semibold text-primary">Unable to load KYC status</p>
+                <p className="text-sm text-primary/80 mt-0.5">{error}</p>
+              </div>
+            </div>
           )}
 
           {loading && (
-            <div className="mb-6 text-sm opacity-70 flex items-center gap-2">
-              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary"></div>
-              Loading KYC information...
+            <div className="mb-6 flex items-center gap-3 rounded-lg border border-border bg-muted/40 px-4 py-3.5">
+              <div className="w-5 h-5 rounded-full border-2 border-primary border-t-transparent animate-spin shrink-0" />
+              <div>
+                <p className="text-sm font-medium text-foreground">Checking KYC status…</p>
+                <p className="text-xs text-muted-foreground mt-0.5">Please wait while we verify your information.</p>
+              </div>
             </div>
           )}
 
           {!error && !loading && (
-            <Alert className={ui.styles.alert}>
-              <ui.Icon className={`h-4 w-4 ${ui.styles.text}`} />
-              <AlertDescription className={ui.styles.text}>
-                <div className="flex flex-col gap-3">
-                  <div>{noteMessage ? noteMessage : ui.message}</div>
-
-                  {isRejected && (
-                    <div>
-                      <Button 
-                        type="button" 
-                        variant="destructive" 
+            <div className={`flex items-start gap-3 rounded-lg px-4 py-3.5 ${ui.styles.alert}`}>
+              <ui.Icon className={`h-5 w-5 mt-0.5 shrink-0 ${ui.styles.icon}`} />
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <p className={`text-sm font-semibold ${ui.styles.text}`}>
+                    KYC Verification Status
+                  </p>
+                  <span className={`text-[11px] font-medium px-2 py-0.5 rounded-full ${ui.styles.badge}`}>
+                    {statusLabel}
+                  </span>
+                </div>
+                <p className={`text-sm mt-1 ${ui.styles.text} opacity-90`}>
+                  {noteMessage || ui.message}
+                </p>
+                {(isRejected || (!isVerified && !isRejected && !isPending)) && (
+                  <div className="mt-2.5">
+                    {isRejected ? (
+                      <Button
+                        type="button"
                         size="sm"
+                        className="bg-primary hover:bg-primary/90 text-primary-foreground h-8 text-xs"
                         onClick={() => navigate("/kyc-add")}
                       >
                         Re-submit KYC
                       </Button>
-                    </div>
-                  )}
-                  
-                  {!isVerified && !isRejected && !isPending && (
-                    <div>
-                      <Button 
-                        type="button" 
-                        variant="default" 
+                    ) : (
+                      <Button
+                        type="button"
                         size="sm"
+                        className="bg-primary hover:bg-primary/90 text-primary-foreground h-8 text-xs"
                         onClick={() => navigate("/kyc-add")}
                       >
                         Complete KYC
                       </Button>
-                    </div>
-                  )}
-                </div>
-              </AlertDescription>
-            </Alert>
+                    )}
+                  </div>
+                )}
+              </div>
+            </div>
           )}
 
           {/* Insurance Cards */}

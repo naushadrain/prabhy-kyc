@@ -1,5 +1,5 @@
 import React from "react";
-import { Bell, Settings, Calendar, Menu } from "lucide-react";
+import { Bell, Settings, Calendar, Menu, User, LogOut, Lock, ChevronDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useLanguage } from "@/contexts/LanguageContext";
 import {
@@ -9,13 +9,21 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 import { logoutCustomer } from "@/api/auth/login/logoutClient";
 import { useNavigate } from "react-router-dom";
+import { toast } from "@/components/ui/sonner";
 
 type HeaderProps = {
-  onMenuClick?: () => void; //  for mobile sidebar toggle
-  title?: string;           // optional title if you want
+  onMenuClick?: () => void;
+  title?: string;
 };
 
 export const Header: React.FC<HeaderProps> = ({ onMenuClick, title }) => {
@@ -23,10 +31,8 @@ export const Header: React.FC<HeaderProps> = ({ onMenuClick, title }) => {
   const navigate = useNavigate();
 
   const fullName = localStorage.getItem("customer_name") || "Guest User";
-  const partyType = localStorage.getItem("party_type") || "INDIVIDUAL";
   const initial = (fullName?.trim()?.[0] || "G").toUpperCase();
 
-  //  make time update every minute (optional)
   const [now, setNow] = React.useState(() => new Date());
   React.useEffect(() => {
     const id = window.setInterval(() => setNow(new Date()), 60_000);
@@ -35,11 +41,15 @@ export const Header: React.FC<HeaderProps> = ({ onMenuClick, title }) => {
 
   const LogoutHandler = async () => {
     try {
-      await logoutCustomer(); // API call
+      await logoutCustomer();
+      toast.success("Logged out successfully", {
+        description: "You have been signed out. See you soon!",
+      });
     } catch (err) {
-      console.error("Logout failed:", err);
+      toast.error("Logout failed", {
+        description: "Something went wrong. You have been signed out anyway.",
+      });
     } finally {
-      // clear local auth data
       localStorage.removeItem("access_token");
       localStorage.removeItem("refresh_token");
       localStorage.removeItem("access_expires_at");
@@ -48,17 +58,16 @@ export const Header: React.FC<HeaderProps> = ({ onMenuClick, title }) => {
       localStorage.removeItem("otp_mobile");
       localStorage.removeItem("customer_name");
       localStorage.removeItem("party_type");
-
-      navigate("/", { replace: true });
+      setTimeout(() => navigate("/", { replace: true }), 1000);
     }
   };
 
   return (
-    <header className="sticky top-0 z-30 bg-background border-b border-border">
+    <header className="sticky top-0 z-30 bg-background border-b border-border shadow-sm">
       <div className="px-4 lg:px-6 py-3 flex items-center justify-between gap-3">
         {/* LEFT */}
         <div className="flex items-center gap-3 min-w-0">
-          {/*  Hamburger only for mobile/tablet */}
+          {/* Hamburger only for mobile/tablet */}
           <Button
             type="button"
             variant="ghost"
@@ -68,21 +77,20 @@ export const Header: React.FC<HeaderProps> = ({ onMenuClick, title }) => {
           >
             <Menu className="w-5 h-5" />
           </Button>
-
-          {/* Optional page title */}
-          {title && (
-            <div className="hidden md:block font-semibold truncate">{title}</div>
-          )}
-
-          {/* Date/time (hide on very small screens) */}
+          {/* Date/time */}
           <div className="hidden sm:flex items-center gap-2 text-sm text-muted-foreground">
-            <Calendar className="w-4 h-4" />
+            <Calendar className="w-4 h-4 text-primary" />
             <span>
               {now.toLocaleDateString("en-US", {
                 weekday: "long",
                 year: "numeric",
                 month: "long",
                 day: "numeric",
+              })}
+            </span>
+            <span className="text-muted-foreground/60">•</span>
+            <span className="font-medium text-foreground">
+              {now.toLocaleTimeString("en-US", {
                 hour: "2-digit",
                 minute: "2-digit",
               })}
@@ -91,17 +99,15 @@ export const Header: React.FC<HeaderProps> = ({ onMenuClick, title }) => {
         </div>
 
         {/* RIGHT */}
-        <div className="flex items-center gap-2 sm:gap-4">
-          <Button variant="ghost" size="icon" type="button">
+        <div className="flex items-center gap-1 sm:gap-2">
+          {/* Notification Bell */}
+          <Button variant="ghost" size="icon" type="button" className="relative">
             <Bell className="w-5 h-5 text-primary" />
+            {/* Notification dot */}
+            <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-red-500 rounded-full ring-2 ring-background" />
           </Button>
 
-          <Button
-            type="button"
-            onClick={LogoutHandler}  className="text-sm rounded">
-            LogOut
-          </Button>
-
+          {/* Settings Dialog */}
           <Dialog>
             <DialogTrigger asChild>
               <Button variant="ghost" size="icon" type="button">
@@ -112,12 +118,8 @@ export const Header: React.FC<HeaderProps> = ({ onMenuClick, title }) => {
               <DialogHeader>
                 <DialogTitle>{t("settings.title")}</DialogTitle>
               </DialogHeader>
-
               <div className="py-4">
-                <h3 className="text-sm font-medium mb-3">
-                  {t("settings.language")}
-                </h3>
-
+                <h3 className="text-sm font-medium mb-3">{t("settings.language")}</h3>
                 <div className="flex gap-4">
                   <Button
                     type="button"
@@ -127,7 +129,6 @@ export const Header: React.FC<HeaderProps> = ({ onMenuClick, title }) => {
                   >
                     {t("settings.english")}
                   </Button>
-
                   <Button
                     type="button"
                     variant={language === "ne" ? "default" : "outline"}
@@ -141,15 +142,54 @@ export const Header: React.FC<HeaderProps> = ({ onMenuClick, title }) => {
             </DialogContent>
           </Dialog>
 
-          {/* Profile */}
-          <div className="hidden md:flex items-center gap-2">
-            <div className="w-10 h-10 rounded-full bg-primary text-primary-foreground flex items-center justify-center font-semibold">
-              {initial}
-            </div>
-            <span className="text-sm font-medium">
-              {`${fullName} `}
-            </span>
-          </div>
+          {/* Profile Dropdown */}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button
+                type="button"
+                className="flex items-center gap-2 px-2 py-1.5 rounded-lg hover:bg-accent transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+              >
+                {/* Avatar */}
+                <div className="w-9 h-9 rounded-full bg-primary text-primary-foreground flex items-center justify-center font-semibold text-sm ring-2 ring-primary/20">
+                  {initial}
+                </div>
+                {/* Name + type (desktop only) */}
+                <div className="hidden md:flex flex-col items-start leading-tight">
+                  <span className="text-sm font-semibold truncate max-w-[120px]">{fullName}</span>
+                  
+                </div>
+                <ChevronDown className="hidden md:block w-4 h-4 text-muted-foreground" />
+              </button>
+            </DropdownMenuTrigger>
+
+            <DropdownMenuContent align="end" className="w-48">
+              <DropdownMenuItem
+                className="gap-2 cursor-pointer"
+                onClick={() => navigate("/profile")}
+              >
+                <User className="w-4 h-4 text-primary" />
+                <span>My Profile</span>
+              </DropdownMenuItem>
+
+              <DropdownMenuItem
+                className="gap-2 cursor-pointer"
+                onClick={() => navigate("/change-password")}
+              >
+                <Lock className="w-4 h-4 text-primary" />
+                <span>Change Password</span>
+              </DropdownMenuItem>
+
+              <DropdownMenuSeparator />
+
+              <DropdownMenuItem
+                className="gap-2 cursor-pointer text-red-600 focus:text-red-600 focus:bg-red-50"
+                onClick={LogoutHandler}
+              >
+                <LogOut className="w-4 h-4" />
+                <span>Logout</span>
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       </div>
     </header>

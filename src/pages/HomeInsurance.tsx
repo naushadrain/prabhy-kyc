@@ -21,9 +21,11 @@ import {
 } from '@/components/ui/table';
 import { ChevronLeft, ArrowRight } from 'lucide-react';
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 
 export const HomeInsurance = () => {
   const { t } = useLanguage();
+  const navigate = useNavigate();
 
   const steps = [
     { number: 1, label: t('homeInsurance.step1'), status: 'inProcess' },
@@ -174,7 +176,7 @@ const [sidebarOpen, setSidebarOpen] = useState<boolean>(false);
               </div>
 
               <div className="flex justify-end">
-                <Button size="lg" className="bg-primary hover:bg-primary/90 gap-2">
+                <Button size="lg" className="bg-primary hover:bg-primary/90 gap-2" onClick={() => navigate('/home-premium-details')}>
                   {t('common.next')} <ArrowRight className="w-4 h-4" />
                 </Button>
               </div>
