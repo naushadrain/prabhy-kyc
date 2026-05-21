@@ -1,4 +1,5 @@
 // src/kyc/getcatalogue/getcatalogue.ts
+import { authFetch } from "@/api/auth/authFetch";
 import { ensureSession } from "@/api/session/sessionClient";
 import { buildSignatureForBody } from "@/api/session/signature";
 
@@ -33,12 +34,11 @@ export async function getCatalogue(
     url.searchParams.set("catalogue_type", String(catalogue_type));
     url.searchParams.set("id", String(id));
 
-    const res = await fetch(url.toString(), {
+    const res = await authFetch(url.toString(), {
         method: "GET",
         headers: {
-            Authorization: `Basic ${basicToken}`,
+            "X-Basic-Authorization": `Basic ${basicToken}`,
             "verify-signature": `${unixTs}.${signature}`,
-            // optional (some servers accept this too)
             "split-signature": `${unixTs}.${signature}`,
             Accept: "*/*",
         },

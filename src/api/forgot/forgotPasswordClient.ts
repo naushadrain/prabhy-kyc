@@ -93,7 +93,7 @@ export async function validateForgotPasswordOtp(otp: string): Promise<boolean> {
   // 3) build body exactly like Postman
   const bodyObj = {
     issue_type: "04", // forgot password
-    process_id: localStorage.getItem("otp_process_id"), // ✅ OTP process id goes in BODY
+    process_id: localStorage.getItem("otp_process_id"), //  OTP process id goes in BODY
     verification_code: encryptedOtp,
   };
 
@@ -168,7 +168,7 @@ export async function resetPassword(newPassword: string): Promise<boolean> {
   const basicToken = btoa(`${USER_LOGIN_ID}:${sessionProcessKey}`);
 
   const res = await fetch(`${API_BASE_URL}/v1/member/forgot-password`, {
-    method: "PUT", // ✅ Postman uses PUT
+    method: "PUT", //  Postman uses PUT
     headers: {
       "Content-Type": "application/json",
       Authorization: `Basic ${basicToken}`,

@@ -392,7 +392,7 @@ export default function ResubmitKycForm() {
 
   const [fieldErrors, setFieldErrors] = useState<FieldErrors>({});
 
-  // ✅ dropdown removed, docType is internal only (inferred from API)
+  //  dropdown removed, docType is internal only (inferred from API)
   const [docType, setDocType] = useState<DocType>("citizenship");
 
   // images
@@ -424,7 +424,7 @@ export default function ResubmitKycForm() {
         initialSnapshot.current = nextInitial;
         setForm(nextInitial);
 
-        // ✅ infer docType from API images; no dropdown
+        //  infer docType from API images; no dropdown
         const img = data?.kyc_detail?.customer_image;
         setDocType(inferDocTypeFromApi(img));
       } catch (e: any) {
@@ -568,7 +568,7 @@ export default function ResubmitKycForm() {
     party_inspection_category: "",
     risk_factors: "",
 
-    // ✅ doc_type still required by API; user can't change now
+    //  doc_type still required by API; user can't change now
     doc_type: docType,
 
     image_profile: profileFile,
@@ -654,7 +654,7 @@ export default function ResubmitKycForm() {
             <span className="text-secondary">Re-submit KYC Form</span>
           </h1>
 
-          {/* ✅ inferred docType info (no dropdown) */}
+          {/*  inferred docType info (no dropdown) */}
           <div className="mb-4 text-sm opacity-80">
             Document Type (auto from rejected KYC):{" "}
             <span className="font-semibold uppercase">{docType}</span>
@@ -989,7 +989,7 @@ export default function ResubmitKycForm() {
                   </div>
                 </div>
 
-                {/* ✅ Images (ALL SHOWN ALWAYS, existing API urls included) */}
+                {/*  Images (ALL SHOWN ALWAYS, existing API urls included) */}
                 <div className="grid md:grid-cols-3 gap-4">
                   <SingleImageDropzone
                     label={`Profile Image (${requiredLabel(docType)} for your current doc type)`}

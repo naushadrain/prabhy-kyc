@@ -101,11 +101,7 @@ export const Header: React.FC<HeaderProps> = ({ onMenuClick, title }) => {
         {/* RIGHT */}
         <div className="flex items-center gap-1 sm:gap-2">
           {/* Notification Bell */}
-          <Button variant="ghost" size="icon" type="button" className="relative">
-            <Bell className="w-5 h-5 text-primary" />
-            {/* Notification dot */}
-            <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-red-500 rounded-full ring-2 ring-background" />
-          </Button>
+          
 
           {/* Settings Dialog */}
           <Dialog>

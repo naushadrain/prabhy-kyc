@@ -1,15 +1,8 @@
 // src/api/policy/uploadPolicyDoc.ts
+import { authFetch } from "../auth/authFetch";
 import { buildSignatureForBody } from "../session/signature";
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL as string;
-
-function getAccessToken() {
-  return (
-    localStorage.getItem("access_token") ||
-    localStorage.getItem("accessToken") ||
-    ""
-  );
-}
 
 export interface UploadPolicyDocResponse {
   process_result: boolean;
@@ -37,9 +30,6 @@ export async function uploadPolicyDocument(
 ): Promise<UploadPolicyDocResponse> {
   if (!API_BASE_URL) throw new Error("Missing env var: VITE_API_BASE_URL");
 
-  const accessToken = getAccessToken();
-  if (!accessToken) throw new Error("Not logged in. Please login first.");
-
   // For multipart/form-data, signature body is always empty string
   const { unixTs, signature } = buildSignatureForBody("");
   const verifySignature = `${unixTs}.${signature}`;
@@ -55,13 +45,13 @@ export async function uploadPolicyDocument(
   formData.append("image_id",    uniqueImageId);
   formData.append("image_file",  imageFile);
 
-  const res = await fetch(`${API_BASE_URL}/v1/Policy/upload-policy-doc`, {
+  const res = await authFetch(`${API_BASE_URL}/v1/Policy/upload-policy-doc`, {
     method: "POST",
     headers: {
-      Authorization: `Bearer ${accessToken}`,
       "verify-signature": verifySignature,
       Accept: "*/*",
       // DO NOT set Content-Type — browser sets multipart boundary automatically
+      // DO NOT set Authorization — authFetch handles it + auto-refreshes on 401
     },
     body: formData,
   });

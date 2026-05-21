@@ -1,6 +1,6 @@
 import { buildSignatureForBody } from "../session/signature";
 import { createSession } from "../session/sessionClient";
-
+import { authFetch } from "../auth/authFetch";
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL as string;
 const USER_LOGIN_ID = import.meta.env.VITE_USER_LOGIN_ID as string;
 
@@ -10,9 +10,9 @@ export async function getTravelAgeBands() {
     const { unixTs, signature } = buildSignatureForBody("");
     const basicToken = btoa(`${USER_LOGIN_ID}:${processKey}`);
 
-    const url = new URL(`${API_BASE_URL}/v1/Travel/get-travel-age-bands?class_id=81`);
+    const url = new URL(`${API_BASE_URL}/v1/Travel/get-travel-age-bands?class_id=33`);
 
-    const res = await fetch(url.toString(), {
+    const res = await authFetch(url.toString(), {
         method: "GET",
         headers: {
             Authorization: `Basic ${basicToken}`,

@@ -1,12 +1,11 @@
-// ✅ GetTravelCatalogues.ts (complete working code)
-
 import { buildSignatureForBody } from "../session/signature";
 import { createSession } from "../session/sessionClient";
+import { authFetch } from "../auth/authFetch";
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL as string;
 const USER_LOGIN_ID = import.meta.env.VITE_USER_LOGIN_ID as string;
 
-async function makeAuthHeaders() {
+async function makeSignedHeaders() {
   if (!API_BASE_URL || !USER_LOGIN_ID) {
     throw new Error("Missing env vars: VITE_API_BASE_URL / VITE_USER_LOGIN_ID");
   }
@@ -18,31 +17,35 @@ async function makeAuthHeaders() {
   return {
     "Content-Type": "application/json",
     "verify-signature": `${unixTs}.${signature}`,
-    Authorization: `Basic ${basicToken}`,
+    "X-Basic-Authorization": `Basic ${basicToken}`,
     Accept: "*/*",
   };
 }
 
 export const getTravelCataloguesPlane = async () => {
-  const headers = await makeAuthHeaders();
+  const headers = await makeSignedHeaders();
 
-  const res = await fetch(
-    `${API_BASE_URL}/v1/Travel/get-travel-plans?class_id=81`,
-    { method: "GET", headers }
+  const res = await authFetch(
+    `${API_BASE_URL}/v1/Travel/get-travel-plans?class_id=33`,
+    {
+      method: "GET",
+      headers,
+    }
   );
 
   if (!res.ok) throw new Error(await res.text());
   return res.json();
 };
 
-export const getTravelCataloguesArea = async (areaPlanId: string) => {
-  const headers = await makeAuthHeaders();
+export const getTravelCataloguesArea = async (planId: string) => {
+  const headers = await makeSignedHeaders();
 
-  const res = await fetch(
-    `${API_BASE_URL}/v1/Travel/get-travel-area?class_id=81&plan_id=${encodeURIComponent(
-      areaPlanId
-    )}`,
-    { method: "GET", headers }
+  const res = await authFetch(
+    `${API_BASE_URL}/v1/Travel/get-travel-area?class_id=33&plan_id=${encodeURIComponent(planId)}`,
+    {
+      method: "GET",
+      headers,
+    }
   );
 
   if (!res.ok) throw new Error(await res.text());
@@ -50,30 +53,38 @@ export const getTravelCataloguesArea = async (areaPlanId: string) => {
 };
 
 export const getTravelCataloguesPackage = async (
+  planId: string,
   areaId: string,
-  areaPlanId: string
+  
 ) => {
-  const headers = await makeAuthHeaders();
+  const headers = await makeSignedHeaders();
 
-  const res = await fetch(
-    `${API_BASE_URL}/v1/Travel/get-travel-packages?class_id=81&area_id=${encodeURIComponent(
-      areaId
-    )}&area_plan_id=${encodeURIComponent(areaPlanId)}`,
-    { method: "GET", headers }
+  const res = await authFetch(
+    `${API_BASE_URL}/v1/Travel/get-travel-packages?class_id=33&plan_id=${encodeURIComponent(planId)}&area_id=${encodeURIComponent(areaId)}`,
+    {
+      method: "GET",
+      headers,
+    }
   );
 
   if (!res.ok) throw new Error(await res.text());
   return res.json();
 };
 
+export async function getTravelPeriod(
+  planId: string | number,
+  days: string | number,
+  area_id: string | number,
+  package_id:string | number
+) {
+  const headers = await makeSignedHeaders();
 
-export async function getTravelPeriod(planId: string | number, days: string | number) {
-  const headers = await makeAuthHeaders();
+  const url = `${API_BASE_URL}/v1/Travel/get-travel-period?class_id=33&plan_id=${planId}&days=${days}&area_id=${area_id}&package_id=${package_id}`;
 
-  const url =
-    `${API_BASE_URL}/v1/Travel/get-travel-period?class_id=81&plan_id=${planId}&days=${days}`;
-
-  const res = await fetch(url, { method: "GET", headers });
+  const res = await authFetch(url, {
+    method: "GET",
+    headers,
+  });
 
   if (!res.ok) throw new Error(await res.text());
   return res.json();

@@ -7,7 +7,7 @@ import { Header } from "@/components/Header";
 import { InsuranceCard } from "@/components/InsuranceCard";
 import { useLanguage } from "@/contexts/LanguageContext";
 
-import { AlertCircle, CheckCircle2, XCircle, Info, ShieldAlert, Wrench } from "lucide-react";
+import { AlertCircle, CheckCircle2, XCircle, Info, ShieldAlert } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 import {
@@ -42,7 +42,6 @@ export const Dashboard = () => {
 
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
-  // Modal states
   const [modalOpen, setModalOpen] = useState(false);
   const [modalKind, setModalKind] = useState<ModalKind>("kyc");
   const [modalTitle, setModalTitle] = useState("");
@@ -89,7 +88,6 @@ export const Dashboard = () => {
     };
   }, []);
 
-  // Normalize status
   const statusRaw = kycData?.kyc_Status ?? "Unknown";
   const status = String(statusRaw).trim().toLowerCase();
 
@@ -102,7 +100,6 @@ export const Dashboard = () => {
     status === "processing" ||
     status === "submitted";
 
-  // Latest note
   const latestNoteWithMessage = useMemo(() => {
     const withComments = (kycNotes || [])
       .filter((n) => String(n?.comments ?? "").trim().length > 0)
@@ -118,31 +115,36 @@ export const Dashboard = () => {
   const noteMessage = String(latestNoteWithMessage?.comments ?? "").trim();
   const noteType = String(latestNoteWithMessage?.note_Type ?? "").trim().toLowerCase();
 
-  // Alert styles — matched to project primary (red) theme
   const stylesFor = (variant: "success" | "warning" | "danger" | "info") => {
-    if (variant === "success") return {
-      alert:   "mb-6 border-l-4 border-l-primary border-primary/30 bg-primary/10",
-      text:    "text-primary",
-      badge:   "bg-green-600 text-white border border-green-600",
-      icon:    "text-primary",
-    };
-    if (variant === "danger") return {
-      alert:   "mb-6 border-l-4 border-l-primary border-primary/30 bg-primary/5",
-      text:    "text-primary",
-      badge:   "bg-primary/10 text-primary border border-primary/30",
-      icon:    "text-primary",
-    };
-    if (variant === "warning") return {
-      alert:   "mb-6 border-l-4 border-l-orange-500 border-orange-200 bg-orange-50",
-      text:    "text-orange-800",
-      badge:   "bg-orange-100 text-orange-700 border border-orange-200",
-      icon:    "text-orange-500",
-    };
+    if (variant === "success") {
+      return {
+        alert: "mb-6 border-l-4 border-l-primary border-primary/30 bg-primary/10",
+        text: "text-primary",
+        badge: "bg-green-600 text-white border border-green-600",
+        icon: "text-primary",
+      };
+    }
+    if (variant === "danger") {
+      return {
+        alert: "mb-6 border-l-4 border-l-primary border-primary/30 bg-primary/5",
+        text: "text-primary",
+        badge: "bg-primary/10 text-primary border border-primary/30",
+        icon: "text-primary",
+      };
+    }
+    if (variant === "warning") {
+      return {
+        alert: "mb-6 border-l-4 border-l-orange-500 border-orange-200 bg-orange-50",
+        text: "text-orange-800",
+        badge: "bg-orange-100 text-orange-700 border border-orange-200",
+        icon: "text-orange-500",
+      };
+    }
     return {
-      alert:   "mb-6 border-l-4 border-l-muted-foreground/40 border-border bg-muted/40",
-      text:    "text-muted-foreground",
-      badge:   "bg-muted text-muted-foreground border border-border",
-      icon:    "text-muted-foreground",
+      alert: "mb-6 border-l-4 border-l-muted-foreground/40 border-border bg-muted/40",
+      text: "text-muted-foreground",
+      badge: "bg-muted text-muted-foreground border border-border",
+      icon: "text-muted-foreground",
     };
   };
 
@@ -172,13 +174,25 @@ export const Dashboard = () => {
     let variant: "success" | "warning" | "danger" | "info" = "info";
     let Icon = Info;
 
-    if (noteType.includes("verified") || noteType.includes("approved") || noteType.includes("success")) {
+    if (
+      noteType.includes("verified") ||
+      noteType.includes("approved") ||
+      noteType.includes("success")
+    ) {
       variant = "success";
       Icon = CheckCircle2;
-    } else if (noteType.includes("reject") || noteType.includes("fail") || noteType.includes("error")) {
+    } else if (
+      noteType.includes("reject") ||
+      noteType.includes("fail") ||
+      noteType.includes("error")
+    ) {
       variant = "danger";
       Icon = XCircle;
-    } else if (noteType.includes("pending") || noteType.includes("review") || noteType.includes("process")) {
+    } else if (
+      noteType.includes("pending") ||
+      noteType.includes("review") ||
+      noteType.includes("process")
+    ) {
       variant = "warning";
       Icon = AlertCircle;
     }
@@ -194,11 +208,15 @@ export const Dashboard = () => {
   const ui = noteMessage ? notesUi : statusUi;
   const statusLabel = statusRaw && statusRaw !== "Unknown" ? String(statusRaw) : "Unknown";
 
-  /**
-   * Generic function to check KYC before navigating to any service
-   */
+  function openComingSoonModal(serviceName: string) {
+    setModalKind("info");
+    setModalTitle(serviceName);
+    setModalMsg("This feature is coming soon...");
+    setTargetRoute("");
+    setModalOpen(true);
+  }
+
   function checkKycAndNavigate(route: string, serviceName: string) {
-    // If still loading KYC
     if (loading) {
       setModalKind("kyc");
       setModalTitle("Please wait");
@@ -207,7 +225,6 @@ export const Dashboard = () => {
       return;
     }
 
-    // If there's an error loading KYC
     if (error) {
       setModalKind("kyc");
       setModalTitle("KYC not available");
@@ -216,13 +233,11 @@ export const Dashboard = () => {
       return;
     }
 
-    // If KYC is verified - allow navigation
     if (isVerified) {
       navigate(route);
       return;
     }
 
-    // If KYC is rejected
     if (isRejected) {
       setModalKind("kyc");
       setModalTitle("KYC Verification Required");
@@ -236,7 +251,6 @@ export const Dashboard = () => {
       return;
     }
 
-    // If KYC is pending
     if (isPending) {
       setModalKind("kyc");
       setModalTitle("KYC Verification Pending");
@@ -250,7 +264,6 @@ export const Dashboard = () => {
       return;
     }
 
-    // If KYC status is unknown
     setModalKind("kyc");
     setModalTitle("KYC Required");
     setModalMsg(`Please complete your KYC verification to access ${serviceName}.`);
@@ -258,17 +271,28 @@ export const Dashboard = () => {
     setModalOpen(true);
   }
 
-  // Service click handlers
   const handleMotorClick = () => {
-    checkKycAndNavigate("/motor-insurance-plan", "Motor Insurance");
+    checkKycAndNavigate("/motor-insurance", "Motor Insurance");
   };
+  const handleTwoWheelerClick = () =>{
+    checkKycAndNavigate("/two-wheeler","Two Wheeler");
+  }
+   const handlePrivateVechicleClick = () =>{
+    checkKycAndNavigate("/private-vechicle","Two Wheeler");
+  }
 
+   const handleCommercialVehicleClick = () =>{
+    checkKycAndNavigate("/two-wheeler","Two Wheeler");
+  }
+ const handleAccidenClick = () =>{
+    checkKycAndNavigate("/accidents","Two Wheeler");
+  }
   const handleTravelClick = () => {
     checkKycAndNavigate("/travel-insurance-coverage", "Travel Insurance");
   };
 
   const handleHomeClick = () => {
-    checkKycAndNavigate("/home-insurance", "Home Insurance");
+    openComingSoonModal("Home Insurance");
   };
 
   function closeModal() {
@@ -302,7 +326,6 @@ export const Dashboard = () => {
             <span className="text-secondary">Insurance Policy</span>
           </h1>
 
-          {/* ── KYC Status Banner ───────────────────────────── */}
           {error && (
             <div className="mb-6 flex items-start gap-3 rounded-lg border-l-4 border-l-primary border-primary/30 bg-primary/5 px-4 py-3.5">
               <XCircle className="h-5 w-5 text-primary mt-0.5 shrink-0" />
@@ -318,7 +341,9 @@ export const Dashboard = () => {
               <div className="w-5 h-5 rounded-full border-2 border-primary border-t-transparent animate-spin shrink-0" />
               <div>
                 <p className="text-sm font-medium text-foreground">Checking KYC status…</p>
-                <p className="text-xs text-muted-foreground mt-0.5">Please wait while we verify your information.</p>
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  Please wait while we verify your information.
+                </p>
               </div>
             </div>
           )}
@@ -365,10 +390,8 @@ export const Dashboard = () => {
             </div>
           )}
 
-          {/* Insurance Cards */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {/* Motor Insurance */}
-            <div
+            {/* <div
               role="button"
               tabIndex={0}
               onClick={handleMotorClick}
@@ -381,9 +404,64 @@ export const Dashboard = () => {
                 subtitle={`${t("insurance.vehicle")} • KYC: ${statusLabel}`}
                 to="#"
               />
+            </div> */}
+            <div
+              role="button"
+              tabIndex={0}
+              onClick={handleTwoWheelerClick}
+              onKeyDown={(e) => e.key === "Enter" && handleTwoWheelerClick()}
+              className="cursor-pointer transition-transform hover:scale-105"
+            >
+              <InsuranceCard
+                type="two-wheeler"
+                title="Two Wheeler"
+                subtitle="Two Wheeler Insurance"
+                to="#"
+              />
+            </div>
+            <div
+              role="button"
+              tabIndex={0}
+              onClick={handlePrivateVechicleClick}
+              onKeyDown={(e) => e.key === "Enter" && handlePrivateVechicleClick()}
+              className="cursor-pointer transition-transform hover:scale-105"
+            >
+              <InsuranceCard
+                type="private-vehicle"
+                title="Private Vihicle"
+                subtitle="Private Vehicle Insurance"
+                to="#"
+              />
+            </div>
+            <div
+              role="button"
+              tabIndex={0}
+              onClick={handleCommercialVehicleClick}
+              onKeyDown={(e) => e.key === "Enter" && handleCommercialVehicleClick()}
+              className="cursor-pointer transition-transform hover:scale-105"
+            >
+              <InsuranceCard
+                type="commercial-vehicle"
+                title="Commercial Vehicle"
+                subtitle="Commercial Vehicle Insurance"
+                to="#"
+              />
+            </div>
+            <div
+              role="button"
+              tabIndex={0}
+              onClick={handleAccidenClick}
+              onKeyDown={(e) => e.key === "Enter" && handleAccidenClick()}
+              className="cursor-pointer transition-transform hover:scale-105"
+            >
+              <InsuranceCard
+                type="accident"
+                title="Accident"
+                subtitle="Accident Insurance"
+                to="#"
+              />
             </div>
 
-            {/* Travel Insurance */}
             <div
               role="button"
               tabIndex={0}
@@ -399,7 +477,6 @@ export const Dashboard = () => {
               />
             </div>
 
-            {/* Home Insurance */}
             <div
               role="button"
               tabIndex={0}
@@ -415,7 +492,7 @@ export const Dashboard = () => {
               />
             </div>
           </div>
-          {/* Modal Dialog */}
+
           <Dialog open={modalOpen} onOpenChange={(v) => !v && closeModal()}>
             <DialogContent className="sm:max-w-md">
               <DialogHeader>

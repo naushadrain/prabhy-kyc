@@ -1,53 +1,60 @@
-import { getJwtExpMs } from "./tokenExpiry";
+// src/api/auth/tokenStore.ts
+const ACCESS_TOKEN_KEY = "access_token";
+const REFRESH_TOKEN_KEY = "refresh_token";
+const EXPIRES_AT_KEY = "expires_at";
 
-export type TokenPair = {
-    access_token?: string;
-    refresh_token?: string;
-    expires_in?: number; // seconds
+export type TokenPayload = {
+  access_token: string;
+  refresh_token?: string;
+  expires_in?: number;
 };
 
-const ACCESS = "access_token";
-const REFRESH = "refresh_token";
-const ACCESS_EXPIRES_AT = "access_expires_at";
+class TokenStore {
+  setTokens({ access_token, refresh_token, expires_in }: TokenPayload): void {
+    localStorage.setItem(ACCESS_TOKEN_KEY, access_token);
 
-export function setTokens(data: TokenPair) {
-    if (data.access_token) localStorage.setItem(ACCESS, data.access_token);
-    if (data.refresh_token) localStorage.setItem(REFRESH, data.refresh_token);
-
-    // Prefer expires_in (seconds)
-    if (typeof data.expires_in === "number" && data.expires_in > 0) {
-        const expMs = Date.now() + data.expires_in * 1000;
-        localStorage.setItem(ACCESS_EXPIRES_AT, String(expMs));
-        return;
+    if (refresh_token) {
+      localStorage.setItem(REFRESH_TOKEN_KEY, refresh_token);
     }
 
-    // Else try JWT exp
-    if (data.access_token) {
-        const expMs = getJwtExpMs(data.access_token);
-        if (expMs) localStorage.setItem(ACCESS_EXPIRES_AT, String(expMs));
+    if (expires_in && Number.isFinite(expires_in)) {
+      const expiresAt = Date.now() + expires_in * 1000;
+      localStorage.setItem(EXPIRES_AT_KEY, String(expiresAt));
     }
+  }
+
+  getAccessToken(): string | null {
+    return localStorage.getItem(ACCESS_TOKEN_KEY);
+  }
+
+  getRefreshToken(): string | null {
+    return localStorage.getItem(REFRESH_TOKEN_KEY);
+  }
+
+  getExpiresAt(): number | null {
+    const value = localStorage.getItem(EXPIRES_AT_KEY);
+    return value ? Number(value) : null;
+  }
+
+  clearTokens(): void {
+    localStorage.removeItem(ACCESS_TOKEN_KEY);
+    localStorage.removeItem(REFRESH_TOKEN_KEY);
+    localStorage.removeItem(EXPIRES_AT_KEY);
+  }
+
+  hasAccessToken(): boolean {
+    return !!this.getAccessToken();
+  }
+
+  hasRefreshToken(): boolean {
+    return !!this.getRefreshToken();
+  }
 }
 
-export function getAccessToken() {
-    return localStorage.getItem(ACCESS);
-}
-export function getRefreshToken() {
-    return localStorage.getItem(REFRESH);
-}
-export function getAccessExpiresAtMs() {
-    const v = localStorage.getItem(ACCESS_EXPIRES_AT);
-    return v ? Number(v) : 0;
-}
+export const tokenStore = new TokenStore();
 
-export function clearTokens() {
-    localStorage.removeItem(ACCESS);
-    localStorage.removeItem(REFRESH);
-    localStorage.removeItem(ACCESS_EXPIRES_AT);
-}
-
-// if exp is unknown => return false and rely on 401 retry
-export function isNearExpiry(bufferMs = 30_000) {
-    const exp = getAccessExpiresAtMs();
-    if (!exp) return false;
-    return Date.now() >= exp - bufferMs;
-}
+export const setTokens = tokenStore.setTokens.bind(tokenStore);
+export const getAccessToken = tokenStore.getAccessToken.bind(tokenStore);
+export const getRefreshToken = tokenStore.getRefreshToken.bind(tokenStore);
+export const getExpiresAt = tokenStore.getExpiresAt.bind(tokenStore);
+export const clearTokens = tokenStore.clearTokens.bind(tokenStore);

@@ -1,31 +1,22 @@
-import React, { useState, useEffect, useCallback } from "react";
-import { Sidebar } from "@/components/Sidebar";
-import { Header } from "@/components/Header";
-import { useLanguage } from "@/contexts/LanguageContext";
+// src/pages/travels/TravelInsuranceDetails.tsx
+import React, { useEffect, useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { Switch } from "@/components/ui/switch";
-import { ChevronLeft, AlertTriangle } from "lucide-react";
+import { ChevronLeft } from "lucide-react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { getTravelAgeBands } from "@/api/travels/GetTravelAgeBands";
 import { getTravelPeriod } from "@/api/travels/GetTravelCatalogues";
 
 type AgeBandItem = {
   value: string;
+  data:string;
   age_from: string;
   age_to: string;
 };
 
 type PeriodApiItem = { value: string; data: string };
+
 type PeriodApiResponse = {
   class_id: number;
   total_data_no: number;
@@ -37,35 +28,37 @@ type CoverageState = {
   planValue?: string;
   areaValue?: string;
   packageValue?: string;
+  planLabel?: string;
 };
 
 export const TravelInsuranceDetails = () => {
-  const { t } = useLanguage();
   const navigate = useNavigate();
   const location = useLocation();
-  const [sidebarOpen, setSidebarOpen] = useState<boolean>(false);
 
-  const steps = [
-    { number: 1, label: "Coverage Plan", status: "completed" as const },
-    { number: 2, label: "Coverage Details", status: "inProcess" as const },
-    { number: 3, label: "Instant Quotes", status: "pending" as const },
-  ];
-
-  // Store step-1 selections
-  const [coverageState, setCoverageState] = React.useState<CoverageState>({
+  const [coverageState, setCoverageState] = useState<CoverageState>({
     planValue: "",
     areaValue: "",
     packageValue: "",
+    planLabel: "",
   });
 
   const planId = coverageState.planValue || "";
+  const areaId = coverageState.areaValue || "";
+  const packageId = coverageState.packageValue || "";
+
+  const isAnnualStudentPlan = useMemo(() => {
+    return (coverageState.planLabel || "")
+      .toLowerCase()
+      .includes("annual student plan");
+  }, [coverageState.planLabel]);
+
+  const maxAllowedDays = isAnnualStudentPlan ? 366 : 180;
 
   function handleBack() {
     navigate("/travel-insurance-coverage", { state: coverageState });
   }
 
-  // ---------------- helpers ----------------
-  const todayStr = React.useMemo(() => {
+  const todayStr = useMemo(() => {
     const d = new Date();
     d.setHours(0, 0, 0, 0);
     const yyyy = d.getFullYear();
@@ -74,8 +67,17 @@ export const TravelInsuranceDetails = () => {
     return `${yyyy}-${mm}-${dd}`;
   }, []);
 
-  // Calculate minimum DOB date (16 years ago from today)
-  const minDobStr = React.useMemo(() => {
+  const tomorrowStr = useMemo(() => {
+    const d = new Date();
+    d.setHours(0, 0, 0, 0);
+    d.setDate(d.getDate() + 1);
+    const yyyy = d.getFullYear();
+    const mm = String(d.getMonth() + 1).padStart(2, "0");
+    const dd = String(d.getDate()).padStart(2, "0");
+    return `${yyyy}-${mm}-${dd}`;
+  }, []);
+
+  const minDobStr = useMemo(() => {
     const d = new Date();
     d.setFullYear(d.getFullYear() - 16);
     d.setHours(0, 0, 0, 0);
@@ -98,6 +100,7 @@ export const TravelInsuranceDetails = () => {
   function calcAgeYears(dobISO: string) {
     const dob = new Date(dobISO);
     dob.setHours(0, 0, 0, 0);
+
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
@@ -122,8 +125,10 @@ export const TravelInsuranceDetails = () => {
     for (const it of items) {
       const m = String(it.data).match(/(\d+)\s*-\s*(\d+)/);
       if (!m) continue;
+
       const from = Number(m[1]);
       const to = Number(m[2]);
+
       if (Number.isFinite(from) && Number.isFinite(to)) {
         if (days >= from && days <= to) return it;
       }
@@ -131,37 +136,34 @@ export const TravelInsuranceDetails = () => {
     return items[0] ?? null;
   }
 
-  // ---------------- Step-2 Fields ----------------
-  const [travelFrom, setTravelFrom] = React.useState("");
-  const [travelTo, setTravelTo] = React.useState("");
-  const [noOfDays, setNoOfDays] = React.useState<number | "">("");
-  const [numberOfTravelers, setNumberOfTravelers] = React.useState<number>(1);
+  const [travelFrom, setTravelFrom] = useState("");
+  const [travelTo, setTravelTo] = useState("");
+  const [noOfDays, setNoOfDays] = useState<number | "">("");
+  const [numberOfTravelers, setNumberOfTravelers] = useState<number>(1);
 
-  const [travelFromError, setTravelFromError] = React.useState<string | null>(null);
-  const [travelToError, setTravelToError] = React.useState<string | null>(null);
+  const [travelFromError, setTravelFromError] = useState<string | null>(null);
+  const [travelToError, setTravelToError] = useState<string | null>(null);
 
-  const [dob, setDob] = React.useState("");
-  const [age, setAge] = React.useState<number | "">("");
-  const [dobError, setDobError] = React.useState<string | null>(null);
+  const [dob, setDob] = useState("");
+  const [age, setAge] = useState<number | "">("");
+  const [dobError, setDobError] = useState<string | null>(null);
 
-  const [passportNumber, setPassportNumber] = React.useState("");
-  const [phoneNumber, setPhoneNumber] = React.useState("");
+  const [passportNumber, setPassportNumber] = useState("");
+  const [phoneNumber, setPhoneNumber] = useState("");
 
-  const [periodId, setPeriodId] = React.useState<string>("");
-  const [periodLoading, setPeriodLoading] = React.useState(false);
-  const [periodError, setPeriodError] = React.useState<string | null>(null);
-  const [periodResp, setPeriodResp] = React.useState<PeriodApiResponse | null>(null);
-  const [periodSelectedLabel, setPeriodSelectedLabel] = React.useState<string>("");
+  const [periodId, setPeriodId] = useState<string>("");
+  const [periodLoading, setPeriodLoading] = useState(false);
+  const [periodError, setPeriodError] = useState<string | null>(null);
+  const [periodResp, setPeriodResp] = useState<PeriodApiResponse | null>(null);
+  const [periodSelectedLabel, setPeriodSelectedLabel] = useState<string>("");
 
-  // ---------------- Age Bands API ----------------
-  const [ageBandList, setAgeBandList] = React.useState<AgeBandItem[]>([]);
-  const [ageBandValue, setAgeBandValue] = React.useState<string>("");
-  const [ageBandError, setAgeBandError] = React.useState<string | null>(null);
+  const [ageBandList, setAgeBandList] = useState<AgeBandItem[]>([]);
+  const [ageBandValue, setAgeBandValue] = useState<string>("");
+  const [ageBandError, setAgeBandError] = useState<string | null>(null);
 
-  const [loadingAgeBands, setLoadingAgeBands] = React.useState(false);
-  const [ageBandsError, setAgeBandsError] = React.useState<string | null>(null);
+  const [loadingAgeBands, setLoadingAgeBands] = useState(false);
+  const [ageBandsError, setAgeBandsError] = useState<string | null>(null);
 
-  // Load saved details from localStorage on mount
   useEffect(() => {
     try {
       const saved = localStorage.getItem("travel.coverageDetails");
@@ -183,11 +185,11 @@ export const TravelInsuranceDetails = () => {
     }
   }, []);
 
-  // Load Step-1 selected values from router state OR localStorage
-  React.useEffect(() => {
+  useEffect(() => {
     function loadCoverageState() {
       const st = (location.state || {}) as CoverageState;
       let ls: CoverageState = {};
+
       try {
         const raw = localStorage.getItem("travel.coveragePlan");
         if (raw) ls = JSON.parse(raw);
@@ -199,6 +201,7 @@ export const TravelInsuranceDetails = () => {
         planValue: st.planValue ?? ls.planValue ?? "",
         areaValue: st.areaValue ?? ls.areaValue ?? "",
         packageValue: st.packageValue ?? ls.packageValue ?? "",
+        planLabel: st.planLabel ?? ls.planLabel ?? "",
       };
 
       setCoverageState(merged);
@@ -207,8 +210,7 @@ export const TravelInsuranceDetails = () => {
     loadCoverageState();
   }, [location.state]);
 
-  // Load Age Bands
-  React.useEffect(() => {
+  useEffect(() => {
     let mounted = true;
 
     async function loadAgeBands() {
@@ -223,8 +225,7 @@ export const TravelInsuranceDetails = () => {
 
         if (!mounted) return;
         setAgeBandList(list);
-        
-        // If DOB already selected, recalculate age band
+
         if (dob) {
           const yrs = calcAgeYears(dob);
           const bandVal = findAgeBandValue(list, yrs);
@@ -247,9 +248,8 @@ export const TravelInsuranceDetails = () => {
     return () => {
       mounted = false;
     };
-  }, []);
+  }, [dob]);
 
-  // ---------------- handlers ----------------
   const onChangeTravelFrom = (v: string) => {
     setTravelFrom(v);
     setTravelFromError(null);
@@ -269,7 +269,11 @@ export const TravelInsuranceDetails = () => {
     if (v && travelTo) {
       const d = daysBetweenInclusive(v, travelTo);
       setNoOfDays(d);
-      setTravelToError(d > 180 ? "No of Days must be below 180 days" : null);
+      setTravelToError(
+        d > maxAllowedDays
+          ? `No of Days must be below ${maxAllowedDays} days`
+          : null
+      );
     } else {
       setNoOfDays("");
     }
@@ -298,7 +302,10 @@ export const TravelInsuranceDetails = () => {
 
     const d = daysBetweenInclusive(travelFrom, v);
     setNoOfDays(d);
-    if (d > 180) setTravelToError("No of Days must be below 180 days");
+
+    if (d > maxAllowedDays) {
+      setTravelToError(`No of Days must be below ${maxAllowedDays} days`);
+    }
   };
 
   const onChangeDob = (v: string) => {
@@ -312,7 +319,6 @@ export const TravelInsuranceDetails = () => {
       return;
     }
 
-    // Check if date is in future
     if (v > todayStr) {
       setDobError("DOB cannot be in the future");
       setAge("");
@@ -320,7 +326,6 @@ export const TravelInsuranceDetails = () => {
       return;
     }
 
-    // Check minimum age (16 years)
     if (v > minDobStr) {
       setDobError("You must be at least 16 years old");
       setAge("");
@@ -348,27 +353,34 @@ export const TravelInsuranceDetails = () => {
     setNumberOfTravelers(clampedValue);
   };
 
-  // Call Period API when planId + noOfDays ready
-  React.useEffect(() => {
+  useEffect(() => {
     let cancelled = false;
 
     async function loadPeriod() {
       if (!planId) return;
+      if (!areaId) return;
+      if (!packageId) return;
       if (typeof noOfDays !== "number") return;
       if (noOfDays <= 0) return;
-      if (noOfDays > 180) return;
+      if (noOfDays > maxAllowedDays) return;
 
       try {
         setPeriodLoading(true);
         setPeriodError(null);
 
-        const resp: PeriodApiResponse = await getTravelPeriod(planId, noOfDays);
+        const resp: PeriodApiResponse = await getTravelPeriod(
+          planId,
+          noOfDays,
+          areaId,
+          packageId
+        );
 
         if (cancelled) return;
 
         setPeriodResp(resp);
 
         const list = Array.isArray(resp?.catalogue_list) ? resp.catalogue_list : [];
+
         if (!resp?.process_result || list.length === 0) {
           setPeriodId("");
           setPeriodSelectedLabel("");
@@ -402,33 +414,32 @@ export const TravelInsuranceDetails = () => {
     return () => {
       cancelled = true;
     };
-  }, [planId, noOfDays]);
+  }, [planId, areaId, packageId, noOfDays, maxAllowedDays]);
 
-  // Validate & Save & Navigate
   const onNext = () => {
     let ok = true;
 
     if (!travelFrom) {
       setTravelFromError("Please select Travel Period From");
       ok = false;
-    } else if (travelFrom < todayStr) {
-      setTravelFromError("Past date not allowed");
+    } else if (travelFrom < tomorrowStr) {
+      setTravelFromError("Today's or past dates are not allowed");
       ok = false;
     }
 
     if (!travelTo) {
       setTravelToError("Please select Travel Period To");
       ok = false;
-    } else if (travelTo < todayStr) {
-      setTravelToError("Past date not allowed");
+    } else if (travelTo < tomorrowStr) {
+      setTravelToError("Today's or past dates are not allowed");
       ok = false;
     } else if (travelFrom && travelTo < travelFrom) {
       setTravelToError("Travel Period To must be same or after Travel Period From");
       ok = false;
     }
 
-    if (typeof noOfDays === "number" && noOfDays > 180) {
-      setTravelToError("No of Days must be below 180 days");
+    if (typeof noOfDays === "number" && noOfDays > maxAllowedDays) {
+      setTravelToError(`No of Days must be below ${maxAllowedDays} days`);
       ok = false;
     }
 
@@ -457,6 +468,9 @@ export const TravelInsuranceDetails = () => {
     if (!planId) {
       setPeriodError("Missing plan_id (go back and select plan)");
       ok = false;
+    } else if (!areaId) {
+      setPeriodError("Missing area_id (go back and select area)");
+      ok = false;
     } else if (periodLoading) {
       setPeriodError("Loading travel period... please wait");
       ok = false;
@@ -482,8 +496,11 @@ export const TravelInsuranceDetails = () => {
       passport_number: passportNumber,
     };
 
-    localStorage.setItem("travel.coverageDetails", JSON.stringify(coverageDetailsPayload));
-    navigate("/travel-insurance-instant-quotes");
+    localStorage.setItem(
+      "travel.coverageDetails",
+      JSON.stringify(coverageDetailsPayload)
+    );
+    navigate("/travel-insurance-premium");
   };
 
   const calculateDisabled =
@@ -498,65 +515,16 @@ export const TravelInsuranceDetails = () => {
     !periodId;
 
   return (
-    <div className="flex min-h-screen">
-      <Sidebar open={sidebarOpen} onClose={() => setSidebarOpen(false)} />
-      <div className="flex-1 flex flex-col">
-        <Header onMenuClick={() => setSidebarOpen(true)} />
-        <main className="flex-1 p-8 bg-background">
-          {/* Stepper */}
-          <div className="mb-12">
-            <div className="flex items-center justify-between max-w-4xl mx-auto">
-              {steps.map((step, index) => (
-                <div key={step.number} className="flex items-center flex-1">
-                  <div className="flex flex-col items-center">
-                    <div
-                      className={`w-12 h-12 rounded-full flex items-center justify-center mb-2 ${
-                        step.status === "completed" || step.status === "inProcess"
-                          ? "bg-primary text-primary-foreground"
-                          : "bg-muted text-muted-foreground"
-                      }`}
-                    >
-                      {step.status === "completed" || step.status === "inProcess" ? "✓" : step.number}
-                    </div>
-                    <span className="text-xs text-center max-w-[120px] font-medium">
-                      STEP {step.number}
-                    </span>
-                    <span
-                      className={`text-xs mt-1 ${
-                        step.status === "completed"
-                          ? "text-green-600"
-                          : step.status === "inProcess"
-                          ? "text-primary"
-                          : "text-orange-500"
-                      }`}
-                    >
-                      {step.status === "completed"
-                        ? "Completed"
-                        : step.status === "inProcess"
-                        ? "In Process"
-                        : "Pending"}
-                    </span>
-                    <span className="text-xs text-center max-w-[120px] mt-1">{step.label}</span>
-                  </div>
-                  {index < steps.length - 1 && <div className="flex-1 h-0.5 bg-border mx-2"></div>}
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* Content */}
-          <div className="max-w-4xl mx-auto">
-            <Button variant="ghost" onClick={handleBack} className="mb-6 gap-2">
-              <ChevronLeft className="w-4 h-4" /> Back to Step 1
-            </Button>
-
+    <>
             <h1 className="text-2xl font-bold mb-2">
               Travel Medical Insurance Individual Plan
             </h1>
-            <p className="text-muted-foreground mb-6">Step 2 of 3: Enter your travel details</p>
 
-            {/* Travel Period Section */}
             <div className="border rounded-lg p-6 mb-6">
+              <div className="mb-4 text-sm text-muted-foreground">
+                Maximum allowed days for this plan: {maxAllowedDays}
+              </div>
+
               <div className="grid md:grid-cols-2 gap-4 mb-4">
                 <div>
                   <Label htmlFor="travelFrom">Travel Period From</Label>
@@ -566,9 +534,11 @@ export const TravelInsuranceDetails = () => {
                     className="mt-2"
                     value={travelFrom}
                     onChange={(e) => onChangeTravelFrom(e.target.value)}
-                    min={todayStr}
+                    min={tomorrowStr}
                   />
-                  {travelFromError && <p className="mt-1 text-sm text-red-600">{travelFromError}</p>}
+                  {travelFromError && (
+                    <p className="mt-1 text-sm text-red-600">{travelFromError}</p>
+                  )}
                 </div>
 
                 <div>
@@ -579,10 +549,12 @@ export const TravelInsuranceDetails = () => {
                     className="mt-2"
                     value={travelTo}
                     onChange={(e) => onChangeTravelTo(e.target.value)}
-                    min={travelFrom || todayStr}
+                    min={travelFrom || tomorrowStr}
                     disabled={!travelFrom}
                   />
-                  {travelToError && <p className="mt-1 text-sm text-red-600">{travelToError}</p>}
+                  {travelToError && (
+                    <p className="mt-1 text-sm text-red-600">{travelToError}</p>
+                  )}
                 </div>
               </div>
 
@@ -596,8 +568,14 @@ export const TravelInsuranceDetails = () => {
                     value={noOfDays}
                     readOnly
                   />
-                  {periodLoading && <p className="text-xs mt-2 text-muted-foreground">Loading period...</p>}
-                  {periodError && <p className="text-xs mt-2 text-red-600">{periodError}</p>}
+                  {periodLoading && (
+                    <p className="text-xs mt-2 text-muted-foreground">
+                      Loading period...
+                    </p>
+                  )}
+                  {periodError && (
+                    <p className="text-xs mt-2 text-red-600">{periodError}</p>
+                  )}
                 </div>
 
                 <div>
@@ -615,22 +593,7 @@ export const TravelInsuranceDetails = () => {
               </div>
             </div>
 
-            {/* KYC Section */}
             <div className="border rounded-lg p-6 mb-6">
-              <Label className="mb-4 block font-semibold">KYC TYPE</Label>
-              <RadioGroup defaultValue="self" className="mb-6">
-                <div className="flex items-center space-x-4">
-                  <div className="flex items-center space-x-2">
-                    <RadioGroupItem value="self" id="self" />
-                    <Label htmlFor="self">Self</Label>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <RadioGroupItem value="others" id="others" />
-                    <Label htmlFor="others">Others</Label>
-                  </div>
-                </div>
-              </RadioGroup>
-
               <div className="grid md:grid-cols-2 gap-4">
                 <div>
                   <Label htmlFor="dob">Date of Birth</Label>
@@ -643,11 +606,19 @@ export const TravelInsuranceDetails = () => {
                     max={todayStr}
                     min="1900-01-01"
                   />
-                  {dobError && <p className="mt-1 text-sm text-red-600">{dobError}</p>}
-                  {ageBandError && <p className="mt-1 text-sm text-red-600">{ageBandError}</p>}
-                  {ageBandsError && <p className="mt-1 text-sm text-red-600">{ageBandsError}</p>}
+                  {dobError && (
+                    <p className="mt-1 text-sm text-red-600">{dobError}</p>
+                  )}
+                  {ageBandError && (
+                    <p className="mt-1 text-sm text-red-600">{ageBandError}</p>
+                  )}
+                  {ageBandsError && (
+                    <p className="mt-1 text-sm text-red-600">{ageBandsError}</p>
+                  )}
                   {loadingAgeBands && (
-                    <p className="mt-1 text-sm text-muted-foreground">Loading age bands...</p>
+                    <p className="mt-1 text-sm text-muted-foreground">
+                      Loading age bands...
+                    </p>
                   )}
                 </div>
 
@@ -665,7 +636,6 @@ export const TravelInsuranceDetails = () => {
               </div>
             </div>
 
-            {/* Actions */}
             <div className="flex gap-4">
               <Button variant="outline" onClick={handleBack} className="gap-2">
                 <ChevronLeft className="w-4 h-4" />
@@ -680,9 +650,6 @@ export const TravelInsuranceDetails = () => {
                 NEXT
               </Button>
             </div>
-          </div>
-        </main>
-      </div>
-    </div>
+    </>
   );
 };

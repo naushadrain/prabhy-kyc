@@ -1,5 +1,6 @@
 import { buildSignatureForBody } from "../session/signature";
 import { createSession } from "../session/sessionClient";
+import { authFetch } from "../auth/authFetch";
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL as string;
 const USER_LOGIN_ID = import.meta.env.VITE_USER_LOGIN_ID as string;
@@ -39,13 +40,13 @@ export async function getTravelPremium(payload: GetPremiumRequest) {
     period_id: String(payload.period_id),
   });
 
-  // ✅ debug: confirm body in console
+  //  debug: confirm body in console
   console.log("Premium Request Body:", bodyStr);
 
   const { unixTs, signature } = buildSignatureForBody(bodyStr);
   const basicToken = btoa(`${USER_LOGIN_ID}:${processKey}`);
 
-  const res = await fetch(`${API_BASE_URL}/v1/Travel/getpremium`, {
+  const res = await authFetch(`${API_BASE_URL}/v1/Travel/getpremium`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",

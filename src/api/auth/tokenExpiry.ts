@@ -1,43 +1,38 @@
-export function getJwtExpMs(token: string): number | null {
-  try {
-    const parts = token.split(".");
-    if (parts.length !== 3) return null; // not a JWT
+// src/api/auth/tokenExpiry.ts
+import { getExpiresAt } from "@/api/auth/tokenStore";
 
-    // base64url -> base64
-    const b64 = parts[1].replace(/-/g, "+").replace(/_/g, "/");
-    const json = decodeURIComponent(
-      atob(b64)
+function parseJwt(token: string): Record<string, any> | null {
+  try {
+    const base64Url = token.split(".")[1];
+    if (!base64Url) return null;
+
+    const base64 = base64Url.replace(/-/g, "+").replace(/_/g, "/");
+    const jsonPayload = decodeURIComponent(
+      atob(base64)
         .split("")
-        .map((c) => "%" + ("00" + c.charCodeAt(0).toString(16)).slice(-2))
+        .map((c) => "%" + c.charCodeAt(0).toString(16).padStart(2, "0"))
         .join("")
     );
 
-    const payload = JSON.parse(json);
-    if (!payload?.exp) return null;
-    return payload.exp * 1000;
+    return JSON.parse(jsonPayload);
   } catch {
     return null;
   }
 }
 
-export function isTokenExpired(token: string): boolean {
-  const expMs = getJwtExpMs(token);
+export function getTokenExpiryTime(token?: string | null): number | null {
+  if (!token) return getExpiresAt();
 
-  // If token isn't a JWT, rely on stored "access_expires_at"
-  if (!expMs) {
-    const stored = Number(localStorage.getItem("access_expires_at") || "0");
-    if (!stored) return false;
-    return Date.now() >= stored;
+  const parsed = parseJwt(token);
+  if (parsed?.exp) {
+    return parsed.exp * 1000;
   }
-  return Date.now() >= expMs;
+
+  return getExpiresAt();
 }
 
-export function msUntilTokenExpiry(token: string): number | null {
-  const expMs = getJwtExpMs(token);
-  if (expMs) return Math.max(0, expMs - Date.now());
-
-  const stored = Number(localStorage.getItem("access_expires_at") || "0");
-  if (stored) return Math.max(0, stored - Date.now());
-
-  return null;
+export function isTokenExpired(token?: string | null): boolean {
+  const expiryTime = getTokenExpiryTime(token);
+  if (!expiryTime) return true;
+  return Date.now() >= expiryTime;
 }

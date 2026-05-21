@@ -116,7 +116,7 @@ export default function ForgotPasswordVerifyOtpPage() {
       const data = await sendForgotPasswordOtp(fpMobile);
 
       if (data?.process_id) {
-        // ✅ IMPORTANT: store the new process_id
+        //  IMPORTANT: store the new process_id
         localStorage.setItem("fp_process_id", data.process_id);
 
         setServerMessage("A new OTP has been sent. Please check your SMS.");
@@ -202,7 +202,7 @@ export default function ForgotPasswordVerifyOtpPage() {
             </div>
           </div>
 
-          {/* ✅ Proper RHF integration using Controller + 6-box OTP */}
+          {/*  Proper RHF integration using Controller + 6-box OTP */}
             <Controller
               control={control}
               name="otp"

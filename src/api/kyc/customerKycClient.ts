@@ -1,4 +1,5 @@
 // src/api/kyc/customerKycClient.ts
+import { authFetch } from "../auth/authFetch";
 import { buildSignatureForBody } from "../session/signature";
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL as string;
@@ -78,24 +79,15 @@ function formDataToDebug(fd: FormData) {
   return out;
 }
 
-function getAccessTokenOrThrow() {
-  const token =
-    localStorage.getItem("access_token") ||
-    localStorage.getItem("accessToken") ||
-    "";
-  if (!token) throw new Error("Not logged in. access_token not found. Please login first.");
-  return token;
-}
-
 export async function submitCustomerKyc(
   form: CustomerKycFormEntity,
   opts?: { debug?: boolean }
 ) {
   if (!API_BASE_URL) throw new Error("VITE_API_BASE_URL is not set");
 
-  const accessToken = getAccessTokenOrThrow();
+  // authFetch handles access_token + auto-refresh on 401
 
-  // ✅ IMPORTANT: Postman style for form-data uses empty body in signature
+  //  IMPORTANT: Postman style for form-data uses empty body in signature
   const { unixTs, signature } = buildSignatureForBody("");
   const verifySignature = `${unixTs}.${signature}`;
 
@@ -173,13 +165,13 @@ export async function submitCustomerKyc(
 
   const url = `${API_BASE_URL}/v1/CustomerKyc/customer-kyc`;
 
-  const res = await fetch(url, {
+  const res = await authFetch(url, {
     method: "POST",
     headers: {
-      Authorization: `Bearer ${accessToken}`,
       "verify-signature": verifySignature,
       Accept: "*/*",
-      // ✅ DO NOT set "Content-Type" for FormData
+      // DO NOT set "Content-Type" for FormData
+      // DO NOT set Authorization — authFetch handles it + auto-refreshes on 401
     },
     body: fd,
   });
@@ -197,20 +189,12 @@ export async function submitCustomerKyc(
     status: res.status,
     ok: res.ok,
     used_headers: {
-      Authorization: `Bearer ${accessToken.slice(0, 10)}...`,
       "verify-signature": `${unixTs}.${String(signature).slice(0, 10)}...`,
     },
     request_form_data: formDataToDebug(fd),
     response_json: json,
     response_text: rawText,
   };
-
-  // If 401, throw useful message
-  if (res.status === 401) {
-    const err: any = new Error(json?.message || "401 Unauthorized (token invalid/expired)");
-    err.debug = debug;
-    throw err;
-  }
 
   if (json?.process_result === false || (Array.isArray(json?.error_list) && json.error_list.length)) {
     const msg =

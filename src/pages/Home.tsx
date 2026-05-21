@@ -4,9 +4,24 @@ import { InsuranceCard } from '@/components/InsuranceCard';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { LogIn } from 'lucide-react';
 import logo from '@/assets/logo.png';
+import { useNavigate } from 'react-router-dom';
+import { Card } from '@/components/ui/card';
+
 
 export const Home = () => {
   const { t } = useLanguage();
+  const navigate = useNavigate();
+    const insurancePlans = [
+      { id: 'two-wheeler', title: 'Two Wheeler', icon: '🏍️', route: '/motor/two-wheeler' },
+      { id: 'private', title: 'Private Vehicle', icon: '🚗', route: '/motor/private-vehicle' },
+      { id: 'commercial', title: 'Commercial Vehicle', icon: '🚚', route: '/motor/commercial-vehicle' },
+      { id: "accident", title: "Accident Insurance",  icon: "🛡️",route: "/accident-insurance",},
+    ];
+  
+    const handlePlanSelect = (planId: string, route: string) => {
+      localStorage.setItem('motor.vehicleType', planId);
+      navigate(route);
+    };
 
   return (
     <div className="min-h-screen bg-background">
@@ -35,12 +50,24 @@ export const Home = () => {
         </h1>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-24">
-          <InsuranceCard
+          {/* <InsuranceCard
             type="motor"
             title={t('insurance.motor')}
             subtitle={t('insurance.vehicle')}
-            to="/vehicle-insurance"
-          />
+            to="/motor-insurance-plan"
+          /> */}
+          {insurancePlans.map((plan) => (
+              <Card
+                key={plan.id}
+                className="p-8 hover:shadow-lg transition-all cursor-pointer h-full text-center border-2 hover:border-primary"
+                onClick={() => handlePlanSelect(plan.id, plan.route)}
+              >
+                <h3 className="text-lg font-bold mb-8">{plan.title}</h3>
+                <div className="flex items-center justify-center py-8">
+                  <div className="text-7xl opacity-80">{plan.icon}</div>
+                </div>
+              </Card>
+            ))}
           <InsuranceCard
             type="travel"
             title={t('insurance.travel')}

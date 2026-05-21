@@ -25,7 +25,7 @@ const forgotSchema = z.object({
 type ForgotValues = z.infer<typeof forgotSchema>;
 
 export default function ForgotPasswordPage() {
-    const navigate = useNavigate(); // ✅ must be inside component
+    const navigate = useNavigate(); //  must be inside component
     const [loading, setLoading] = useState(false);
     const [serverMessage, setServerMessage] = useState<string | null>(null);
     const [serverIsError, setServerIsError] = useState(false);
@@ -48,7 +48,7 @@ export default function ForgotPasswordPage() {
         try {
             const data = await sendForgotPasswordOtp(values.mobile);
 
-            // ✅ success if process_id exists
+            //  success if process_id exists
             if (data?.process_id) {
                 // store for verify page (recommended)
                 localStorage.setItem("fp_mobile", values.mobile);
@@ -57,7 +57,7 @@ export default function ForgotPasswordPage() {
                 setServerMessage("OTP sent successfully. Redirecting...");
                 setServerIsError(false);
 
-                // ✅ redirect to /verify-otp
+                //  redirect to /verify-otp
                 navigate("/verify-otp", { replace: true });
                 return;
             }

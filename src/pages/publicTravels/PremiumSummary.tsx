@@ -1,37 +1,19 @@
 import React, { useState } from "react";
 import { useForm, useFieldArray, Controller } from "react-hook-form";
-import { z } from "zod";
-import { zodResolver } from "@hookform/resolvers/zod";
-import logo from "@/assets/logo.png";
-import { useLanguage } from "@/contexts/LanguageContext";
 
 import { Button } from "@/components/ui/button";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 
-import { ChevronLeft, LogIn, Plus, Trash2 } from "lucide-react";
-import { Link, useNavigate } from "react-router-dom";
+import { ChevronLeft } from "lucide-react";
+import { useNavigate, useLocation } from "react-router-dom";
 
-import { getTravelPremium } from "@/api/travels/GetTravelPeriod";
-import {
-  createTravelPolicy,
-  type CreateTravelPolicyPayload,
-} from "@/api/travels/CreateTravelPolicy";
-
-/* ---------------- helpers ---------------- */
-
-
-
+import { getTravelPremium } from "@/api/travels/GetTravelCataloguesPublic";
 function parseISO(v: string) {
   const t = Date.parse(v);
   return Number.isFinite(t) ? new Date(t) : null;
 }
-
-function isValidISODate(v: string) {
-  return !!parseISO(v);
-}
-
 type ApiErrorItem = { error_code?: string; error_message?: string };
 
 function extractApiErrors(resp: any): string[] {
@@ -45,56 +27,6 @@ function extractApiErrors(resp: any): string[] {
   return msg ? [msg] : [];
 }
 
-function tryParseJson(text: string) {
-  try {
-    return JSON.parse(text);
-  } catch {
-    return null;
-  }
-}
-
-function normalizeUnknownError(err: any): string[] {
-  const msg = String(err?.message ?? err ?? "").trim();
-
-  if (msg.startsWith("{") || msg.startsWith("[")) {
-    const obj = tryParseJson(msg);
-    if (obj) return extractApiErrors(obj);
-  }
-
-  if (err && typeof err === "object") {
-    const errs = extractApiErrors(err);
-    if (errs.length) return errs;
-  }
-
-  return msg ? [msg] : ["Request failed"];
-}
-
-function mapServerErrorsToFields(
-  messages: string[],
-  setError: ReturnType<typeof useForm<any>>["setError"]
-) {
-  for (const m of messages) {
-    const lower = m.toLowerCase();
-
-    if (lower.includes("policy_info.proposed_date") || lower.includes("proposed date")) {
-      setError("proposed_date", { type: "server", message: m });
-      continue;
-    }
-    if (lower.includes("policy_info.issued_date_ad") || lower.includes("issued date")) {
-      setError("issued_date_ad", { type: "server", message: m });
-      continue;
-    }
-    if (lower.includes("policy_info.effective_date") || lower.includes("effective date")) {
-      setError("effective_date", { type: "server", message: m });
-      continue;
-    }
-    if (lower.includes("policy_info.expiry_date") || lower.includes("expiry date")) {
-      setError("expiry_date", { type: "server", message: m });
-      continue;
-    }
-  }
-}
-
 function SummaryRow({ label, value }: { label: string; value: any }) {
   return (
     <div className="flex items-center justify-between gap-3 border-b py-2 last:border-b-0">
@@ -104,38 +36,23 @@ function SummaryRow({ label, value }: { label: string; value: any }) {
   );
 }
 
-/* ---------------- ZOD ---------------- */
-
-const childSchema = z.object({
-  children_name: z.string().min(1, "Child name is required"),
-  children_dob: z.string().min(1, "Child DOB is required").refine(isValidISODate, "Invalid date"),
-  children_passport: z.string().min(1, "Child passport is required"),
-});
-
-
-
 export const PremiumSummary = () => {
-  const { t } = useLanguage();
   const navigate = useNavigate();
-  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const location = useLocation();
 
   //  SUCCESS dialog/banner state
   const [successModal, setSuccessModal] = useState<null | { title: string; text: string }>(null);
-
   const {
     control,
-    register,
-    handleSubmit,
     watch,
     setValue,
-    setError,
-    reset,
+
     formState: { errors, isSubmitting },
   } = useForm({
     defaultValues: {
       bank_code: "1",
       department_id: "3",
-      class_id: "81",
+      class_id: "33",
       payment_process: "Full Payment",
 
       proposed_date: "",
@@ -191,41 +108,30 @@ export const PremiumSummary = () => {
   const [premiumLoading, setPremiumLoading] = useState(false);
   const [premiumError, setPremiumError] = useState<string | null>(null);
   const [premiumSnapshot, setPremiumSnapshot] = useState<any>(null);
-
-  const [submitLoading, setSubmitLoading] = useState(false);
-  const [submitBanner, setSubmitBanner] = useState<string>("");
-
   const lastPremiumKeyRef = React.useRef("");
 
-  /* restore step values */
+  /* restore step values from router state */
   React.useEffect(() => {
-    try {
-      const planRaw = localStorage.getItem("travel.coveragePlan");
-      const detailsRaw = localStorage.getItem("travel.coverageDetails");
+    const st = (location.state || {}) as any;
+    if (!st) return;
 
-      const plan = planRaw ? JSON.parse(planRaw) : null;
-      const details = detailsRaw ? JSON.parse(detailsRaw) : null;
+    if (st.planValue) setValue("travel_area_plan_id", String(st.planValue));
+    if (st.areaValue) setValue("travel_area_id", String(st.areaValue));
+    if (st.packageValue) setValue("travel_package_id", String(st.packageValue));
 
-      if (plan?.planValue) setValue("travel_area_plan_id", String(plan.planValue));
-      if (plan?.areaValue) setValue("travel_area_id", String(plan.areaValue));
-      if (plan?.packageValue) setValue("travel_package_id", String(plan.packageValue));
+    if (st.age_band_id) setValue("age_band_id", String(st.age_band_id));
+    if (st.period_id) setValue("period_id", String(st.period_id));
 
-      if (details?.age_band_id) setValue("age_band_id", String(details.age_band_id));
-      if (details?.period_id) setValue("period_id", String(details.period_id));
+    if (st.dob) setValue("date_of_birth_AD", String(st.dob));
+    if (st.phone_number) setValue("phone_number", String(st.phone_number));
+    if (st.passport_number) setValue("passport_number", String(st.passport_number));
 
-      if (details?.dob) setValue("date_of_birth_AD", String(details.dob));
-      if (details?.phone_number) setValue("phone_number", String(details.phone_number));
-      if (details?.passport_number) setValue("passport_number", String(details.passport_number));
-
-      if (details?.travelFrom) {
-        setValue("proposed_date", String(details.travelFrom));
-        setValue("effective_date", String(details.travelFrom));
-      }
-      if (details?.travelTo) setValue("expiry_date", String(details.travelTo));
-    } catch (e) {
-      console.error("Restore failed:", e);
+    if (st.travelFrom) {
+      setValue("proposed_date", String(st.travelFrom));
+      setValue("effective_date", String(st.travelFrom));
     }
-  }, [setValue]);
+    if (st.travelTo) setValue("expiry_date", String(st.travelTo));
+  }, [location.state, setValue]);
 
   /* clear children if off */
   React.useEffect(() => {
@@ -343,98 +249,55 @@ export const PremiumSummary = () => {
       cancelled = true;
     };
   }, [classId, ageBandId, packageId, areaId, areaPlanId, periodId]);
-    submitLoading || premiumLoading || isSubmitting || !!premiumError || !premiumSnapshot;
+
+  type CoverageState = {
+    planValue?: string;
+    areaValue?: string;
+    packageValue?: string;
+  };
+  const [coverageState, setCoverageState] = React.useState<CoverageState>({
+    planValue: "",
+    areaValue: "",
+    packageValue: "",
+  });
+  function handleBack() {
+    navigate("/travels", { state: coverageState });
+  }
   return (
-    <div className="min-h-screen bg-background">
-      {/* Top bar */}
-      <header className="sticky top-0 z-50 border-b bg-white/90 backdrop-blur">
-        <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
-          <div className="h-16 flex items-center justify-between gap-3">
-            <div className="flex items-center gap-3 min-w-0">
-              <img src={logo} alt="Prabhu Insurance" className="h-9 w-auto shrink-0" />
-              <div className="hidden sm:block min-w-0">
-                <div className="text-sm font-semibold leading-4 truncate">Prabhu Insurance</div>
-                <div className="text-xs text-muted-foreground truncate">
-                  Travel Medical Insurance
-                </div>
-              </div>
-            </div>
+    <>
+      <Card className="mb-6">
+        <CardHeader>
+          <CardTitle>Premium Summary</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-1">
+          {premiumLoading && <p className="text-sm text-muted-foreground">Loading premium...</p>}
+          {premiumError && <p className="text-sm text-red-600">{premiumError}</p>}
 
-            <div className="flex items-center gap-2 shrink-0">
-              <Link to="/login">
-                <Button size="sm" className="gap-2">
-                  <LogIn className="h-4 w-4" />
-                  <span className="hidden sm:inline">{t("nav.login")}</span>
-                  <span className="sm:hidden">Login</span>
-                </Button>
-              </Link>
-            </div>
-          </div>
-        </div>
-      </header>
-        <main className="flex-1 p-8 bg-background">
-          <div className="max-w-4xl mx-auto">
-            <Button variant="ghost" onClick={() => navigate(-1)} className="mb-6 gap-2">
-              <ChevronLeft className="w-4 h-4" />
-            </Button>
+          {!premiumLoading && !premiumError && premiumSnapshot && (
+            <>
+              <SummaryRow label="Currency" value={premiumSnapshot?.currency ?? "—"} />
+              <SummaryRow label="Rate" value={premiumSnapshot?.rate ?? 0} />
+              <SummaryRow label="Currency Premium" value={premiumSnapshot?.currency_amount ?? 0} />
+              <SummaryRow label="Premium in NPR" value={premiumSnapshot?.premium_in_npr ?? 0} />
+              <SummaryRow label="VAT %" value={premiumSnapshot?.vat_percent ?? 0} />
+              <SummaryRow label="VAT Amount" value={premiumSnapshot?.vat_amount ?? 0} />
+              <SummaryRow label="Stamp Duty" value={premiumSnapshot?.stamp_duty ?? 0} />
+              <SummaryRow label="Direct Discount Percent" value={premiumSnapshot?.direct_discount_percent ?? 0} />
+              <SummaryRow label="Total Premium with VAT" value={premiumSnapshot?.total_premium_with_vat ?? 0} />
+            </>
+          )}
+        </CardContent>
+      </Card>
+      <div className="flex gap-4">
+        <Button variant="outline" onClick={handleBack} className="gap-2">
+          <ChevronLeft className="w-4 h-4" />
+          BACK
+        </Button>
 
-            <h1 className="text-2xl font-bold mb-6">Instant Quotes</h1>
-
-            {/*  TOP SUCCESS ALERT (with OK button) */}
-            {successModal && (
-              <div className="mb-6 rounded-lg border border-green-200 bg-green-50 p-4 text-sm text-green-800">
-                <div className="flex items-start justify-between gap-3">
-                  <div>
-                    <div className="font-semibold">{successModal.title}</div>
-                    <div className="mt-1">{successModal.text}</div>
-                  </div>
-                  <Button
-                    type="button"
-                    onClick={() => {
-                      setSuccessModal(null);
-                      navigate("/dashboard", { replace: true });
-                    }}
-                  >
-                    OK
-                  </Button>
-                </div>
-              </div>
-            )}
-
-            {/* small error banner */}
-            {submitBanner && !successModal && (
-              <div className="mb-6 rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-700">
-                {submitBanner}
-              </div>
-            )}
-
-            {/* Premium Summary */}
-            <Card className="mb-6">
-              <CardHeader>
-                <CardTitle>Premium Summary</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-1">
-                {premiumLoading && <p className="text-sm text-muted-foreground">Loading premium...</p>}
-                {premiumError && <p className="text-sm text-red-600">{premiumError}</p>}
-
-                {!premiumLoading && !premiumError && premiumSnapshot && (
-                  <>
-                    <SummaryRow label="Currency" value={premiumSnapshot?.currency ?? "—"} />
-                    <SummaryRow label="Rate" value={premiumSnapshot?.rate ?? 0} />
-                    <SummaryRow label="Currency Premium" value={premiumSnapshot?.currency_amount ?? 0} />
-                    <SummaryRow label="Premium in NPR" value={premiumSnapshot?.premium_in_npr ?? 0} />
-                    <SummaryRow label="Currency Suminsured" value={premiumSnapshot?.currency_suminsured ?? 0} />
-                    <SummaryRow label="Suminsured in NPR" value={premiumSnapshot?.suminsured_in_npr ?? 0} />
-                    <SummaryRow label="VAT %" value={premiumSnapshot?.vat_percent ?? 0} />
-                    <SummaryRow label="VAT Amount" value={premiumSnapshot?.vat_amount ?? 0} />
-                    <SummaryRow label="Stamp Duty" value={premiumSnapshot?.stamp_duty ?? 0} />
-                    <SummaryRow label="Total Premium with VAT" value={premiumSnapshot?.total_premium_with_vat ?? 0} />
-                  </>
-                )}
-              </CardContent>
-            </Card>
-          </div>
-        </main>
+        <Button onClick={() => navigate("/")}>
+          HOME
+        </Button>
       </div>
+    </>
   );
 };

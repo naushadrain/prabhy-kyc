@@ -15,7 +15,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { sendOneTimeOtp } from "@/api/auth/login/otpClient";
 
 /* =========================
-   ✅ Zod schema validation
+    Zod schema validation
    ========================= */
 const registerSchema = z.object({
   mobile: z
@@ -114,7 +114,7 @@ export const Register = () => {
                   placeholder={t("auth.mobileNo")}
                   inputMode="numeric"
                   {...register("mobile", {
-                    // ✅ while typing: remove any non-digit characters
+                    //  while typing: remove any non-digit characters
                     setValueAs: (v) => String(v ?? "").replace(/\D/g, ""),
                   })}
                   className={errors.mobile ? "border-red-500 focus-visible:ring-red-500" : ""}
@@ -149,7 +149,7 @@ export const Register = () => {
         {/* ================= LEFT SIDE (INSURANCE) ================= */}
         <div className="order-2 md:order-1 flex-1 px-4 pb-10 pt-2 sm:px-8 md:px-10 md:py-12 lg:px-16 lg:py-16">
           <div className="mx-auto w-full max-w-5xl">
-            {/* ✅ Mobile: show all cards one-by-one (single column) */}
+            {/*  Mobile: show all cards one-by-one (single column) */}
             <div className="grid grid-cols-1 gap-4 md:hidden">
               <InsuranceCard
                 type="motor"
@@ -168,7 +168,7 @@ export const Register = () => {
               />
             </div>
 
-            {/* ✅ md+ : normal grid */}
+            {/*  md+ : normal grid */}
             <div className="hidden md:grid grid-cols-2 lg:grid-cols-3 gap-6">
               <InsuranceCard type="motor" title={t("insurance.motor")} subtitle={t("insurance.vehicle")} />
               <InsuranceCard type="travel" title={t("insurance.travel")} subtitle={t("insurance.travelIns")} />

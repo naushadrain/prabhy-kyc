@@ -20,7 +20,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { ChevronLeft, ChevronRight, Eye, Download, Printer } from 'lucide-react';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { getPolicyList, printPolicyPdf } from '@/api/policy/policyList';
 import { Policy } from '@/types/policy/types';
@@ -29,92 +29,129 @@ export const MyPolicies = () => {
   const { t } = useLanguage();
   const navigate = useNavigate();
   const [sidebarOpen, setSidebarOpen] = useState<boolean>(false);
-  
-  // Data states
+
   const [policies, setPolicies] = useState<Policy[]>([]);
   const [filteredPolicies, setFilteredPolicies] = useState<Policy[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
-  
-  // Filter states
+
   const [dateFrom, setDateFrom] = useState<string>('');
   const [dateTo, setDateTo] = useState<string>('');
   const [insuredName, setInsuredName] = useState<string>('');
+  const [policyNumber, setPolicyNumber] = useState<string>('');
   const [activeTab, setActiveTab] = useState<string>('policy');
-  
-  // Pagination
+
   const [rowsPerPage, setRowsPerPage] = useState<number>(10);
   const [currentPage, setCurrentPage] = useState<number>(1);
 
-  // Fetch policies on mount
   useEffect(() => {
     fetchPolicies();
   }, []);
 
-  // Apply filters
   useEffect(() => {
     filterPolicies();
-  }, [policies, dateFrom, dateTo, insuredName, activeTab]);
+  }, [policies, dateFrom, dateTo, insuredName, policyNumber, activeTab]);
 
-  // Reset pagination when filters change
   useEffect(() => {
     setCurrentPage(1);
-  }, [rowsPerPage, filteredPolicies.length]);
+  }, [rowsPerPage, filteredPolicies.length, activeTab]);
+
+  const normalizeStatus = (status: string) => status?.trim().toLowerCase() || '';
+
+  const isAllowedPolicy = (policy: Policy) => {
+    const status = normalizeStatus(policy.policy_status);
+    return status === 'accepted, payment pending';
+  };
+
+  const activePoliciesCount = useMemo(() => {
+    return policies.filter(
+      (p) => isAllowedPolicy(p) && normalizeStatus(p.expiry_status) !== 'expired'
+    ).length;
+  }, [policies]);
+
+  const expiredPoliciesCount = useMemo(() => {
+    return policies.filter(
+      (p) => isAllowedPolicy(p) && normalizeStatus(p.expiry_status) === 'expired'
+    ).length;
+  }, [policies]);
 
   const fetchPolicies = async () => {
     try {
       setLoading(true);
-      const response = await getPolicyList(81);
+      const response = await getPolicyList(33);
+
       if (response.process_result && response.policy_list) {
-        setPolicies(response.policy_list);
+        const allowedPolicies = response.policy_list.filter(isAllowedPolicy);
+        setPolicies(allowedPolicies);
+      } else {
+        setPolicies([]);
       }
     } catch (err) {
       console.error('Error fetching policies:', err);
+      setPolicies([]);
     } finally {
       setLoading(false);
     }
   };
 
+  const convertDdMmYyyyToIso = (dateStr: string) => {
+    if (!dateStr) return '';
+    const parts = dateStr.split('/');
+    if (parts.length !== 3) return '';
+    const [dd, mm, yyyy] = parts;
+    return `${yyyy}-${mm.padStart(2, '0')}-${dd.padStart(2, '0')}`;
+  };
+
   const filterPolicies = () => {
     let filtered = [...policies];
 
-    // Filter by tab
     if (activeTab === 'expired') {
-      filtered = filtered.filter(p => p.expiry_status === 'Expired');
+      filtered = filtered.filter(
+        (p) => normalizeStatus(p.expiry_status) === 'expired'
+      );
     } else {
-      filtered = filtered.filter(p => p.expiry_status !== 'Expired');
+      filtered = filtered.filter(
+        (p) => normalizeStatus(p.expiry_status) !== 'expired'
+      );
     }
 
-    // Filter by date range
     if (dateFrom) {
-      filtered = filtered.filter(p => {
-        const policyDate = p.created_date.split('/').reverse().join('-');
-        return policyDate >= dateFrom;
+      filtered = filtered.filter((p) => {
+        const policyDate = convertDdMmYyyyToIso(p.created_date);
+        return policyDate ? policyDate >= dateFrom : false;
       });
     }
 
     if (dateTo) {
-      filtered = filtered.filter(p => {
-        const policyDate = p.created_date.split('/').reverse().join('-');
-        return policyDate <= dateTo;
+      filtered = filtered.filter((p) => {
+        const policyDate = convertDdMmYyyyToIso(p.created_date);
+        return policyDate ? policyDate <= dateTo : false;
       });
     }
 
-    // Filter by insured name
     if (insuredName.trim()) {
-      filtered = filtered.filter(p =>
-        p.insured_name.toLowerCase().includes(insuredName.toLowerCase())
+      filtered = filtered.filter((p) =>
+        (p.insured_name || '').toLowerCase().includes(insuredName.toLowerCase())
+      );
+    }
+
+    if (policyNumber.trim()) {
+      filtered = filtered.filter((p) =>
+        (p.document_number || '').toLowerCase().includes(policyNumber.toLowerCase())
       );
     }
 
     setFilteredPolicies(filtered);
   };
 
-  const handleSearch = () => filterPolicies();
-  
+  const handleSearch = () => {
+    filterPolicies();
+  };
+
   const handleReset = () => {
     setDateFrom('');
     setDateTo('');
     setInsuredName('');
+    setPolicyNumber('');
     setCurrentPage(1);
   };
 
@@ -124,35 +161,29 @@ export const MyPolicies = () => {
 
   const handleDownloadPDF = async (policy: Policy) => {
     try {
-      const pdfBlob = await printPolicyPdf(81, policy.document_number);
-      const pdfUrl = URL.createObjectURL(pdfBlob);
-      const link = document.createElement('a');
-      link.href = pdfUrl;
-      link.download = `Policy_${policy.document_number.replace(/[\/\\]/g, '_')}.pdf`;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      setTimeout(() => URL.revokeObjectURL(pdfUrl), 100);
+      const resp = await printPolicyPdf(policy.document_number);
+      const pdfLink = resp?.print_link;
+      if (pdfLink) {
+        window.open(pdfLink, '_blank');
+      }
     } catch (error) {
-      console.error("Download failed:", error);
+      console.error('Download failed:', error);
     }
   };
 
   const handlePrintPDF = async (policy: Policy) => {
     try {
-      const pdfBlob = await printPolicyPdf(81, policy.document_number);
-      const pdfUrl = URL.createObjectURL(pdfBlob);
-      const printWindow = window.open(pdfUrl, '_blank');
-      if (printWindow) {
-        printWindow.onload = () => printWindow.print();
+      const resp = await printPolicyPdf(policy.document_number);
+      const pdfLink = resp?.print_link;
+      if (pdfLink) {
+        window.open(pdfLink, '_blank');
       }
     } catch (error) {
-      console.error("Print failed:", error);
+      console.error('Print failed:', error);
     }
   };
 
-  // Pagination calculations
-  const totalPages = Math.ceil(filteredPolicies.length / rowsPerPage);
+  const totalPages = Math.max(1, Math.ceil(filteredPolicies.length / rowsPerPage));
   const startIndex = (currentPage - 1) * rowsPerPage;
   const endIndex = Math.min(startIndex + rowsPerPage, filteredPolicies.length);
   const currentPolicies = filteredPolicies.slice(startIndex, endIndex);
@@ -161,30 +192,145 @@ export const MyPolicies = () => {
     return new Intl.NumberFormat('en-NP', {
       minimumFractionDigits: 2,
       maximumFractionDigits: 2,
-    }).format(parseFloat(amount));
+    }).format(parseFloat(amount || '0'));
   };
 
   const getPaymentStatusBadge = (status: string) => {
-    const statusLower = status.toLowerCase();
+    const statusLower = normalizeStatus(status);
+
     if (statusLower === 'paid') {
-      return <span className="px-2 py-1 bg-green-100 text-green-800 rounded-full text-xs font-medium">Paid</span>;
-    } else if (statusLower === 'unpaid') {
-      return <span className="px-2 py-1 bg-yellow-100 text-yellow-800 rounded-full text-xs font-medium">Unpaid</span>;
+      return (
+        <span className="px-2 py-1 bg-green-100 text-green-800 rounded-full text-xs font-medium">
+          Paid
+        </span>
+      );
     }
-    return <span className="px-2 py-1 bg-gray-100 text-gray-800 rounded-full text-xs font-medium">{status}</span>;
+
+    if (statusLower === 'unpaid') {
+      return (
+        <span className="px-2 py-1 bg-yellow-100 text-yellow-800 rounded-full text-xs font-medium">
+          Unpaid
+        </span>
+      );
+    }
+
+    if (statusLower === 'payment pending') {
+      return (
+        <span className="px-2 py-1 bg-orange-100 text-orange-800 rounded-full text-xs font-medium">
+          Payment Pending
+        </span>
+      );
+    }
+
+    return (
+      <span className="px-2 py-1 bg-gray-100 text-gray-800 rounded-full text-xs font-medium">
+        {status}
+      </span>
+    );
   };
 
   const getPolicyStatusBadge = (status: string) => {
-    const statusLower = status.toLowerCase();
-    if (statusLower.includes('approval pending')) {
-      return <span className="px-2 py-1 bg-blue-100 text-blue-800 rounded-full text-xs font-medium">Pending</span>;
-    } else if (statusLower.includes('approved')) {
-      return <span className="px-2 py-1 bg-green-100 text-green-800 rounded-full text-xs font-medium">Approved</span>;
-    } else if (statusLower.includes('rejected')) {
-      return <span className="px-2 py-1 bg-red-100 text-red-800 rounded-full text-xs font-medium">Rejected</span>;
+    const statusLower = normalizeStatus(status);
+
+    if (statusLower === 'accepted, payment pending') {
+      return (
+        <span className="px-2 py-1 bg-blue-100 text-blue-800 rounded-full text-xs font-medium">
+          Accepted, Payment Pending
+        </span>
+      );
     }
-    return <span className="px-2 py-1 bg-gray-100 text-gray-800 rounded-full text-xs font-medium">{status}</span>;
+
+    return (
+      <span className="px-2 py-1 bg-gray-100 text-gray-800 rounded-full text-xs font-medium">
+        {status}
+      </span>
+    );
   };
+
+  const renderTable = (emptyText: string) => (
+    <div className="border rounded-lg overflow-hidden">
+      <Table>
+        <TableHeader>
+          <TableRow className="bg-primary hover:bg-primary">
+            <TableHead className="text-primary-foreground font-bold">S.N.</TableHead>
+            <TableHead className="text-primary-foreground font-bold">Insured Name</TableHead>
+            <TableHead className="text-primary-foreground font-bold">Product</TableHead>
+            <TableHead className="text-primary-foreground font-bold">Created Date</TableHead>
+            <TableHead className="text-primary-foreground font-bold">Expiry Date</TableHead>
+            <TableHead className="text-primary-foreground font-bold">Policy Number</TableHead>
+            <TableHead className="text-primary-foreground font-bold">Premium (NPR)</TableHead>
+            <TableHead className="text-primary-foreground font-bold">Payment</TableHead>
+            <TableHead className="text-primary-foreground font-bold">Status</TableHead>
+            <TableHead className="text-primary-foreground font-bold">Actions</TableHead>
+          </TableRow>
+        </TableHeader>
+
+        <TableBody>
+          {loading ? (
+            <TableRow>
+              <TableCell colSpan={10} className="text-center py-12">
+                <div className="flex justify-center">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+                </div>
+              </TableCell>
+            </TableRow>
+          ) : currentPolicies.length === 0 ? (
+            <TableRow>
+              <TableCell colSpan={10} className="text-center py-12 text-muted-foreground">
+                {emptyText}
+              </TableCell>
+            </TableRow>
+          ) : (
+            currentPolicies.map((policy, index) => (
+              <TableRow key={`${policy.document_number}-${index}`} className="hover:bg-muted/50">
+                <TableCell>{startIndex + index + 1}</TableCell>
+                <TableCell className="font-medium">{policy.insured_name}</TableCell>
+                <TableCell>{policy.product_name}</TableCell>
+                <TableCell>{policy.created_date}</TableCell>
+                <TableCell>{policy.expiry_date}</TableCell>
+                <TableCell>
+                  <span className="font-mono text-sm">{policy.document_number}</span>
+                </TableCell>
+                <TableCell className="text-right font-medium">
+                  {formatCurrency(policy.total_premium)}
+                </TableCell>
+                <TableCell>{getPaymentStatusBadge(policy.payment_status)}</TableCell>
+                <TableCell>{getPolicyStatusBadge(policy.policy_status)}</TableCell>
+                <TableCell>
+                  <div className="flex gap-2">
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => handleViewPolicy(policy)}
+                      title="View Policy"
+                    >
+                      <Eye className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => handleDownloadPDF(policy)}
+                      title="Download PDF"
+                    >
+                      <Download className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => handlePrintPDF(policy)}
+                      title="Print Policy"
+                    >
+                      <Printer className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </TableCell>
+              </TableRow>
+            ))
+          )}
+        </TableBody>
+      </Table>
+    </div>
+  );
 
   return (
     <div className="flex min-h-screen">
@@ -192,36 +338,49 @@ export const MyPolicies = () => {
       <div className="flex-1 flex flex-col">
         <Header onMenuClick={() => setSidebarOpen(true)} />
         <main className="flex-1 p-8 bg-background">
-          {/* Search Filters */}
           <div className="flex flex-wrap gap-4 mb-6 items-end">
             <div>
               <label className="text-sm font-medium mb-1 block">Date From</label>
-              <Input 
-                type="date" 
+              <Input
+                type="date"
                 value={dateFrom}
                 onChange={(e) => setDateFrom(e.target.value)}
                 className="w-48"
               />
             </div>
+
             <div>
               <label className="text-sm font-medium mb-1 block">Date To</label>
-              <Input 
-                type="date" 
+              <Input
+                type="date"
                 value={dateTo}
                 onChange={(e) => setDateTo(e.target.value)}
                 className="w-48"
               />
             </div>
+
             <div>
               <label className="text-sm font-medium mb-1 block">Insured Name</label>
-              <Input 
-                type="text" 
+              <Input
+                type="text"
                 placeholder="Search by name"
                 value={insuredName}
                 onChange={(e) => setInsuredName(e.target.value)}
                 className="w-64"
               />
             </div>
+
+            <div>
+              <label className="text-sm font-medium mb-1 block">Policy Number</label>
+              <Input
+                type="text"
+                placeholder="Search by policy number"
+                value={policyNumber}
+                onChange={(e) => setPolicyNumber(e.target.value)}
+                className="w-64"
+              />
+            </div>
+
             <div className="flex gap-2">
               <Button onClick={handleSearch} className="bg-primary hover:bg-primary/90">
                 Search
@@ -235,102 +394,21 @@ export const MyPolicies = () => {
           <Tabs defaultValue="policy" className="w-full" onValueChange={setActiveTab}>
             <TabsList className="bg-muted">
               <TabsTrigger value="policy">
-                Active Policies ({policies.filter(p => p.expiry_status !== 'Expired').length})
+                Active Policies ({activePoliciesCount})
               </TabsTrigger>
               <TabsTrigger value="expired">
-                Expired Policies ({policies.filter(p => p.expiry_status === 'Expired').length})
+                Expired Policies ({expiredPoliciesCount})
               </TabsTrigger>
             </TabsList>
 
             <TabsContent value="policy" className="mt-6">
-              <div className="border rounded-lg overflow-hidden">
-                <Table>
-                  <TableHeader>
-                    <TableRow className="bg-primary hover:bg-primary">
-                      <TableHead className="text-primary-foreground font-bold">S.N.</TableHead>
-                      <TableHead className="text-primary-foreground font-bold">Insured Name</TableHead>
-                      <TableHead className="text-primary-foreground font-bold">Product</TableHead>
-                      <TableHead className="text-primary-foreground font-bold">Created Date</TableHead>
-                      <TableHead className="text-primary-foreground font-bold">Expiry Date</TableHead>
-                      <TableHead className="text-primary-foreground font-bold">Policy Number</TableHead>
-                      <TableHead className="text-primary-foreground font-bold">Premium (NPR)</TableHead>
-                      <TableHead className="text-primary-foreground font-bold">Payment</TableHead>
-                      <TableHead className="text-primary-foreground font-bold">Status</TableHead>
-                      <TableHead className="text-primary-foreground font-bold">Actions</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {loading ? (
-                      <TableRow>
-                        <TableCell colSpan={10} className="text-center py-12">
-                          <div className="flex justify-center">
-                            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-                          </div>
-                        </TableCell>
-                      </TableRow>
-                    ) : currentPolicies.length === 0 ? (
-                      <TableRow>
-                        <TableCell colSpan={10} className="text-center py-12 text-muted-foreground">
-                          No policies found
-                        </TableCell>
-                      </TableRow>
-                    ) : (
-                      currentPolicies.map((policy, index) => (
-                        <TableRow key={policy.policy_number} className="hover:bg-muted/50">
-                          <TableCell>{startIndex + index + 1}</TableCell>
-                          <TableCell className="font-medium">{policy.insured_name}</TableCell>
-                          <TableCell>{policy.product_name}</TableCell>
-                          <TableCell>{policy.created_date}</TableCell>
-                          <TableCell>{policy.expiry_date}</TableCell>
-                          <TableCell>
-                            <span className="font-mono text-sm">{policy.document_number}</span>
-                          </TableCell>
-                          <TableCell className="text-right font-medium">
-                            {formatCurrency(policy.total_premium)}
-                          </TableCell>
-                          <TableCell>{getPaymentStatusBadge(policy.payment_status)}</TableCell>
-                          <TableCell>{getPolicyStatusBadge(policy.policy_status)}</TableCell>
-                          <TableCell>
-                            <div className="flex gap-2">
-                              <Button 
-                                variant="ghost" 
-                                size="icon"
-                                onClick={() => handleViewPolicy(policy)}
-                                title="View Policy"
-                              >
-                                <Eye className="h-4 w-4" />
-                              </Button>
-                              <Button 
-                                variant="ghost" 
-                                size="icon"
-                                onClick={() => handleDownloadPDF(policy)}
-                                title="Download PDF"
-                              >
-                                <Download className="h-4 w-4" />
-                              </Button>
-                              <Button 
-                                variant="ghost" 
-                                size="icon"
-                                onClick={() => handlePrintPDF(policy)}
-                                title="Print Policy"
-                              >
-                                <Printer className="h-4 w-4" />
-                              </Button>
-                            </div>
-                          </TableCell>
-                        </TableRow>
-                      ))
-                    )}
-                  </TableBody>
-                </Table>
-              </div>
+              {renderTable('No policies found')}
 
-              {/* Pagination */}
               <div className="flex items-center justify-between mt-4">
                 <div className="flex items-center gap-2 text-sm text-muted-foreground">
                   Rows per page
-                  <Select 
-                    value={rowsPerPage.toString()} 
+                  <Select
+                    value={rowsPerPage.toString()}
                     onValueChange={(v) => setRowsPerPage(Number(v))}
                   >
                     <SelectTrigger className="w-16">
@@ -343,26 +421,28 @@ export const MyPolicies = () => {
                     </SelectContent>
                   </Select>
                 </div>
+
                 <div className="flex items-center gap-4">
                   <span className="text-sm text-muted-foreground">
-                    {filteredPolicies.length > 0 
+                    {filteredPolicies.length > 0
                       ? `${startIndex + 1}–${endIndex} of ${filteredPolicies.length}`
-                      : '0–0 of 0'
-                    }
+                      : '0–0 of 0'}
                   </span>
+
                   <div className="flex gap-1">
-                    <Button 
-                      variant="ghost" 
-                      size="icon" 
-                      onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
                       disabled={currentPage === 1 || filteredPolicies.length === 0}
                     >
                       <ChevronLeft className="w-4 h-4" />
                     </Button>
-                    <Button 
-                      variant="ghost" 
+
+                    <Button
+                      variant="ghost"
                       size="icon"
-                      onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                      onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
                       disabled={currentPage === totalPages || filteredPolicies.length === 0}
                     >
                       <ChevronRight className="w-4 h-4" />
@@ -373,65 +453,7 @@ export const MyPolicies = () => {
             </TabsContent>
 
             <TabsContent value="expired" className="mt-6">
-              {/* Same table for expired - can reuse or separate component */}
-              <div className="border rounded-lg overflow-hidden">
-                <Table>
-                  <TableHeader>
-                    <TableRow className="bg-primary hover:bg-primary">
-                      <TableHead className="text-primary-foreground font-bold">S.N.</TableHead>
-                      <TableHead className="text-primary-foreground font-bold">Insured Name</TableHead>
-                      <TableHead className="text-primary-foreground font-bold">Product</TableHead>
-                      <TableHead className="text-primary-foreground font-bold">Created Date</TableHead>
-                      <TableHead className="text-primary-foreground font-bold">Expiry Date</TableHead>
-                      <TableHead className="text-primary-foreground font-bold">Policy Number</TableHead>
-                      <TableHead className="text-primary-foreground font-bold">Premium (NPR)</TableHead>
-                      <TableHead className="text-primary-foreground font-bold">Payment</TableHead>
-                      <TableHead className="text-primary-foreground font-bold">Status</TableHead>
-                      <TableHead className="text-primary-foreground font-bold">Actions</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {currentPolicies.length === 0 ? (
-                      <TableRow>
-                        <TableCell colSpan={10} className="text-center py-12 text-muted-foreground">
-                          No expired policies found
-                        </TableCell>
-                      </TableRow>
-                    ) : (
-                      currentPolicies.map((policy, index) => (
-                        <TableRow key={policy.policy_number} className="hover:bg-muted/50">
-                          <TableCell>{startIndex + index + 1}</TableCell>
-                          <TableCell className="font-medium">{policy.insured_name}</TableCell>
-                          <TableCell>{policy.product_name}</TableCell>
-                          <TableCell>{policy.created_date}</TableCell>
-                          <TableCell>{policy.expiry_date}</TableCell>
-                          <TableCell>
-                            <span className="font-mono text-sm">{policy.document_number}</span>
-                          </TableCell>
-                          <TableCell className="text-right font-medium">
-                            {formatCurrency(policy.total_premium)}
-                          </TableCell>
-                          <TableCell>{getPaymentStatusBadge(policy.payment_status)}</TableCell>
-                          <TableCell>{getPolicyStatusBadge(policy.policy_status)}</TableCell>
-                          <TableCell>
-                            <div className="flex gap-2">
-                              <Button variant="ghost" size="icon" onClick={() => handleViewPolicy(policy)} title="View">
-                                <Eye className="h-4 w-4" />
-                              </Button>
-                              <Button variant="ghost" size="icon" onClick={() => handleDownloadPDF(policy)} title="Download">
-                                <Download className="h-4 w-4" />
-                              </Button>
-                              <Button variant="ghost" size="icon" onClick={() => handlePrintPDF(policy)} title="Print">
-                                <Printer className="h-4 w-4" />
-                              </Button>
-                            </div>
-                          </TableCell>
-                        </TableRow>
-                      ))
-                    )}
-                  </TableBody>
-                </Table>
-              </div>
+              {renderTable('No expired policies found')}
             </TabsContent>
           </Tabs>
         </main>

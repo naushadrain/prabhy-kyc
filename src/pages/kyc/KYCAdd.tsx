@@ -12,7 +12,8 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
-import { Upload, X, AlertCircle, CheckCircle2, Info } from "lucide-react";
+import { Upload, X, AlertCircle, CheckCircle2, Info, FileImage } from "lucide-react";
+import { toast } from "@/components/ui/sonner";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 
@@ -31,20 +32,34 @@ import {
   getDobMinMaxYMD,
   adIsoToBsYMD,
   normalizeSpaces,
-} from "./validation/kycSchema";
-import Districts from "./District";
+} from "@/zod/kycSchema";
 // API
 import { submitCustomerKyc, type CustomerKycFormEntity } from "@/api/kyc/customerKycClient";
 import { kycStatus } from "@/api/kyc/kycStatus";
 import { kycRejectForm } from "@/api/kyc/kycRejectForm";
 import { getUserInfo } from "@/api/userInfo/homePageIngo";
 import { UsersInfo } from "@/types/gotohome";
-/* =========================
-   Upload config
-========================= */
-type UploadItem = { file: File; previewUrl: string };
 
-const ALLOWED_MIME = ["image/png", "image/jpeg"];
+import type {
+  BannerState,
+  ApiErrorItem,
+  KycNote,
+  StatusApi,
+  DetailApi,
+  UploadItem,
+} from "@/types/types";
+import {
+  normalizeStatusText,
+  buildStatusBanner,
+  isLockedByStatus,
+  mapApiToFormValues,
+  mapApiToExistingImages,
+} from "@/utils/addKyc";
+ export const  KYCAdd = () => {
+  const { t } = useLanguage();
+  const navigate = useNavigate();
+
+  const ALLOWED_MIME = ["image/png", "image/jpeg"];
 const MAX_FILE_MB = 1;
 
 /** REQUIRED */
@@ -61,175 +76,6 @@ const DL_FRONT_KEY = "Driving License / Front (Optional)";
 const DL_BACK_KEY = "Driving License / Back (Optional)";
 
 const REQUIRED_ATTACHMENTS = [PHOTO_KEY, CTZ_FRONT_KEY, CTZ_BACK_KEY] as const;
-
-type BannerState = { type: "info" | "success" | "error"; title: string; message: string; debug?: any } | null;
-type ApiErrorItem = { error_code?: string; error_message?: string };
-
-type KycNote = { note_Type?: string; comments?: string; date_Posted?: string };
-
-type StatusApi = {
-  kyc_Status?: string;
-  process_result?: boolean;
-  note_List?: KycNote[];
-  total_data_no?: number;
-  error_list?: ApiErrorItem[];
-};
-
-type DetailApi = {
-  kyc_status?: string;
-  process_result?: boolean;
-  error_list?: ApiErrorItem[];
-  kyc_detail?: any;
-};
-
-function normalizeStatusText(s: any) {
-  const v = String(s ?? "").trim();
-  return v || "Unknown";
-}
-
-function shouldShowStatusAlert(status: string) {
-  const low = status.toLowerCase();
-  if (!status || low === "unknown") return false;
-  if (low === "kyc not completed") return false;
-  return ["pending", "rejected", "approved", "verified"].includes(low);
-}
-
-function buildStatusBanner(status: string): BannerState {
-  if (!shouldShowStatusAlert(status)) return null;
-
-  const low = status.toLowerCase();
-  if (low === "pending") {
-    return {
-      type: "info",
-      title: "KYC is under review",
-      message: "We received your KYC. Our team is reviewing it. Editing is locked until a decision is made.",
-    };
-  }
-  if (low === "rejected") {
-    return {
-      type: "error",
-      title: "KYC needs correction",
-      message: "Your KYC was rejected. Please correct the highlighted fields/documents and submit again.",
-    };
-  }
-  if (low === "approved" || low === "verified") {
-    return {
-      type: "success",
-      title: "KYC approved",
-      // message: "Your KYC has been approved. You cannot edit or submit again.",
-      message: "",
-    };
-  }
-  return null;
-}
-
-function isLockedByStatus(status: string) {
-  const low = status.toLowerCase();
-  return low === "pending" || low === "approved" || low === "verified";
-}
-
-/* =========================
-   Prefill mappers (GET details)
-========================= */
-function mapApiToFormValues(api: any, fallback: KycFormValues): KycFormValues {
-  const root = api?.data ?? api;
-  const d = root?.kyc_detail ?? root?.kycDetail ?? root;
-
-  const name = d?.customer_Name ?? {};
-  const id = d?.identification ?? {};
-  const info = d?.customerInformation ?? {};
-  const addr = d?.address ?? {};
-  const contact = d?.contact ?? {};
-  const rel = d?.relation ?? {};
-
-  return {
-    ...fallback,
-
-    honour: name?.honour ?? fallback.honour,
-    gender: info?.gender ?? fallback.gender,
-
-    first_name: name?.first_Name ?? fallback.first_name,
-    middle_name: name?.middle_Name ?? fallback.middle_name,
-    last_name: name?.last_Name ?? fallback.last_name,
-
-    first_name_nep: name?.first_Name_nep ?? fallback.first_name_nep,
-    middle_name_nep: name?.middle_Name_nep ?? fallback.middle_name_nep,
-    last_name_nep: name?.last_Name_nep ?? fallback.last_name_nep,
-
-    id_type: id?.id_Type ?? fallback.id_type,
-    id_no: id?.id_No ?? fallback.id_no,
-    issued_district: id?.issued_District ?? fallback.issued_district,
-
-    issue_date_ad: id?.issue_Date_AD ?? fallback.issue_date_ad,
-    issue_date_bs: id?.issue_Date_BS ?? fallback.issue_date_bs,
-
-    dob_ad: info?.date_Of_Birth_AD ?? fallback.dob_ad,
-    dob_bs: info?.date_Of_Birth_BS ?? fallback.dob_bs,
-
-    mobile: contact?.mobile ?? fallback.mobile,
-    email: contact?.email ?? fallback.email,
-
-    province: addr?.province ?? fallback.province,
-    district: addr?.district ?? fallback.district,
-    local_level: addr?.local_level ?? fallback.local_level,
-    ward_no: addr?.ward_No ?? fallback.ward_no,
-
-    tole: addr?.tole ?? fallback.tole,
-    tole_nep: addr?.tole_nep ?? fallback.tole_nep,
-
-    residence_country: addr?.residence_Country ?? fallback.residence_country,
-
-    temp_address: addr?.temporary_Address ?? fallback.temp_address,
-    temp_address_nep: addr?.temporary_Address_nep ?? fallback.temp_address_nep,
-
-    father_name: rel?.father_Name ?? fallback.father_name,
-    father_name_nep: rel?.father_Name_nep ?? fallback.father_name_nep,
-
-    father_citizenship_no: rel?.father_citizenship_no ?? fallback.father_citizenship_no,
-    father_citizenship_issued_district:
-      rel?.father_citizenship_issued_district ?? fallback.father_citizenship_issued_district,
-
-    occupation: info?.occupation ?? fallback.occupation,
-    industry: info?.sub_Occupation ?? fallback.industry,
-
-    politically_involved: Boolean(d?.politically_involved ?? fallback.politically_involved),
-    party_inspection_category: d?.party_inspection_category ?? fallback.party_inspection_category,
-    risk_factors: d?.risk_factors ?? fallback.risk_factors,
-
-    doc_type: d?.doc_type ?? fallback.doc_type,
-
-    // optional docs UI controls
-    add_optional_docs: fallback.add_optional_docs,
-    optional_doc_type: fallback.optional_doc_type,
-  };
-}
-
-function mapApiToExistingImages(api: any) {
-  const root = api?.data ?? api;
-  const img = root?.kyc_detail?.customer_image ?? root?.customer_image ?? {};
-
-  const existing: Record<string, string | undefined> = {};
-
-  existing[PHOTO_KEY] = img?.image_name_profile || img?.image_profile || img?.image_name_profile;
-
-  existing[CTZ_FRONT_KEY] = img?.ctz_name_front || img?.ctz_front || img?.ctz_image_front;
-  existing[CTZ_BACK_KEY] = img?.ctz_name_back || img?.ctz_back || img?.ctz_image_back;
-
-  existing[PASS_FRONT_KEY] = img?.passport_name_front || img?.passport_front || img?.passport_image_front;
-  existing[PASS_BACK_KEY] = img?.passport_name_back || img?.passport_back || img?.passport_image_back;
-
-  existing[NID_FRONT_KEY] = img?.nid_name_front || img?.nid_front || img?.nid_image_front;
-  existing[NID_BACK_KEY] = img?.nid_name_back || img?.nid_back || img?.nid_image_back;
-
-  existing[DL_FRONT_KEY] = img?.dl_name_front || img?.dl_front || img?.driving_license_front;
-  existing[DL_BACK_KEY] = img?.dl_name_back || img?.dl_back || img?.driving_license_back;
-
-  return existing;
-}
-
- export const  KYCAdd = () => {
-  const { t } = useLanguage();
-  const navigate = useNavigate();
 
   const redirectTimerRef = useRef<number | null>(null);
   useEffect(() => {
@@ -264,7 +110,7 @@ function mapApiToExistingImages(api: any) {
     middle_name_nep: "",
     last_name_nep: "",
 
-    id_type: "",
+    id_type: "Citizenship",
     id_no: "",
     issued_district: "",
 
@@ -711,11 +557,9 @@ function mapApiToExistingImages(api: any) {
     try {
       const result = await submitCustomerKyc(payload, { debug: true });
 
-      setBanner({
-        type: "success",
-        title: "Submitted successfully",
-        message: result?.data?.message || "Your KYC has been submitted and is under review.",
-      });
+      const successMsg = result?.data?.message || "Your KYC has been submitted and is under review.";
+      setBanner({ type: "success", title: "Submitted successfully", message: successMsg });
+      toast.success(successMsg);
 
       clearFormAfterSuccess();
 
@@ -735,6 +579,7 @@ function mapApiToExistingImages(api: any) {
 
       applyApiErrorsToFields(apiErrorList);
 
+      toast.error(genericMsg);
       setBanner({
         type: "error",
         title: "Submission failed",
@@ -828,7 +673,7 @@ useEffect(() => {
 
         <main className="flex-1 p-6 md:p-8 bg-background">
           <form onSubmit={handleSubmit(onValidSubmit, onInvalidSubmit)} className="space-y-8">
-            {/* ✅ alert rules applied here */}
+            {/*  alert rules applied here */}
             {banner && (
               <Alert
                 className={
@@ -851,7 +696,7 @@ useEffect(() => {
               </Alert>
             )}
 
-            {/* ✅ show API note_List */}
+            {/*  show API note_List */}
             {!!statusNotes.length && (
               <div className="rounded-lg border p-4 bg-muted/20">
                 <div className="font-semibold mb-2">KYC Notes</div>
@@ -950,7 +795,7 @@ useEffect(() => {
                   {errors.id_no && <p className="text-xs text-red-500 mt-1">{errors.id_no.message}</p>}
                 </div>
 
-                {/* ✅ Replace your Issued District input with this */}
+                {/*  Replace your Issued District input with this */}
                 <div>
                   <Label>Issued District *</Label>
 
@@ -1165,7 +1010,7 @@ useEffect(() => {
               <input type="hidden" {...register("add_optional_docs")} />
               <input type="hidden" {...register("optional_doc_type")} />
 
-              {/* ✅ Optional docs checkbox + dropdown */}
+              {/*  Optional docs checkbox + dropdown */}
               {!locked && (
                 <div className="mt-4 rounded-lg border p-4">
                   <div className="flex items-center gap-2">
@@ -1215,96 +1060,86 @@ useEffect(() => {
                 </div>
               )}
 
-              <div className={`space-y-4 mt-4 ${formDisabled ? "opacity-60 pointer-events-none" : ""}`}>
+              <div className={`grid grid-cols-1 md:grid-cols-3 gap-4 mt-4 ${formDisabled ? "opacity-60 pointer-events-none" : ""}`}>
                 {visibleAttachments.map((attachmentKey) => {
                   const item = uploads[attachmentKey] ?? null;
                   const err = uploadErrors[attachmentKey];
                   const existingUrl = existingImages[attachmentKey];
+                  const hasFile = !!item;
+                  const hasExisting = !hasFile && !!existingUrl;
 
                   return (
-                    <div key={attachmentKey} className="rounded-lg border p-4">
-                      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
-                        <div>
-                          <p className="text-sm font-medium">{attachmentKey}</p>
-                          <p className="text-xs text-muted-foreground">PNG / JPG / JPEG (Max {MAX_FILE_MB}MB)</p>
-                        </div>
+                    <div key={attachmentKey} className="border rounded-lg p-4 space-y-2">
+                      <p className="text-sm font-medium">{attachmentKey}</p>
 
-                        <input
-                          ref={(el) => (inputRefs.current[attachmentKey] = el)}
-                          type="file"
-                          accept="image/png,image/jpeg"
-                          className="hidden"
-                          onChange={onFileChange(attachmentKey)}
-                        />
-
-                        <Button
-                          type="button"
-                          variant="outline"
-                          size="sm"
-                          className="gap-2 text-orange-500 border-orange-200 hover:bg-orange-50 w-fit"
-                          onClick={() => openPicker(attachmentKey)}
-                        >
-                          <Upload className="w-4 h-4" />
-                          {item ? "Change file" : existingUrl ? "Replace file" : "Click to upload"}
-                        </Button>
-                      </div>
+                      <input
+                        ref={(el) => (inputRefs.current[attachmentKey] = el)}
+                        type="file"
+                        accept="image/png,image/jpeg"
+                        className="hidden"
+                        onChange={onFileChange(attachmentKey)}
+                      />
 
                       <div
-                        className="mt-3 rounded-lg border-2 border-dashed p-3 cursor-pointer hover:bg-muted/30 transition"
+                        className={`flex flex-col items-center justify-center gap-2 border-2 border-dashed rounded-lg p-4 text-center cursor-pointer transition-colors ${
+                          hasFile
+                            ? "border-green-400 bg-green-50"
+                            : hasExisting
+                            ? "border-blue-300 bg-blue-50/30"
+                            : "border-border hover:border-primary/50 hover:bg-muted/30"
+                        }`}
                         onClick={() => openPicker(attachmentKey)}
-                        onDragOver={(e) => {
-                          e.preventDefault();
-                          e.stopPropagation();
-                        }}
+                        onDragOver={(e) => { e.preventDefault(); e.stopPropagation(); }}
                         onDrop={onDropFile(attachmentKey)}
-                        role="button"
-                        tabIndex={0}
                       >
-                        {!item ? (
-                          <div className="flex items-center justify-between">
-                            <div>
-                              <p className="text-sm font-medium">Drop file here</p>
-                              <p className="text-xs text-muted-foreground">{existingUrl ? "Existing image loaded from API" : "or click to upload"}</p>
-                            </div>
-                            <Upload className="h-5 w-5 text-muted-foreground" />
-                          </div>
-                        ) : (
-                          <div className="flex items-center gap-3">
-                            <img src={item.previewUrl} alt="preview" className="h-16 w-16 rounded-md object-cover border" />
-                            <div className="flex-1 min-w-0">
-                              <p className="text-sm font-medium truncate">{item.file.name}</p>
-                              <p className="text-xs text-muted-foreground">{(item.file.size / (1024 * 1024)).toFixed(2)} MB</p>
-                            </div>
-
+                        {hasFile ? (
+                          <>
+                            {item.previewUrl ? (
+                              <img
+                                src={item.previewUrl}
+                                alt="preview"
+                                className="w-full max-h-36 object-contain rounded"
+                              />
+                            ) : (
+                              <CheckCircle2 className="w-8 h-8 text-green-500" />
+                            )}
+                            <p className="text-xs font-medium text-green-700 break-all px-1">
+                              {item.file.name}
+                            </p>
+                            <p className="text-xs text-muted-foreground">
+                              {(item.file.size / 1024).toFixed(1)} KB — Click or drag to replace
+                            </p>
                             <Button
                               type="button"
                               variant="ghost"
                               size="sm"
-                              className="text-red-600 hover:text-red-700"
-                              onClick={(e) => {
-                                e.preventDefault();
-                                e.stopPropagation();
-                                removeFile(attachmentKey);
-                              }}
+                              className="text-red-600 hover:text-red-700 gap-1"
+                              onClick={(e) => { e.preventDefault(); e.stopPropagation(); removeFile(attachmentKey); }}
                             >
-                              <X className="h-4 w-4 mr-1" />
-                              Remove
+                              <X className="h-3 w-3" /> Remove
                             </Button>
-                          </div>
-                        )}
-
-                        {!item && existingUrl && (
-                          <div className="mt-3 flex items-center gap-3">
-                            <img src={existingUrl} alt="api-existing" className="h-16 w-16 rounded-md object-cover border" />
-                            <div className="text-xs text-muted-foreground break-all">Existing from API</div>
-                          </div>
+                          </>
+                        ) : hasExisting ? (
+                          <>
+                            <img
+                              src={existingUrl}
+                              alt="existing"
+                              className="w-full max-h-36 object-contain rounded"
+                            />
+                            <p className="text-xs text-muted-foreground">Existing — click to replace</p>
+                          </>
+                        ) : (
+                          <>
+                            <Upload className="w-8 h-8 text-muted-foreground" />
+                            <p className="text-xs font-medium">Click or drag & drop</p>
+                            <p className="text-xs text-muted-foreground">PNG / JPG — max {MAX_FILE_MB} MB</p>
+                          </>
                         )}
                       </div>
 
-                      {err && <p className="text-xs text-red-500 mt-2">{err}</p>}
-
-                      {isRequiredDocKey(attachmentKey) && !uploads[attachmentKey]?.file && !existingImages[attachmentKey] && (
-                        <p className="text-xs text-muted-foreground mt-2">This document is required.</p>
+                      {err && <p className="text-xs text-red-500 mt-1">{err}</p>}
+                      {isRequiredDocKey(attachmentKey) && !hasFile && !hasExisting && (
+                        <p className="text-xs text-muted-foreground">Required</p>
                       )}
                     </div>
                   );

@@ -1,31 +1,18 @@
-// src/api/kyc/kycStatus.ts
+// src/api/kyc/kycRejectForm.ts
+import { authFetch } from "../auth/authFetch";
 import { buildSignatureForBody } from "../session/signature";
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL as string;
 
-function getAccessTokenOrThrow() {
-    const token =
-        localStorage.getItem("access_token") ||
-        localStorage.getItem("accessToken") ||
-        "";
-    if (!token) throw new Error("Not logged in. access_token not found. Please login first.");
-    return token;
-}
-
 export async function kycRejectForm() {
     const url = `${API_BASE_URL}/v1/CustomerKyc/get-kyc-details`;
-    const accessToken = getAccessTokenOrThrow();
 
-    // For GET with no body, sign empty string (if your backend expects that)
     const { unixTs, signature } = buildSignatureForBody("");
-
-    // ✅ correct order
     const verifySignature = `${unixTs}.${signature}`;
 
-    const res = await fetch(url, {
+    const res = await authFetch(url, {
         method: "GET",
         headers: {
-            Authorization: `Bearer ${accessToken}`,
             "verify-signature": verifySignature,
             Accept: "application/json",
         },

@@ -37,7 +37,7 @@ export function ProvinceDistrictMunicipality(props: {
     labels?: { province?: string; district?: string; local_level?: string };
     disabled?: boolean;
 
-    // ✅ add this
+    //  add this
     errors?: { province?: string; district?: string; local_level?: string };
 }) {
     const { value, onChange, labels, disabled, errors } = props;

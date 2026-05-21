@@ -1,8 +1,6 @@
 // src/api/travels/CreateTravelPolicy.ts
 import { buildSignatureForBody } from "../session/signature";
-import { getAccessToken } from "../auth/tokenStore";
-import { createSession } from "../session/sessionClient";
-
+import { authFetch } from "../auth/authFetch";
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL as string;
 const USER_LOGIN_ID = import.meta.env.VITE_USER_LOGIN_ID as string;
 
@@ -67,24 +65,22 @@ export type CreateTravelPolicyPayload = {
 export async function createTravelPolicy(payload: CreateTravelPolicyPayload) {
   if (!API_BASE_URL) throw new Error("Missing env var: VITE_API_BASE_URL");
 
-  const accessToken = getAccessToken();
-  if (!accessToken) throw new Error("No access token found. Please login again.");
+  if (!payload.policy_session_id?.trim()) {
+    throw new Error("policy_session_id is missing. Please recalculate the premium first.");
+  }
 
-  // Fresh session tied to the logged-in user
-  const processKey = await createSession(USER_LOGIN_ID);
-  const basicToken = btoa(`${USER_LOGIN_ID}:${processKey}`);
-
-  // Inject the fresh session ID into the payload
-  const finalPayload = { ...payload, policy_session_id: processKey };
+  // Use policy_session_id from getTravelPremium response directly — no new session call
+  const sessionId = payload.policy_session_id;
+  const basicToken = btoa(`${USER_LOGIN_ID}:${sessionId}`);
+  const finalPayload = { ...payload, policy_session_id: sessionId };
 
   const bodyStr = JSON.stringify(finalPayload);
   const { unixTs, signature } = buildSignatureForBody(bodyStr);
 
-  const res = await fetch(`${API_BASE_URL}/v1/Travel/create_travel_policy`, {
+  const res = await authFetch(`${API_BASE_URL}/v1/Travel/create_travel_policy`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-      Authorization: `Bearer ${accessToken}`,
       "X-Authorization": `Basic ${basicToken}`,
       "verify-signature": `${unixTs}.${signature}`,
       "split-signature": `${unixTs}.${signature}`,

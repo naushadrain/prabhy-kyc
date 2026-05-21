@@ -1,27 +1,27 @@
 import React from "react";
-import { useLocation, useNavigate, Link } from "react-router-dom";
-import { ChevronLeft, LogIn } from "lucide-react";
+import { useLocation, useNavigate } from "react-router-dom";
+import { ChevronLeft } from "lucide-react";
 
-import { useLanguage } from "@/contexts/LanguageContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 
-import logo from "@/assets/logo.png";
+import {
+  getTravelPeriod,
+  getTravelAgeBandsPublic,
+  TravelPeriodResponse,
+} from "@/api/travels/GetTravelCataloguesPublic";
 
-import { getTravelAgeBands } from "@/api/travels/GetTravelAgeBands";
-import { getTravelPeriod } from "@/api/travels/GetTravelCatalogues";
+type AgeBandItem = {
+  value: string;
+  age_from: string;
+  age_to: string;
+};
 
-// ---------------- types ----------------
-type AgeBandItem = { value: string; age_from: string; age_to: string };
-
-type PeriodApiItem = { value: string; data: string };
-type PeriodApiResponse = {
-  class_id: number;
-  total_data_no: number;
-  catalogue_list: PeriodApiItem[];
-  process_result: boolean;
+type PeriodApiItem = {
+  value: string;
+  data: string;
 };
 
 type CoverageState = {
@@ -30,7 +30,23 @@ type CoverageState = {
   packageValue?: string;
 };
 
-// ---------------- helpers ----------------
+const STORAGE_KEY = "travelInsurance.details";
+
+function saveToStorage(data: Record<string, any>) {
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+  } catch {}
+}
+
+function loadFromStorage(): Record<string, any> | null {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    return raw ? JSON.parse(raw) : null;
+  } catch {
+    return null;
+  }
+}
+
 function todayISO() {
   const d = new Date();
   d.setHours(0, 0, 0, 0);
@@ -87,95 +103,78 @@ function matchPeriodByDays(items: PeriodApiItem[], days: number) {
 }
 
 export default function TravelInsuranceDetails() {
-  const { t } = useLanguage();
   const navigate = useNavigate();
   const location = useLocation();
 
-  // Load Step-1 state (router OR localStorage)
   const [coverageState, setCoverageState] = React.useState<CoverageState>({
     planValue: "",
     areaValue: "",
     packageValue: "",
   });
 
-  React.useEffect(() => {
-    const st = (location.state || {}) as CoverageState;
-    let ls: CoverageState = {};
-    
-    try {
-      const raw = localStorage.getItem("travel.coveragePlan");
-      if (raw) ls = JSON.parse(raw);
-    } catch { }
+  // Restore from localStorage on mount
+  const saved = React.useMemo(() => loadFromStorage(), []);
 
-    const merged: CoverageState = {
-      planValue: st.planValue ?? ls.planValue ?? "",
-      areaValue: st.areaValue ?? ls.areaValue ?? "",
-      packageValue: st.packageValue ?? ls.packageValue ?? "",
-    };
-
-    setCoverageState(merged);
-    localStorage.setItem("travel.coveragePlan", JSON.stringify(merged));
-  }, [location.state]);
-
-  const planId = coverageState.planValue || "";
-  const todayStr = React.useMemo(() => todayISO(), []);
-
-  function handleBack() {
-    navigate("/travel-coverage", { state: coverageState });
-  }
-
-  // ---------------- Step-2 Fields ----------------
-  const [travelFrom, setTravelFrom] = React.useState("");
-  const [travelTo, setTravelTo] = React.useState("");
-  const [noOfDays, setNoOfDays] = React.useState<number | "">("");
-  const [numberOfTravelers, setNumberOfTravelers] = React.useState<number>(1);
+  const [travelFrom, setTravelFrom] = React.useState(saved?.travelFrom ?? "");
+  const [travelTo, setTravelTo] = React.useState(saved?.travelTo ?? "");
+  const [noOfDays, setNoOfDays] = React.useState<number | "">(saved?.noOfDays ?? "");
+  const [numberOfTravelers, setNumberOfTravelers] = React.useState<number>(saved?.numberOfTravelers ?? 1);
 
   const [travelFromError, setTravelFromError] = React.useState<string | null>(null);
   const [travelToError, setTravelToError] = React.useState<string | null>(null);
 
-  const [dob, setDob] = React.useState("");
-  const [age, setAge] = React.useState<number | "">("");
+  const [dob, setDob] = React.useState(saved?.dob ?? "");
+  const [age, setAge] = React.useState<number | "">(saved?.age ?? "");
   const [dobError, setDobError] = React.useState<string | null>(null);
 
-  const [passportNumber, setPassportNumber] = React.useState("");
-  const [phoneNumber, setPhoneNumber] = React.useState("");
+  const [passportNumber, setPassportNumber] = React.useState(saved?.passportNumber ?? "");
+  const [phoneNumber, setPhoneNumber] = React.useState(saved?.phoneNumber ?? "");
 
-  // period
-  const [periodId, setPeriodId] = React.useState<string>("");
+  const [periodId, setPeriodId] = React.useState<string>(saved?.periodId ?? "");
   const [periodLoading, setPeriodLoading] = React.useState(false);
   const [periodError, setPeriodError] = React.useState<string | null>(null);
 
-  // age bands
   const [ageBandList, setAgeBandList] = React.useState<AgeBandItem[]>([]);
-  const [ageBandValue, setAgeBandValue] = React.useState<string>("");
+  const [ageBandValue, setAgeBandValue] = React.useState<string>(saved?.ageBandValue ?? "");
   const [ageBandError, setAgeBandError] = React.useState<string | null>(null);
 
   const [loadingAgeBands, setLoadingAgeBands] = React.useState(false);
   const [ageBandsError, setAgeBandsError] = React.useState<string | null>(null);
 
-  // Load saved details from localStorage on mount
   React.useEffect(() => {
-    try {
-      const saved = localStorage.getItem("travel.coverageDetails");
-      if (saved) {
-        const parsed = JSON.parse(saved);
-        setTravelFrom(parsed.travelFrom || "");
-        setTravelTo(parsed.travelTo || "");
-        setNoOfDays(parsed.noOfDays || "");
-        setNumberOfTravelers(parsed.numberOfTravelers || 1);
-        setDob(parsed.dob || "");
-        setAge(parsed.age || "");
-        setPeriodId(parsed.period_id || "");
-        setAgeBandValue(parsed.age_band_id || "");
-        setPhoneNumber(parsed.phone_number || "");
-        setPassportNumber(parsed.passport_number || "");
-      }
-    } catch (error) {
-      console.error("Error loading saved details:", error);
-    }
-  }, []);
+    const st = (location.state || {}) as CoverageState;
+    setCoverageState({
+      planValue: st.planValue ?? "",
+      areaValue: st.areaValue ?? "",
+      packageValue: st.packageValue ?? "",
+    });
+  }, [location.state]);
 
-  // Load age bands
+  const planId = coverageState.planValue || "";
+  const areaId = coverageState.areaValue || "";
+  const packageId = coverageState.packageValue || "";
+  const todayStr = React.useMemo(() => todayISO(), []);
+
+  // Save form data to localStorage whenever it changes
+  React.useEffect(() => {
+    saveToStorage({
+      travelFrom,
+      travelTo,
+      noOfDays,
+      numberOfTravelers,
+      dob,
+      age,
+      passportNumber,
+      phoneNumber,
+      periodId,
+      ageBandValue,
+    });
+  }, [travelFrom, travelTo, noOfDays, numberOfTravelers, dob, age, passportNumber, phoneNumber, periodId, ageBandValue]);
+
+  function handleBack() {
+    navigate("/travel-coverage", { state: coverageState });
+  }
+
   React.useEffect(() => {
     let mounted = true;
 
@@ -184,18 +183,13 @@ export default function TravelInsuranceDetails() {
         setLoadingAgeBands(true);
         setAgeBandsError(null);
 
-        const res = await getTravelAgeBands();
-        const list: AgeBandItem[] = Array.isArray(res?.travel_age_band_list) ? res.travel_age_band_list : [];
+        const res = await getTravelAgeBandsPublic();
+        const list: AgeBandItem[] = Array.isArray(res?.travel_age_band_list)
+          ? res.travel_age_band_list
+          : [];
 
         if (!mounted) return;
         setAgeBandList(list);
-        
-        // Re-calculate age band if DOB is already set
-        if (dob) {
-          const yrs = calcAgeYears(dob);
-          const bandVal = findAgeBandValue(list, yrs);
-          setAgeBandValue(bandVal);
-        }
       } catch (e: any) {
         if (!mounted) return;
         setAgeBandsError(e?.message ?? "Failed to load age bands");
@@ -205,12 +199,22 @@ export default function TravelInsuranceDetails() {
     }
 
     loadAgeBands();
+
     return () => {
       mounted = false;
     };
-  }, [dob]);
+  }, []);
 
-  // handlers
+  // Re-evaluate age band when ageBandList loads after DOB was already selected
+  React.useEffect(() => {
+    if (ageBandList.length === 0 || !dob) return;
+    const yrs = calcAgeYears(dob);
+    if (yrs < 16) return;
+    const bandVal = findAgeBandValue(ageBandList, yrs);
+    setAgeBandValue(bandVal);
+    setAgeBandError(bandVal ? null : `Age ${yrs} is not allowed in available age bands`);
+  }, [ageBandList, dob]);
+
   const onChangeTravelFrom = (v: string) => {
     setTravelFrom(v);
     setTravelFromError(null);
@@ -227,7 +231,7 @@ export default function TravelInsuranceDetails() {
     if (v && travelTo) {
       const d = daysBetweenInclusive(v, travelTo);
       setNoOfDays(d);
-      setTravelToError(d > 180 ? "No of Days must be below 180 days" : null);
+      setTravelToError(null);
     } else {
       setNoOfDays("");
     }
@@ -253,7 +257,6 @@ export default function TravelInsuranceDetails() {
 
     const d = daysBetweenInclusive(travelFrom, v);
     setNoOfDays(d);
-    if (d > 180) setTravelToError("No of Days must be below 180 days");
   };
 
   const onChangeDob = (v: string) => {
@@ -275,6 +278,14 @@ export default function TravelInsuranceDetails() {
     }
 
     const yrs = calcAgeYears(v);
+
+    if (yrs < 16) {
+      setDobError("Minimum age is 16 years");
+      setAge(yrs);
+      setAgeBandValue("");
+      return;
+    }
+
     setAge(yrs);
 
     if (ageBandList.length > 0) {
@@ -292,31 +303,38 @@ export default function TravelInsuranceDetails() {
     setNumberOfTravelers(clampedValue);
   };
 
-  // Load period when planId + days ready
   React.useEffect(() => {
     let cancelled = false;
 
     async function loadPeriod() {
-      if (!planId) return;
+      if (!planId || !areaId || !packageId) return;
       if (typeof noOfDays !== "number") return;
       if (noOfDays <= 0) return;
-      if (noOfDays > 180) return;
 
       try {
         setPeriodLoading(true);
         setPeriodError(null);
+        setPeriodId("");
 
-        const resp: PeriodApiResponse = await getTravelPeriod(planId, noOfDays);
+        const resp: TravelPeriodResponse = await getTravelPeriod(
+          planId,
+          noOfDays,
+          areaId,
+          packageId
+        );
+
         if (cancelled) return;
 
         const list = Array.isArray(resp?.catalogue_list) ? resp.catalogue_list : [];
-        if (!resp?.process_result || list.length === 0) {
+
+        if (list.length === 0) {
           setPeriodId("");
           setPeriodError("No period found for selected days");
           return;
         }
 
         const matched = matchPeriodByDays(list, noOfDays);
+
         if (!matched) {
           setPeriodId("");
           setPeriodError("No period matched for selected days");
@@ -334,10 +352,11 @@ export default function TravelInsuranceDetails() {
     }
 
     loadPeriod();
+
     return () => {
       cancelled = true;
     };
-  }, [planId, noOfDays]);
+  }, [planId, areaId, packageId, noOfDays]);
 
   const onNext = () => {
     let ok = true;
@@ -361,17 +380,15 @@ export default function TravelInsuranceDetails() {
       ok = false;
     }
 
-    if (typeof noOfDays === "number" && noOfDays > 180) {
-      setTravelToError("No of Days must be below 180 days");
-      ok = false;
-    }
-
     if (!dob) {
       setDobError("Please select DOB");
       ok = false;
-    } else if (dob > todayStr) {
-      setDobError("DOB cannot be in the future");
-      ok = false;
+    } else {
+      const yrs = calcAgeYears(dob);
+      if (yrs < 16) {
+        setDobError("Minimum age is 16 years");
+        ok = false;
+      }
     }
 
     if (loadingAgeBands) {
@@ -385,8 +402,8 @@ export default function TravelInsuranceDetails() {
       ok = false;
     }
 
-    if (!planId) {
-      setPeriodError("Missing plan_id (go back and select plan)");
+    if (!planId || !areaId || !packageId) {
+      setPeriodError("Missing plan, area, or package selection. Please go back.");
       ok = false;
     } else if (periodLoading) {
       setPeriodError("Loading travel period... please wait");
@@ -400,21 +417,21 @@ export default function TravelInsuranceDetails() {
 
     if (!ok) return;
 
-    const payload = {
-      travelFrom,
-      travelTo,
-      noOfDays,
-      numberOfTravelers,
-      dob,
-      age,
-      period_id: periodId,
-      age_band_id: ageBandValue,
-      phone_number: phoneNumber,
-      passport_number: passportNumber,
-    };
-
-    localStorage.setItem("travel.coverageDetails", JSON.stringify(payload));
-    navigate("/premium-summary");
+    navigate("/premium-summary", {
+      state: {
+        ...coverageState,
+        travelFrom,
+        travelTo,
+        noOfDays,
+        numberOfTravelers,
+        dob,
+        age,
+        period_id: periodId,
+        age_band_id: ageBandValue,
+        phone_number: phoneNumber,
+        passport_number: passportNumber,
+      },
+    });
   };
 
   const calculateDisabled =
@@ -429,46 +446,7 @@ export default function TravelInsuranceDetails() {
     !periodId;
 
   return (
-    <div className="min-h-screen bg-background">
-      {/* Top bar */}
-      <header className="sticky top-0 z-50 border-b bg-white/90 backdrop-blur">
-        <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
-          <div className="h-16 flex items-center justify-between gap-3">
-            <div className="flex items-center gap-3 min-w-0">
-              <img src={logo} alt="Prabhu Insurance" className="h-9 w-auto shrink-0" />
-              <div className="hidden sm:block min-w-0">
-                <div className="text-sm font-semibold leading-4 truncate">Prabhu Insurance</div>
-                <div className="text-xs text-muted-foreground truncate">
-                  Travel Medical Insurance
-                </div>
-              </div>
-            </div>
-
-            <div className="flex items-center gap-2 shrink-0">
-              <Link to="/login">
-                <Button size="sm" className="gap-2">
-                  <LogIn className="h-4 w-4" />
-                  <span className="hidden sm:inline">{t("nav.login")}</span>
-                  <span className="sm:hidden">Login</span>
-                </Button>
-              </Link>
-            </div>
-          </div>
-        </div>
-      </header>
-
-      <main className="flex-1">
-        <div className="mx-auto max-w-4xl px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
-          {/* Back button */}
-          <Button variant="ghost" onClick={handleBack} className="mb-6 gap-2">
-            <ChevronLeft className="w-4 h-4" />
-            Back
-          </Button>
-
-          <h1 className="text-2xl font-bold mb-2">Travel Medical Insurance Individual Plan</h1>
-          <p className="text-sm text-muted-foreground mb-6">Step 2 of 3: Enter your travel details</p>
-
-          {/* Travel Period */}
+    <>
           <div className="border rounded-lg p-6 mb-6">
             <div className="grid md:grid-cols-2 gap-4 mb-4">
               <div>
@@ -509,7 +487,9 @@ export default function TravelInsuranceDetails() {
                   value={noOfDays}
                   readOnly
                 />
-                {periodLoading && <p className="text-xs mt-2 text-muted-foreground">Loading period...</p>}
+                {periodLoading && (
+                  <p className="text-xs mt-2 text-muted-foreground">Loading period...</p>
+                )}
                 {periodError && <p className="text-xs mt-2 text-red-600">{periodError}</p>}
               </div>
 
@@ -528,22 +508,7 @@ export default function TravelInsuranceDetails() {
             </div>
           </div>
 
-          {/* KYC TYPE */}
           <div className="border rounded-lg p-6 mb-6">
-            <Label className="mb-4 block font-semibold">KYC TYPE</Label>
-            <RadioGroup defaultValue="self" className="mb-6">
-              <div className="flex items-center space-x-4">
-                <div className="flex items-center space-x-2">
-                  <RadioGroupItem value="self" id="self" />
-                  <Label htmlFor="self">Self</Label>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <RadioGroupItem value="others" id="others" />
-                  <Label htmlFor="others">Others</Label>
-                </div>
-              </div>
-            </RadioGroup>
-
             <div className="grid md:grid-cols-2 gap-4">
               <div>
                 <Label htmlFor="dob">Date of Birth</Label>
@@ -558,7 +523,9 @@ export default function TravelInsuranceDetails() {
                 {dobError && <p className="mt-1 text-sm text-red-600">{dobError}</p>}
                 {ageBandError && <p className="mt-1 text-sm text-red-600">{ageBandError}</p>}
                 {ageBandsError && <p className="mt-1 text-sm text-red-600">{ageBandsError}</p>}
-                {loadingAgeBands && <p className="mt-1 text-sm text-muted-foreground">Loading age bands...</p>}
+                {loadingAgeBands && (
+                  <p className="mt-1 text-sm text-muted-foreground">Loading age bands...</p>
+                )}
               </div>
 
               <div>
@@ -575,7 +542,6 @@ export default function TravelInsuranceDetails() {
             </div>
           </div>
 
-          {/* Actions */}
           <div className="flex gap-4">
             <Button variant="outline" onClick={handleBack} className="gap-2">
               <ChevronLeft className="w-4 h-4" />
@@ -586,8 +552,6 @@ export default function TravelInsuranceDetails() {
               NEXT
             </Button>
           </div>
-        </div>
-      </main>
-    </div>
+    </>
   );
 }

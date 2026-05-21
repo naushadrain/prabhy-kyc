@@ -26,5 +26,5 @@
       "@/*": ["./src/*"]
     }
   },
-  "include": ["src"]
+  "include": ["src", "backupfolder/VehicleCoverageDetails.tsx", "backupfolder/VehicleCoverageDetailsSimple.tsx", "backupfolder/VehicleCoveragePlan.tsx", "backupfolder/VehicleCoveragePlanSimple.tsx", "backupfolder/VehicleInsurancePlan.tsx"]
 }

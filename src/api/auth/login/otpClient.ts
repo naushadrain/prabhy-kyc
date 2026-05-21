@@ -64,14 +64,14 @@ export async function validateOneTimeOtp(otp) {
 
   const bodyObj = {
     issue_type: "07",
-    process_id: otpProcessId, // ✅ OTP process id goes in BODY
+    process_id: otpProcessId, //  OTP process id goes in BODY
     verification_code: encryptedOtp,
   };
 
   const jsonBody = JSON.stringify(bodyObj);
   const { unixTs, signature } = buildSignatureForBody(jsonBody);
 
-  // ✅ Basic Auth = user_login_id : session_process_key (NOT otp_process_id)
+  //  Basic Auth = user_login_id : session_process_key (NOT otp_process_id)
   const basicToken = btoa(`${USER_LOGIN_ID}:${sessionProcessKey}`);
 
   const res = await fetch(`${API_BASE_URL}/v1/common/onetime-otp/validate`, {
@@ -93,7 +93,7 @@ export async function validateOneTimeOtp(otp) {
     throw new Error(`OTP validation error ${res.status}`);
   }
 
-  // ✅ save tokens
+  //  save tokens
   if (data.access_token) localStorage.setItem("access_token", data.access_token);
   if (data.refresh_token) localStorage.setItem("refresh_token", data.refresh_token);
 

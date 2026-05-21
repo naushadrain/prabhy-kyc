@@ -12,10 +12,10 @@ import { Label } from "@/components/ui/label";
 import logo from "@/assets/logo.png";
 import { ArrowLeft, Eye, EyeOff, Lock, Phone } from "lucide-react";
 
-// ✅ import your API function
+//  import your API function
 import { resetPassword } from "@/api/forgot/forgotPasswordClient";
 
-// ✅ Password rules:
+//  Password rules:
 // - 6 to 12 chars
 // - at least 1 uppercase
 // - at least 1 number
@@ -46,7 +46,7 @@ type ResetValues = z.infer<typeof resetSchema>;
 export default function ResetPasswordPage() {
     const navigate = useNavigate();
 
-    // ✅ read saved mobile (support both keys)
+    //  read saved mobile (support both keys)
     const storedMobile = useMemo(
         () =>
             localStorage.getItem("forgot_mobile") ||
@@ -94,14 +94,14 @@ export default function ResetPasswordPage() {
                 return;
             }
 
-            // ✅ call API (uses otp_process_id from localStorage in your client)
+            //  call API (uses otp_process_id from localStorage in your client)
             await resetPassword(values.newPassword);
 
-            // ✅ cleanup (optional)
+            //  cleanup (optional)
             localStorage.removeItem("otp_process_id");
             localStorage.removeItem("forgot_mobile_encrypt");
 
-            // ✅ redirect
+            //  redirect
             navigate("/login", { replace: true });
         } catch (err: any) {
             const msg =

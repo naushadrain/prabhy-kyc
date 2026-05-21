@@ -21,7 +21,7 @@ export async function fetchWithAuth(input: RequestInfo, init: RequestInit = {}) 
 
     const res = await fetch(input, { ...init, headers });
 
-    // ✅ If token expired -> try refresh once
+    //  If token expired -> try refresh once
     if (res.status !== 401) return res;
 
     // avoid multiple refresh calls in parallel
