@@ -179,6 +179,6 @@ export async function getFirePropertyPremium(
     return postFirePremium<FirePropertyPremiumResponse>(
         "/v1/Fire/get-property-premium",
         payload,
-        "Failed to calculate fire property premium"
+        "Failed to calculate Property Insurance premium"
     );
 }

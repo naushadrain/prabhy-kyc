@@ -3,7 +3,6 @@ import { LogIn } from "lucide-react";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { Button } from "@/components/ui/button";
 import logo from "@/assets/logo.png";
-import TravelStepper from "@/components/common/TravelStepper";
 import { getTravelSteps } from "@/utils/travelSteps";
 
 const stepMap: Record<string, number> = {
@@ -25,12 +24,7 @@ export default function PublicTravelLayout() {
           <div className="h-16 flex items-center justify-between gap-3">
             <div className="flex items-center gap-3 min-w-0">
               <img src={logo} alt="Prabhu Insurance" className="h-9 w-auto shrink-0" />
-              <div className="hidden sm:block min-w-0">
-                <div className="text-sm font-semibold leading-4 truncate">Prabhu Insurance</div>
-                <div className="text-xs text-muted-foreground truncate">
-                  Travel Medical Insurance
-                </div>
-              </div>
+             
             </div>
 
             <div className="flex items-center gap-2 shrink-0">
@@ -45,11 +39,6 @@ export default function PublicTravelLayout() {
           </div>
         </div>
       </header>
-
-      {/* Stepper */}
-      <div className="mx-auto max-w-6xl w-full px-4 sm:px-6 lg:px-8 pt-6">
-        <TravelStepper steps={getTravelSteps(currentStep)} />
-      </div>
 
       {/* Page content */}
       <main className="flex-1">

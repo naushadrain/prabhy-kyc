@@ -14,12 +14,7 @@ export default function PublicMotorLayout() {
           <div className="h-16 flex items-center justify-between gap-3">
             <Link to="/" className="flex items-center gap-3 min-w-0 hover:opacity-80 transition-opacity">
               <img src={logo} alt="Prabhu Insurance" className="h-9 w-auto shrink-0" />
-              <div className="hidden sm:block min-w-0">
-                <div className="text-sm font-semibold leading-4 truncate">Prabhu Insurance</div>
-                <div className="text-xs text-muted-foreground truncate">
-                  Travel Medical Insurance
-                </div>
-              </div>
+              
             </Link>
 
             <div className="flex items-center gap-2 shrink-0">

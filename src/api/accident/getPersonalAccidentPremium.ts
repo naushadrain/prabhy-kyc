@@ -8,10 +8,9 @@ const USER_LOGIN_ID = import.meta.env.VITE_USER_LOGIN_ID as string;
 
 export type PersonalAccidentPremiumRequest = {
     class_id: string;
-    include_rsd_charge: boolean;
     suminsured: string;
-    medical_suminsured: string;
     total_suminsured: string;
+    get_direct_discount: "y" | "n";
 };
 
 export type PersonalAccidentAmountInfo = {
@@ -45,29 +44,40 @@ export type PersonalAccidentPremiumResponse = {
     message?: string;
 };
 
+function getApiErrorMessage(data: any, fallback: string): string {
+    return data?.error_list?.[0]?.error_message || data?.message || fallback;
+}
+
+function buildPublicHeaders(bodyStr: string, processKey: string) {
+    const { unixTs, signature } = buildSignatureForBody(bodyStr);
+    const basicToken = btoa(`${USER_LOGIN_ID}:${processKey}`);
+
+    return {
+        "Content-Type": "application/json",
+        Accept: "*/*",
+        Authorization: `Basic ${basicToken}`,
+        "X-Basic-Authorization": `Basic ${basicToken}`,
+        "verify-signature": `${unixTs}.${signature}`,
+        "split-signature": `${unixTs}.${signature}`,
+    };
+}
+
 export async function getPersonalAccidentPremium(
     payload: PersonalAccidentPremiumRequest
 ): Promise<PersonalAccidentPremiumResponse> {
-    const bodyStr = JSON.stringify(payload);
+    const fixedPayload: PersonalAccidentPremiumRequest = {
+        class_id: String(payload.class_id || "18"),
+        suminsured: String(payload.suminsured || "0"),
+        total_suminsured: String(payload.total_suminsured || "0"),
+        get_direct_discount: payload.get_direct_discount === "y" ? "y" : "n",
+    };
 
+    const bodyStr = JSON.stringify(fixedPayload);
     const processKey = await createSession();
-
-    const { unixTs, signature } = buildSignatureForBody(bodyStr);
-
-    const basicToken = btoa(`${USER_LOGIN_ID}:${processKey}`);
 
     const response = await fetch(`${API_BASE_URL}/v1/Misc/get-pa-premium`, {
         method: "POST",
-        headers: {
-            "Content-Type": "application/json",
-            Accept: "*/*",
-
-            Authorization: `Basic ${basicToken}`,
-            "X-Basic-Authorization": `Basic ${basicToken}`,
-
-            "verify-signature": `${unixTs}.${signature}`,
-            "split-signature": `${unixTs}.${signature}`,
-        },
+        headers: buildPublicHeaders(bodyStr, processKey),
         body: bodyStr,
     });
 
@@ -75,9 +85,7 @@ export async function getPersonalAccidentPremium(
 
     if (!response.ok || data?.process_result === false) {
         throw new Error(
-            data?.error_list?.[0]?.error_message ||
-                data?.message ||
-                "Failed to calculate personal accident premium"
+            getApiErrorMessage(data, "Failed to calculate personal accident premium")
         );
     }
 

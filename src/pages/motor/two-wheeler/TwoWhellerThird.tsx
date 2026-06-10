@@ -371,7 +371,7 @@ export const TwoWhellerThirdPage = () => {
                   onCheckedChange={setDirectDiscount}
                 />
                 <Label htmlFor="directDiscount" className="cursor-pointer">
-                  Direct discount?
+                  Direct discount
                 </Label>
               </div>
             </div>
@@ -466,96 +466,92 @@ export const TwoWhellerThirdPage = () => {
           </div>
         )}
 
-        {hasData && (
-          <div className="space-y-8">
-            <div>
-              <h2 className="text-base font-semibold mb-3">Risk Details</h2>
-              <div className="rounded-lg overflow-hidden border">
-                <table className="w-full text-sm">
-                  <thead>
-                    <tr className="bg-primary text-primary-foreground">
-                      <th className="text-left px-5 py-3 font-semibold">
-                        Risk Description
-                      </th>
-                      <th className="text-right px-5 py-3 font-semibold">
-                        Amount (NPR)
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {riskRows.map((row, i) => (
-                      <tr key={i} className={i % 2 === 0 ? "bg-background" : "bg-muted/40"}>
-                        <td className="px-5 py-3 text-muted-foreground">
-                          {row.description}
-                        </td>
-                        <td
-                          className={`px-5 py-3 text-right font-medium ${
-                            row.amount.startsWith("-") ? "text-red-600" : ""
-                          }`}
-                        >
-                          {row.amount}
-                        </td>
-                      </tr>
-                    ))}
-                    <tr className="bg-muted/20 border-t">
-                      <td className="px-5 py-3 font-semibold">Sum Insured</td>
-                      <td className="px-5 py-3 text-right font-semibold">
-                        {fmt(amount.suminsured)}
-                      </td>
-                    </tr>
-                  </tbody>
-                </table>
-              </div>
-            </div>
+       {hasData && (
+  <div className="space-y-8">
+    <div className="overflow-hidden rounded-lg border">
+      <table className="w-full text-sm">
+        <thead>
+          <tr className="bg-primary text-primary-foreground">
+            <th className="px-5 py-3 text-left font-semibold">
+              Risk Description
+            </th>
+            <th className="px-5 py-3 text-right font-semibold">
+              Amount (NPR)
+            </th>
+          </tr>
+        </thead>
 
-            <div>
-              <h2 className="text-base font-semibold mb-3">Premium Breakdown</h2>
-              <div className="rounded-lg overflow-hidden border">
-                <table className="w-full text-sm">
-                  <tbody>
-                    <tr className="bg-background">
-                      <td className="px-5 py-3 text-muted-foreground">Net Premium</td>
-                      <td className="px-5 py-3 text-right">
-                        {fmt(amount.premium_amount)}
-                      </td>
-                    </tr>
-                    <tr className="bg-muted/40">
-                      <td className="px-5 py-3 text-muted-foreground">Taxable Amount</td>
-                      <td className="px-5 py-3 text-right">
-                        {fmt(amount.taxable_amount)}
-                      </td>
-                    </tr>
-                    <tr className="bg-background">
-                      <td className="px-5 py-3 text-muted-foreground">
-                        VAT ({amount.vat_percent}%)
-                      </td>
-                      <td className="px-5 py-3 text-right">{fmt(amount.vat_amount)}</td>
-                    </tr>
-                    <tr className="bg-muted/40">
-                      <td className="px-5 py-3 text-muted-foreground">Stamp Duty</td>
-                      <td className="px-5 py-3 text-right">{fmt(amount.stamp_duty)}</td>
-                    </tr>
-                    {Number(amount.pa_amount || 0) > 0 && (
-                      <tr className="bg-background">
-                        <td className="px-5 py-3 text-muted-foreground">PA Amount</td>
-                        <td className="px-5 py-3 text-right">{fmt(amount.pa_amount)}</td>
-                      </tr>
-                    )}
-                    <tr className="border-t-2 bg-primary/5">
-                      <td className="px-5 py-4 font-bold text-primary">
-                        Total Payable Premium
-                      </td>
-                      <td className="px-5 py-4 text-right font-bold text-primary text-base">
-                        {fmt(amount.total_amount)}
-                      </td>
-                    </tr>
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          </div>
-        )}
+        <tbody>
+          {riskRows.map((row, i) => (
+            <tr
+              key={i}
+              className={i % 2 === 0 ? "bg-background" : "bg-muted/40"}
+            >
+              <td className="px-5 py-3 text-muted-foreground">
+                {row.description}
+              </td>
 
+              <td
+                className={`px-5 py-3 text-right font-medium ${
+                  row.amount.startsWith("-") ? "text-red-600" : ""
+                }`}
+              >
+                {row.amount}
+              </td>
+            </tr>
+          ))}
+          <tr className="bg-background">
+            <td className="px-5 py-3 text-muted-foreground">Net Premium</td>
+            <td className="px-5 py-3 text-right">
+              {fmt(amount.premium_amount)}
+            </td>
+          </tr>
+
+          <tr className="bg-muted/40">
+            <td className="px-5 py-3 text-muted-foreground">Taxable Amount</td>
+            <td className="px-5 py-3 text-right">
+              {fmt(amount.taxable_amount)}
+            </td>
+          </tr>
+
+          <tr className="bg-background">
+            <td className="px-5 py-3 text-muted-foreground">
+              VAT ({amount.vat_percent}%)
+            </td>
+            <td className="px-5 py-3 text-right">
+              {fmt(amount.vat_amount)}
+            </td>
+          </tr>
+
+          <tr className="bg-muted/40">
+            <td className="px-5 py-3 text-muted-foreground">Stamp Duty</td>
+            <td className="px-5 py-3 text-right">
+              {fmt(amount.stamp_duty)}
+            </td>
+          </tr>
+
+          {Number(amount.pa_amount || 0) > 0 && (
+            <tr className="bg-background">
+              <td className="px-5 py-3 text-muted-foreground">PA Amount</td>
+              <td className="px-5 py-3 text-right">
+                {fmt(amount.pa_amount)}
+              </td>
+            </tr>
+          )}
+
+          <tr className="border-t-2 bg-primary/5">
+            <td className="px-5 py-4 font-bold text-primary">
+              Total Payable Premium
+            </td>
+            <td className="px-5 py-4 text-right text-base font-bold text-primary">
+              {fmt(amount.total_amount)}
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+)}
         <div className="flex mt-6 gap-2">
           <Button variant="outline" className="gap-2" onClick={() => goToStep(2)}>
             <ArrowLeft className="w-4 h-4" /> Back

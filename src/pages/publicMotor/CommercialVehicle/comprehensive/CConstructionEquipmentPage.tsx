@@ -384,83 +384,6 @@ export default function CConstructionEquipmentPage() {
                         </p>
                     </div>
                 </div>
-
-                <Card className="mb-6">
-                    <CardContent className="pt-6">
-                        <h2 className="mb-4 text-base font-semibold">
-                            Selected Details
-                        </h2>
-
-                        <div className="grid gap-4 md:grid-cols-2">
-                            <DetailCard
-                                label="Good Carrying Capacity"
-                                value={goodCarryingCapacity}
-                            />
-
-                            <DetailCard
-                                label="No of Seats Including Driver"
-                                value={noOfSeats}
-                            />
-
-                            <DetailCard
-                                label="Helper"
-                                value={helper === "yes" ? "Yes" : "No"}
-                            />
-
-                            <DetailCard
-                                label="Passenger Seat Capacity"
-                                value={String(
-                                    Math.max(
-                                        0,
-                                        Number(noOfSeats) -
-                                            1 -
-                                            (helper === "yes" ? 1 : 0)
-                                    )
-                                )}
-                            />
-
-                            <DetailCard
-                                label="Sum Insured"
-                                value={`NPR ${fmt(sumInsured)}`}
-                            />
-
-                            <DetailCard
-                                label="Year of Manufacture"
-                                value={yearOfManufacture}
-                            />
-
-                            <DetailCard
-                                label="Compulsory Excess"
-                                value={`NPR ${fmt(compulsoryExcess)}`}
-                            />
-
-                            
-
-                            <DetailCard
-                                label="Voluntary Excess"
-                                value={`NPR ${fmt(voluntaryExcess)}`}
-                            />
-
-                            <DetailCard
-                                label="No Claim Discount"
-                                value={`${noClaimYear} Year`}
-                            />
-
-                            <DetailCard
-                                label="Towing Charge"
-                                value={towingCharge === "yes" ? "Yes" : "No"}
-                            />
-
-                            <DetailCard
-                                label="Direct Discount"
-                                value={directDiscount ? "Yes" : "No"}
-                            />
-                        </div>
-                    </CardContent>
-                </Card>
-
-                <Card>
-                    <CardContent className="pt-6">
                         <div className="overflow-hidden rounded-lg border">
                             <table className="w-full text-sm">
                                 <thead>
@@ -541,8 +464,6 @@ export default function CConstructionEquipmentPage() {
                                 </tbody>
                             </table>
                         </div>
-                    </CardContent>
-                </Card>
 
                 <div className="mt-6 flex gap-3">
                     <Button
@@ -738,19 +659,18 @@ export default function CConstructionEquipmentPage() {
                             onChange={setTowingCharge}
                         />
 
-                        <div className="rounded-lg border bg-muted/30 p-4">
-                            <div className="flex items-center gap-3 pt-2">
+                        <div className="grid md:grid-cols-2 gap-4 pt-2">
+                            <div className="flex items-center gap-3">
                                 <Switch
                                     id="directDiscount"
-                                    checked={directDiscount}
-                                    onCheckedChange={setDirectDiscount}
+                                    checked={true}
+                                    disabled
                                 />
-
                                 <Label
                                     htmlFor="directDiscount"
-                                    className="cursor-pointer"
+                                    className="cursor-not-allowed text-muted-foreground"
                                 >
-                                    Direct discount?
+                                    Direct discount
                                 </Label>
                             </div>
                         </div>

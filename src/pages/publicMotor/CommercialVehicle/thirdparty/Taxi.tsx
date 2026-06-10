@@ -279,12 +279,6 @@ export default function TtaxiPage() {
             value: thirdPartyPremium,
         },
         {
-            key: "third_party_ncd",
-            label: "Less : No Claim Discount",
-            value: thirdPartyNcd,
-            type: "less",
-        },
-        {
             key: "third_party_total",
             label: "Third Party Premium",
             value: finalThirdPartyPremium,
@@ -360,89 +354,83 @@ export default function TtaxiPage() {
                     </div>
                 </div>
 
-                <Card className="mb-6">
-                    <CardContent className="pt-6">
-                        <h2 className="mb-4 text-base font-semibold">
-                            Selected Taxi Details
-                        </h2>
+                <div className="overflow-hidden rounded-md border">
+                    <table className="w-full border-collapse text-sm">
+                        <thead>
+                            <tr className="bg-[#e91d25] text-white">
+                                <th className="border-r border-white px-4 py-3 text-left font-bold">
+                                    Particulars
+                                </th>
 
-                        <div className="grid gap-4 md:grid-cols-2">
-                            <div className="rounded-lg border bg-muted/30 p-4">
-                                <p className="text-xs text-muted-foreground">
-                                    Vehicle CC
-                                </p>
-                                <p className="mt-1 font-semibold">
-                                    {selectedCcOption?.label}
-                                </p>
-                            </div>
+                                <th className="px-4 py-3 text-right font-bold">
+                                    Amount
+                                </th>
+                            </tr>
+                        </thead>
 
-                            <div className="rounded-lg border bg-muted/30 p-4">
-                                <p className="text-xs text-muted-foreground">
-                                    No of Seats Including Driver
-                                </p>
-                                <p className="mt-1 font-semibold">{noOfSeats}</p>
-                            </div>
-
-                            <div className="rounded-lg border bg-muted/30 p-4">
-                                <p className="text-xs text-muted-foreground">
-                                    Driver Seat Capacity
-                                </p>
-                                <p className="mt-1 font-semibold">1</p>
-                            </div>
-
-                            
-                        </div>
-                    </CardContent>
-                </Card>
-
-                <Card>
-                    <CardContent className="pt-6">
-                        <div className="overflow-hidden rounded-lg border">
-                            <table className="w-full text-sm">
-                                <thead>
-                                    <tr className="bg-primary text-primary-foreground">
-                                        <th className="px-5 py-3 text-left font-semibold">
-                                            Description
-                                        </th>
-
-                                        <th className="px-5 py-3 text-right font-semibold">
-                                            Amount (NPR)
-                                        </th>
-                                    </tr>
-                                </thead>
-
-                                <tbody>
-                                    {premiumRows.map((row, index) => (
-                                        <tr
-                                            key={row.key}
-                                            className={getRowClass(row.type, index)}
-                                        >
+                        <tbody>
+                            {premiumRows.map((row) => {
+                                if (row.type === "section") {
+                                    return (
+                                        <tr key={row.key} className="border-b bg-[#fff7f3]">
                                             <td
-                                                className={`px-5 py-3 ${getLabelClass(
-                                                    row.type
-                                                )}`}
+                                                colSpan={2}
+                                                className="px-4 py-3 font-bold text-black"
                                             >
                                                 {row.label}
                                             </td>
+                                        </tr>
+                                    );
+                                }
 
-                                            <td
-                                                className={`px-5 py-3 text-right ${getValueClass(
-                                                    row.type
-                                                )}`}
-                                            >
-                                                {row.type === "section"
-                                                    ? ""
-                                                    : fmt(row.value)}
+                                if (row.type === "total") {
+                                    return (
+                                        <tr key={row.key} className="bg-[#b71319] text-white">
+                                            <td className="border-r border-white px-4 py-4 text-base font-bold">
+                                                {row.label}
+                                            </td>
+
+                                            <td className="px-4 py-4 text-right text-base font-bold">
+                                                {fmt(row.value)}
                                             </td>
                                         </tr>
-                                    ))}
-                                </tbody>
-                            </table>
-                        </div>
-                    </CardContent>
-                </Card>
+                                    );
+                                }
 
-                <div className="mt-6 flex gap-3">
+                                return (
+                                    <tr
+                                        key={row.key}
+                                        className="border-b bg-[#fff7f3] last:border-b-0"
+                                    >
+                                        <td
+                                            className={`border-r border-white px-4 py-3 ${row.type === "less"
+                                                    ? "text-red-600"
+                                                    : row.type === "subtotal"
+                                                        ? "font-semibold text-black"
+                                                        : "text-black"
+                                                }`}
+                                        >
+                                            {row.type === "less" ? `Less : ${row.label}` : row.label}
+                                        </td>
+
+                                        <td
+                                            className={`px-4 py-3 text-right font-medium ${row.type === "less"
+                                                    ? "text-red-600"
+                                                    : row.type === "subtotal"
+                                                        ? "font-semibold text-black"
+                                                        : "text-black"
+                                                }`}
+                                        >
+                                            {row.type === "less" ? `(${fmt(row.value)})` : fmt(row.value)}
+                                        </td>
+                                    </tr>
+                                );
+                            })}
+                        </tbody>
+                    </table>
+                </div>
+
+                <div className="mt-8 flex items-center justify-between gap-3">
                     <Button
                         variant="outline"
                         className="gap-2"
@@ -453,11 +441,10 @@ export default function TtaxiPage() {
                     </Button>
 
                     <Button
-                        onClick={() =>
-                            navigate("/motor/commercial-vehicle/third-party")
-                        }
+                        className="gap-2 bg-[#f71920] text-white hover:bg-[#d9151b]"
+                        onClick={() => navigate("/login")}
                     >
-                        Change Category
+                        Buy Policy
                     </Button>
                 </div>
             </>
@@ -486,119 +473,115 @@ export default function TtaxiPage() {
                 </div>
             </div>
 
-            <Card className="max-w-6xl">
-                <CardContent className="space-y-5 pt-6">
-                        <h2 className="text-base font-semibold text-blue-800">
-                            Third Party Taxi Insurance
-                        </h2>
-                    <div className="grid gap-5 md:grid-cols-2">
-                        <div>
-                            <Label htmlFor="vehicleCc">Vehicle CC *</Label>
+            <h2 className="text-base font-semibold text-blue-800">
+                Third Party Taxi Insurance
+            </h2>
+            <div className="grid gap-5 md:grid-cols-2">
+                <div>
+                    <Label htmlFor="vehicleCc">Vehicle CC *</Label>
 
-                            <Select
-                                value={vehicleCc}
-                                onValueChange={(value) => {
-                                    setVehicleCc(value);
-                                    setErrors((prev) => ({
-                                        ...prev,
-                                        vehicleCc: "",
-                                    }));
-                                }}
-                            >
-                                <SelectTrigger
-                                    id="vehicleCc"
-                                    className={`mt-2 ${errors.vehicleCc ? "border-red-500" : ""
-                                        }`}
+                    <Select
+                        value={vehicleCc}
+                        onValueChange={(value) => {
+                            setVehicleCc(value);
+                            setErrors((prev) => ({
+                                ...prev,
+                                vehicleCc: "",
+                            }));
+                        }}
+                    >
+                        <SelectTrigger
+                            id="vehicleCc"
+                            className={`mt-2 ${errors.vehicleCc ? "border-red-500" : ""
+                                }`}
+                        >
+                            <SelectValue placeholder="Select Vehicle CC" />
+                        </SelectTrigger>
+
+                        <SelectContent>
+                            {vehicleCcOptions.map((item) => (
+                                <SelectItem
+                                    key={item.value}
+                                    value={item.value}
                                 >
-                                    <SelectValue placeholder="Select Vehicle CC" />
-                                </SelectTrigger>
+                                    {item.label}
+                                </SelectItem>
+                            ))}
+                        </SelectContent>
+                    </Select>
 
-                                <SelectContent>
-                                    {vehicleCcOptions.map((item) => (
-                                        <SelectItem
-                                            key={item.value}
-                                            value={item.value}
-                                        >
-                                            {item.label}
-                                        </SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </Select>
+                    {errors.vehicleCc && (
+                        <p className="mt-1 text-xs text-red-600">
+                            {errors.vehicleCc}
+                        </p>
+                    )}
+                </div>
 
-                            {errors.vehicleCc && (
-                                <p className="mt-1 text-xs text-red-600">
-                                    {errors.vehicleCc}
-                                </p>
-                            )}
-                        </div>
+                <div>
+                    <Label htmlFor="noOfSeats">
+                        No of Seats Including Driver *
+                    </Label>
 
-                        <div>
-    <Label htmlFor="noOfSeats">
-        No of Seats Including Driver *
-    </Label>
+                    <Input
+                        id="noOfSeats"
+                        type="text"
+                        inputMode="numeric"
+                        placeholder="Enter no of seats including driver"
+                        className={`mt-2 ${errors.noOfSeats ? "border-red-500" : ""
+                            }`}
+                        value={noOfSeats}
+                        onChange={(e) => {
+                            const value = e.target.value;
 
-    <Input
-        id="noOfSeats"
-        type="text"
-        inputMode="numeric"
-        placeholder="Enter no of seats including driver"
-        className={`mt-2 ${
-            errors.noOfSeats ? "border-red-500" : ""
-        }`}
-        value={noOfSeats}
-        onChange={(e) => {
-            const value = e.target.value;
+                            if (value === "" || /^\d+$/.test(value)) {
+                                setNoOfSeats(value);
 
-            if (value === "" || /^\d+$/.test(value)) {
-                setNoOfSeats(value);
-
-                setErrors((prev) => ({
-                    ...prev,
-                    noOfSeats: "",
-                }));
-            }
-        }}
-    />
-
-    {errors.noOfSeats && (
-        <p className="mt-1 text-xs text-red-600">
-            {errors.noOfSeats}
-        </p>
-    )}
-</div>
-                    </div>
-
-                    
-                    <div className="flex justify-between pt-2">
-                        <Button
-                            variant="outline"
-                            className="gap-2"
-                            onClick={() =>
-                                navigate("/motor/commercial-vehicle/third-party")
+                                setErrors((prev) => ({
+                                    ...prev,
+                                    noOfSeats: "",
+                                }));
                             }
-                        >
-                            <ArrowLeft className="h-4 w-4" />
-                            Back
-                        </Button>
+                        }}
+                    />
 
-                        <Button
-                            size="lg"
-                            className="px-8"
-                            disabled={loading}
-                            onClick={handleCalculate}
-                        >
-                            {loading ? (
-                                <>
-                                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                                    Calculating...
-                                </>
-                            ) : (
-                                "Calculate"
-                            )}
-                        </Button>
-                    </div>
-                </CardContent>
-            </Card>
+                    {errors.noOfSeats && (
+                        <p className="mt-1 text-xs text-red-600">
+                            {errors.noOfSeats}
+                        </p>
+                    )}
+                </div>
+            </div>
+
+
+            <div className="flex justify-between pt-2">
+                <Button
+                    variant="outline"
+                    className="gap-2"
+                    onClick={() =>
+                        navigate("/motor/commercial-vehicle/third-party")
+                    }
+                >
+                    <ArrowLeft className="h-4 w-4" />
+                    Back
+                </Button>
+
+                <Button
+                    size="lg"
+                    className="px-8"
+                    disabled={loading}
+                    onClick={handleCalculate}
+                >
+                    {loading ? (
+                        <>
+                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                            Calculating...
+                        </>
+                    ) : (
+                        "Calculate"
+                    )}
+                </Button>
+            </div>
+
         </>
     );
 }

@@ -2,14 +2,21 @@
 
 import { buildSignatureForBody } from "../session/signature";
 import { createSession } from "../session/sessionClient";
+import { authFetch } from "../auth/authFetch";
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL as string;
 const USER_LOGIN_ID = import.meta.env.VITE_USER_LOGIN_ID as string;
 
+export type GroupPremiumPersonInfo = {
+    suminsured: string;
+};
+
 export type GroupPersonalAccidentPremiumRequest = {
     class_id: string;
-    include_rsd_charge: boolean;
     total_suminsured: string;
+    person_info: GroupPremiumPersonInfo[];
+    get_direct_discount: "y" | "n";
+    total_person: string;
 };
 
 export type GroupPersonalAccidentAmountInfo = {
@@ -43,27 +50,35 @@ export type GroupPersonalAccidentPremiumResponse = {
     message?: string;
 };
 
+function getApiErrorMessage(data: any, fallback: string): string {
+    return data?.error_list?.[0]?.error_message || data?.message || fallback;
+}
+
+function buildAuthHeaders(bodyStr: string, processKey: string) {
+    const { unixTs, signature } = buildSignatureForBody(bodyStr);
+    const basicToken = btoa(`${USER_LOGIN_ID}:${processKey}`);
+
+    return {
+        "Content-Type": "application/json",
+        Accept: "*/*",
+
+        Authorization: `Basic ${basicToken}`,
+        "X-Basic-Authorization": `Basic ${basicToken}`,
+
+        "verify-signature": `${unixTs}.${signature}`,
+        "split-signature": `${unixTs}.${signature}`,
+    };
+}
+
 export async function getGroupPersonalAccidentPremium(
     payload: GroupPersonalAccidentPremiumRequest
 ): Promise<GroupPersonalAccidentPremiumResponse> {
     const bodyStr = JSON.stringify(payload);
-
     const processKey = await createSession();
 
-    const { unixTs, signature } = buildSignatureForBody(bodyStr);
-
-    const basicToken = btoa(`${USER_LOGIN_ID}:${processKey}`);
-
-    const response = await fetch(`${API_BASE_URL}/v1/Misc/get-gpa-premium`, {
+    const response = await authFetch(`${API_BASE_URL}/v1/Misc/get-gpa-premium`, {
         method: "POST",
-        headers: {
-            "Content-Type": "application/json",
-            Accept: "*/*",
-            Authorization: `Basic ${basicToken}`,
-            "X-Basic-Authorization": `Basic ${basicToken}`,
-            "verify-signature": `${unixTs}.${signature}`,
-            "split-signature": `${unixTs}.${signature}`,
-        },
+        headers: buildAuthHeaders(bodyStr, processKey),
         body: bodyStr,
     });
 
@@ -71,9 +86,10 @@ export async function getGroupPersonalAccidentPremium(
 
     if (!response.ok || data?.process_result === false) {
         throw new Error(
-            data?.error_list?.[0]?.error_message ||
-                data?.message ||
+            getApiErrorMessage(
+                data,
                 "Failed to calculate group personal accident premium"
+            )
         );
     }
 

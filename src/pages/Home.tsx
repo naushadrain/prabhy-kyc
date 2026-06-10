@@ -1,122 +1,140 @@
-import { Link } from 'react-router-dom';
-import { Button } from '@/components/ui/button';
-import { InsuranceCard } from '@/components/InsuranceCard';
-import { useLanguage } from '@/contexts/LanguageContext';
-import { LogIn } from 'lucide-react';
-import logo from '@/assets/logo.png';
-import { useNavigate } from 'react-router-dom';
-import { Card } from '@/components/ui/card';
-
+import { Link, useNavigate } from "react-router-dom";
+import { Button } from "@/components/ui/button";
+import { InsuranceCard } from "@/components/InsuranceCard";
+import { useLanguage } from "@/contexts/LanguageContext";
+import { LogIn } from "lucide-react";
+import logo from "@/assets/logo.png";
 
 export const Home = () => {
   const { t } = useLanguage();
   const navigate = useNavigate();
-    const insurancePlans = [
-      { id: 'two-wheeler', title: 'Two Wheeler', icon: '🏍️', route: '/motor/two-wheeler' },
-      { id: 'private', title: 'Private Vehicle', icon: '🚗', route: '/motor/private-vehicle' },
-      { id: 'commercial', title: 'Commercial Vehicle', icon: '🚚', route: '/motor/commercial-vehicle' },
-      { id: "accident", title: "Accident Insurance",  icon: "🛡️",route: "/accident-insurance",},
-    ];
-  
-    const handlePlanSelect = (planId: string, route: string) => {
-      localStorage.setItem('motor.vehicleType', planId);
-      navigate(route);
-    };
+
+  const insurancePlans = [
+    {
+      id: "two-wheeler",
+      title: "Two Wheeler",
+      icon: "/motor.svg",
+      route: "/motor/two-wheeler",
+    },
+    {
+      id: "private",
+      title: "Private Vehicle",
+      icon: "/car-white.svg",
+      route: "/motor/private-vehicle",
+    },
+    {
+      id: "commercial",
+      title: "Commercial Vehicle",
+      icon: "/commercial.svg",
+      route: "/motor/commercial-vehicle",
+    },
+    {
+      id: "accident",
+      title: " Accidental Insurance",
+      icon: "/accident-white.svg",
+      route: "/accident-insurance",
+    },
+    {
+      id: "travel",
+      title: "Travel Insurance",
+      icon: "/travel-icon.svg",
+      route: "/travel-coverage",
+    },
+    {
+      id: "home",
+      title: "House & Property Insurance",
+      icon: "/Property-white.svg",
+      route: "/home-insurance",
+    },
+  ];
+
+  const handlePlanSelect = (planId: string, route: string) => {
+    localStorage.setItem("motor.vehicleType", planId);
+    navigate(route);
+  };
 
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
-      <header className="border-b border-border px-8 py-4 flex items-center justify-between">
+      <header className="flex items-center justify-between border-b border-border px-8 py-4">
         <div>
-          <img
-            src={logo}
-            alt="Prabhu Insurance"
-            className="h-12"
-          />
+          <img src={logo} alt="Prabhu Insurance" className="h-12" />
         </div>
+
         <Link to="/login">
           <Button className="gap-2">
-            <LogIn className="w-4 h-4" />
-            {t('nav.login')}
+            <LogIn className="h-4 w-4" />
+            {t("nav.login")}
           </Button>
         </Link>
       </header>
 
       {/* Hero Section */}
-      <section className="max-w-7xl mx-auto px-8 py-16">
-        <h1 className="text-5xl font-bold text-center mb-16">
-          {t('home.title').split('Insurance Policy')[0]}
-          <span className="text-secondary">Insurance Policy</span>
+      <section className="mx-auto max-w-7xl px-8 py-16">
+        <h1 className="mb-16 text-center text-5xl font-bold">
+          {t("home.title").split("Insurance Policy")[0]}
+          <span className="text-red-500">Insurance Policy</span>
         </h1>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-24">
-          {/* <InsuranceCard
-            type="motor"
-            title={t('insurance.motor')}
-            subtitle={t('insurance.vehicle')}
-            to="/motor-insurance-plan"
-          /> */}
+        <div className="mb-24 grid grid-cols-1 gap-8 md:grid-cols-3">
           {insurancePlans.map((plan) => (
-              <Card
-                key={plan.id}
-                className="p-8 hover:shadow-lg transition-all cursor-pointer h-full text-center border-2 hover:border-primary"
-                onClick={() => handlePlanSelect(plan.id, plan.route)}
-              >
-                <h3 className="text-lg font-bold mb-8">{plan.title}</h3>
-                <div className="flex items-center justify-center py-8">
-                  <div className="text-7xl opacity-80">{plan.icon}</div>
-                </div>
-              </Card>
-            ))}
-          <InsuranceCard
-            type="travel"
-            title={t('insurance.travel')}
-            subtitle={t('insurance.travelIns')}
-            to="/travel-coverage"
-          />
-          <InsuranceCard
-            type="home"
-            title={t('insurance.home')}
-            subtitle={t('insurance.homeIns')}
-            to="/home-insurance"
-          />
+            <InsuranceCard
+              key={plan.id}
+              icon={plan.icon}
+              title={plan.title}
+              onClick={() => handlePlanSelect(plan.id, plan.route)}
+            />
+          ))}
         </div>
       </section>
 
-
       {/* Why Pick Us Section */}
       <section className="bg-accent py-20">
-        <div className="max-w-7xl mx-auto px-8">
-          <h2 className="text-4xl font-bold text-center mb-16">{t('home.whyPickUs')}</h2>
+        <div className="mx-auto max-w-7xl px-8">
+          <h2 className="mb-16 text-center text-4xl font-bold">
+            {t("home.whyPickUs")}
+          </h2>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-12">
+          <div className="grid grid-cols-1 gap-12 md:grid-cols-3">
             <div className="text-center">
-              <div className="w-64 h-64 bg-blue-100 rounded-full mx-auto mb-6 flex items-center justify-center">
+              <div className="mx-auto mb-6 flex h-64 w-64 items-center justify-center rounded-full bg-blue-100">
                 <div className="text-6xl">📋</div>
               </div>
-              <h3 className="text-xl font-bold mb-3">{t('home.compareProduct')}</h3>
-              <p className="text-sm text-muted-foreground px-4">
-                {t('home.compareDesc')}
+
+              <h3 className="mb-3 text-xl font-bold">
+                {t("home.compareProduct")}
+              </h3>
+
+              <p className="px-4 text-sm text-muted-foreground">
+                {t("home.compareDesc")}
               </p>
             </div>
 
             <div className="text-center">
-              <div className="w-64 h-64 bg-blue-100 rounded-full mx-auto mb-6 flex items-center justify-center">
+              <div className="mx-auto mb-6 flex h-64 w-64 items-center justify-center rounded-full bg-blue-100">
                 <div className="text-6xl">💡</div>
               </div>
-              <h3 className="text-xl font-bold mb-3">{t('home.simpleReliable')}</h3>
-              <p className="text-sm text-muted-foreground px-4">
-                {t('home.simpleDesc')}
+
+              <h3 className="mb-3 text-xl font-bold">
+                {t("home.simpleReliable")}
+              </h3>
+
+              <p className="px-4 text-sm text-muted-foreground">
+                {t("home.simpleDesc")}
               </p>
             </div>
 
             <div className="text-center">
-              <div className="w-64 h-64 bg-blue-100 rounded-full mx-auto mb-6 flex items-center justify-center">
+              <div className="mx-auto mb-6 flex h-64 w-64 items-center justify-center rounded-full bg-blue-100">
                 <div className="text-6xl">💰</div>
               </div>
-              <h3 className="text-xl font-bold mb-3">{t('home.saveMoney')}</h3>
-              <p className="text-sm text-muted-foreground px-4">
-                {t('home.saveDesc')}
+
+              <h3 className="mb-3 text-xl font-bold">
+                {t("home.saveMoney")}
+              </h3>
+
+              <p className="px-4 text-sm text-muted-foreground">
+                {t("home.saveDesc")}
               </p>
             </div>
           </div>

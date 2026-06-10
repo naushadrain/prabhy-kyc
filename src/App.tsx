@@ -73,6 +73,20 @@ import { MotorPrivateVehiclePage } from "./pages/motor/private-vehicle/MotorPriv
 import AccidentPersionalAccidentPagee from "./pages/accident/PersionalAccident";
 import ProtectedAccidentLayout from "./pages/accident/layout";
 import AccidentsPersonalPage from "./pages/accident/AccidentsPersonal";
+import AccidentsGroupPage from "./pages/accident/CreateAccidentsPersonal";
+import HomeInsurancesPage from "./pages/home-insurance/HomeInsurance";
+import ProtectedHomeLayout from "./pages/home-insurance/layout";
+import FireHouseInsurancePage from "./pages/home-insurance-fire/FireHouseInsurancePage";
+import PCommercialVehiclePage from "./pages/motor/commercial-vehicle/PCommercialVehicle";
+import PComprehensivePage from "./pages/motor/commercial-vehicle/Pcomprehensive";
+import PNormalGoodsPage from "./pages/motor/commercial-vehicle/PNormalGoodsCreatePolicyPage";
+import PTaxiPage from "./pages/motor/commercial-vehicle/PTaxi";
+import PHazardousGoodsPage from "./pages/motor/commercial-vehicle/PHazardousGoods";
+import PPassengerCarryingPage from "./pages/motor/commercial-vehicle/PPassengerCarrying";
+import PTempoERikshawPage from "./pages/motor/commercial-vehicle/PTempoERikshaw";
+import PAgricultureForestryPage from "./pages/motor/commercial-vehicle/PAgricultureForestry";
+import PConstructionEquipmentPage from "./pages/motor/commercial-vehicle/PConstructionEquipment";
+import FirePropertyInsurancePage from "./pages/home-insurance-fire/FirePropertyInsurancePage";
 
 const queryClient = new QueryClient();
 
@@ -162,8 +176,8 @@ const App = () => {
 
                   <Route element={<ProtectedAccidentLayout />}>
                     <Route path="/accidents" element={<AccidentPersionalAccidentPagee />} />
-                    <Route path="/accidents/personal" element={<AccidentsPersonalPage/>}/>
-
+                    <Route path="/accidents/personal" element={<AccidentsPersonalPage />} />
+                    <Route path="/accidents/group-personal" element={<AccidentsGroupPage />} />
                   </Route>
 
                   <Route path="/motor-insurance" element={<MotorInsurancePage />} />
@@ -173,6 +187,17 @@ const App = () => {
 
                     <Route path="/private-vechicle" element={<MotorPrivateVehiclePage />} />
                   </Route>
+                  <Route path="/commercial-vehicle" element={<PCommercialVehiclePage />} />
+                  <Route path="/commercial-vehicle/comprehensive" element={<PComprehensivePage />} />
+                  <Route path="/commercial-vehicle/comprehensive/normal-goods" element={<PNormalGoodsPage />} />
+                  <Route path="/commercial-vehicle/comprehensive/hazardous-goods" element={<PHazardousGoodsPage />} />
+                  <Route path="/commercial-vehicle/comprehensive/passenger-carrying" element={<PPassengerCarryingPage />} />
+                  <Route path="/commercial-vehicle/comprehensive/taxi" element={<PTaxiPage />} />
+                  <Route path="/commercial-vehicle/comprehensive/tempo-e-rikshaw" element={<PTempoERikshawPage />} />
+                  <Route path="/commercial-vehicle/comprehensive/agriculture-forestry" element={<PAgricultureForestryPage />} />
+                  <Route path="/commercial-vehicle/comprehensive/construction-equipment" element={<PConstructionEquipmentPage />} />
+
+
 
                   <Route path="/travel-insurance" element={<TravelInsurance />} />
                   <Route element={<ProtectedTravelLayout />}>
@@ -181,6 +206,14 @@ const App = () => {
                     <Route path="/travel-insurance-premium" element={<PremiumSummaryPage />} />
                     <Route path="/travel-insurance-instant-quotes" element={<TravelInsuranceInstantQuotes />} />
                   </Route>
+
+                  <Route element={<ProtectedHomeLayout />}>
+                    <Route path="/home-insurances" element={<HomeInsurancesPage />} />
+                    <Route path="/home-insurances/fire-house" element={<FireHouseInsurancePage />} />
+                    <Route path="/home-insurances/fire-property" element={<FirePropertyInsurancePage />}/>
+
+                  </Route>
+
                 </Route>
 
                 <Route path="*" element={<NotFound />} />

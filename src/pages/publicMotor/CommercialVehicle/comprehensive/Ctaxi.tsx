@@ -596,99 +596,6 @@ export default function CtaxiPage() {
                         </p>
                     </div>
                 </div>
-
-                <Card className="mb-6">
-                    <CardContent className="pt-6">
-                        <h2 className="mb-4 text-base font-semibold">
-                            Selected Taxi Details
-                        </h2>
-
-                        <div className="grid gap-4 md:grid-cols-2">
-                            <div className="rounded-lg border bg-muted/30 p-4">
-                                <p className="text-xs text-muted-foreground">
-                                    Vehicle CC
-                                </p>
-                                <p className="mt-1 font-semibold">
-                                    {selectedCcOption?.label}
-                                </p>
-                            </div>
-
-                            <div className="rounded-lg border bg-muted/30 p-4">
-                                <p className="text-xs text-muted-foreground">
-                                    No of Seats Including Driver
-                                </p>
-                                <p className="mt-1 font-semibold">
-                                    {noOfSeats}
-                                </p>
-                            </div>
-
-                            <div className="rounded-lg border bg-muted/30 p-4">
-                                <p className="text-xs text-muted-foreground">
-                                    Passenger Seat Capacity
-                                </p>
-                                <p className="mt-1 font-semibold">
-                                    {Math.max(0, Number(noOfSeats) - 1)}
-                                </p>
-                            </div>
-
-                            <div className="rounded-lg border bg-muted/30 p-4">
-                                <p className="text-xs text-muted-foreground">
-                                    Year of Manufacture
-                                </p>
-                                <p className="mt-1 font-semibold">
-                                    {yearOfManufacture}
-                                </p>
-                            </div>
-
-                            <div className="rounded-lg border bg-muted/30 p-4">
-                                <p className="text-xs text-muted-foreground">
-                                    Compulsory Excess
-                                </p>
-                                <p className="mt-1 font-semibold">
-                                    NPR {fmt(compulsoryExcess)}
-                                </p>
-                            </div>
-
-                            <div className="rounded-lg border bg-muted/30 p-4">
-                                <p className="text-xs text-muted-foreground">
-                                    Vehicle Cost
-                                </p>
-                                <p className="mt-1 font-semibold">
-                                    NPR {fmt(vehicleCost)}
-                                </p>
-                            </div>
-
-                            <div className="rounded-lg border bg-muted/30 p-4">
-                                <p className="text-xs text-muted-foreground">
-                                    Voluntary Excess
-                                </p>
-                                <p className="mt-1 font-semibold">
-                                    NPR {fmt(voluntaryExcess)}
-                                </p>
-                            </div>
-                            <div className="rounded-lg border bg-muted/30 p-4">
-                                <p className="text-xs text-muted-foreground">
-                                    Towing Charge
-                                </p>
-                                <p className="mt-1 font-semibold">
-                                    {towingCharge === "yes" ? "Yes" : "No"}
-                                </p>
-                            </div>
-
-                            <div className="rounded-lg border bg-muted/30 p-4">
-                                <p className="text-xs text-muted-foreground">
-                                    Direct Discount
-                                </p>
-                                <p className="mt-1 font-semibold">
-                                    {directDiscount === "yes" ? "Yes" : "No"}
-                                </p>
-                            </div>
-                        </div>
-                    </CardContent>
-                </Card>
-
-                <Card>
-                    <CardContent className="pt-6">
                         <div className="overflow-hidden rounded-lg border">
                             <table className="w-full text-sm">
                                 <thead>
@@ -731,8 +638,6 @@ export default function CtaxiPage() {
                                 </tbody>
                             </table>
                         </div>
-                    </CardContent>
-                </Card>
 
                 <div className="mt-6 flex gap-3">
                     <Button
@@ -1045,24 +950,19 @@ export default function CtaxiPage() {
                             </Select>
                         </div>
 
-                        <div>
-                            <div className="grid gap-4 pt-2 md:grid-cols-2">
-                                <div className="flex items-center gap-3">
-                                    <Switch
-                                        id="directDiscount"
-                                        checked={directDiscount === "yes"}
-                                        onCheckedChange={(checked) => {
-                                            setDirectDiscount(checked ? "yes" : "no");
-                                        }}
-                                    />
-
-                                    <Label
-                                        htmlFor="directDiscount"
-                                        className="cursor-pointer"
-                                    >
-                                        Direct discount?
-                                    </Label>
-                                </div>
+                        <div className="grid md:grid-cols-2 gap-4 pt-2">
+                            <div className="flex items-center gap-3">
+                                <Switch
+                                    id="directDiscount"
+                                    checked={true}
+                                    disabled
+                                />
+                                <Label
+                                    htmlFor="directDiscount"
+                                    className="cursor-not-allowed text-muted-foreground"
+                                >
+                                    Direct discount
+                                </Label>
                             </div>
                         </div>
                     </div>

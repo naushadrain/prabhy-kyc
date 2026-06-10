@@ -1,15 +1,16 @@
 // src/pages/home/HomeInsurancePage.tsx
 
-import { Link } from "react-router-dom";
-import { Flame, Building2, ArrowRight, Home } from "lucide-react";
+import { Link, useNavigate } from "react-router-dom";
+import { Flame, Building2, ArrowRight, Home, ChevronLeft } from "lucide-react";
 
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 
 export default function HomeInsurancePage() {
+    const navigate = useNavigate();
     const insuranceCards = [
         {
-            title: "Fire House",
+            title: "House Insurance",
             description:
                 "Calculate fire insurance premium for house or residential building.",
             icon: Home,
@@ -17,7 +18,7 @@ export default function HomeInsurancePage() {
             badge: "House Insurance",
         },
         {
-            title: "Fire Property",
+            title: "Property Insurance",
             description:
                 "Calculate fire insurance premium for property, stock, furniture, machinery, and other assets.",
             icon: Building2,
@@ -27,7 +28,7 @@ export default function HomeInsurancePage() {
     ];
 
     return (
-        <div className="min-h-screen bg-[#fbf4f2] px-4 py-8 sm:px-6 lg:px-8">
+        <div className="min-h-screen px-4 py-8 sm:px-6 lg:px-8">
             <div className="mx-auto max-w-6xl">
                 <div className="mb-8">
                     <div className="inline-flex items-center gap-2 rounded-full bg-red-50 px-4 py-2 text-sm font-medium text-red-600">
@@ -35,10 +36,19 @@ export default function HomeInsurancePage() {
                         Fire Insurance
                     </div>
 
-                    <h1 className="mt-4 text-3xl font-bold text-black">
-                        Home Insurance
-                    </h1>
+                    <div className="mt-4 flex items-center gap-3">
+                        <button
+                            type="button"
+                            onClick={() => navigate("/")}
+                            className="flex h-9 w-9 shrink-0 items-center justify-center transition hover:bg-muted"
+                        >
+                            <ChevronLeft className="h-5 w-5 text-black" />
+                        </button>
 
+                        <h1 className="text-3xl font-bold text-black">
+                            Home Insurance
+                        </h1>
+                    </div>
                     <p className="mt-2 max-w-2xl text-sm text-muted-foreground">
                         Choose insurance type to continue with premium calculation.
                     </p>

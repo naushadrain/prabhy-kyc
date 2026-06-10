@@ -11,17 +11,6 @@ export interface UploadPolicyDocResponse {
   [key: string]: unknown;
 }
 
-/**
- * Base upload function.
- *
- * FormData sent to API:
- *   class_id    = "1"               (static)
- *   doc_id_type = "UBB"             (static)
- *   doc_type    = docType           e.g. "Passport", "Vehicle"
- *   doc_id      = docId             e.g. "PF", "PB", "CPF", "CPB", "VF", "VB"
- *   image_id    = unique per upload  {timestamp}{random}
- *   image_file  = file blob
- */
 export async function uploadPolicyDocument(
   docType: string,
   docId: string,

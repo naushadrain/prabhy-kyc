@@ -1,5 +1,4 @@
 // src/api/home/getCatlog.ts
-
 import { buildSignatureForBody } from "../session/signature";
 import { createSession } from "../session/sessionClient";
 
@@ -58,25 +57,52 @@ async function requestHomeCatalogue(url: string): Promise<HomeCatalogueItem[]> {
     return data?.catalogue_list || [];
 }
 
+function buildCatalogueUrl(catalogueType: string | number, id?: string | number) {
+    const url = new URL(`${API_BASE_URL}/v1/catalogue/getcatalogue`);
+
+    url.searchParams.set("catalogue_type", String(catalogueType));
+
+    if (id !== undefined && id !== null && String(id) !== "") {
+        url.searchParams.set("id", String(id));
+    }
+
+    return url.toString();
+}
+
+// Property List
 // GET {{host}}/v1/catalogue/getcatalogue?catalogue_type=36
 export async function getPropertyListCatalogue(): Promise<HomeCatalogueItem[]> {
-    const url = `${API_BASE_URL}/v1/catalogue/getcatalogue?catalogue_type=36`;
-
-    return requestHomeCatalogue(url);
+    return requestHomeCatalogue(buildCatalogueUrl(36));
 }
 
+// Fire Risk Type
 // GET {{host}}/v1/catalogue/getcatalogue?catalogue_type=38
 export async function getFireRiskTypeCatalogue(): Promise<HomeCatalogueItem[]> {
-    const url = `${API_BASE_URL}/v1/catalogue/getcatalogue?catalogue_type=38`;
-
-    return requestHomeCatalogue(url);
+    return requestHomeCatalogue(buildCatalogueUrl(38));
 }
 
+// Property Description
 // GET {{host}}/v1/catalogue/getcatalogue?catalogue_type=35&id={id}
 export async function getPropertyDescriptionCatalogue(
     id: string | number
 ): Promise<HomeCatalogueItem[]> {
-    const url = `${API_BASE_URL}/v1/catalogue/getcatalogue?catalogue_type=35&id=10`;
+    return requestHomeCatalogue(buildCatalogueUrl(35, id));
+}
 
-    return requestHomeCatalogue(url);
+// Province / State
+// GET {{host}}/v1/catalogue/getcatalogue?catalogue_type=11&id=1
+export async function getProvinceCatalogue(): Promise<HomeCatalogueItem[]> {
+    return requestHomeCatalogue(buildCatalogueUrl(11, 1));
+}
+
+// District
+// GET {{host}}/v1/catalogue/getcatalogue?catalogue_type=12&id=1
+export async function getDistrictCatalogue(): Promise<HomeCatalogueItem[]> {
+    return requestHomeCatalogue(buildCatalogueUrl(12, 1));
+}
+
+// Local Level / Municipality
+// GET {{host}}/v1/catalogue/getcatalogue?catalogue_type=13&id=1
+export async function getLocalLevelCatalogue(): Promise<HomeCatalogueItem[]> {
+    return requestHomeCatalogue(buildCatalogueUrl(13, 1));
 }

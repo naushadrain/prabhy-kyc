@@ -14,25 +14,13 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent } from "@/components/ui/card";
-
-import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
-} from "@/components/ui/select";
+import { Switch } from "@/components/ui/switch";
 
 import {
     getGroupPersonalAccidentPremium,
     type GroupPersonalAccidentPremiumRequest,
     type GroupPersonalAccidentPremiumResponse,
 } from "@/api/accident/getGroupPersonalAccidentPremium";
-
-const yesNoOptions = [
-    { label: "Yes", value: "yes" },
-    { label: "No", value: "no" },
-];
 
 function formatAmount(value: number | string | null | undefined) {
     const cleanValue = String(value ?? "0").replace(/,/g, "");
@@ -50,8 +38,10 @@ export default function GroupPersonalAccidentPage() {
     const navigate = useNavigate();
 
     const [step, setStep] = useState<1 | 2>(1);
-    const [totalSuminsured, setTotalSuminsured] = useState("");
-    const [includeRsdCharge, setIncludeRsdCharge] = useState("yes");
+
+    const [totalPerson, setTotalPerson] = useState("4");
+    const [totalSuminsured, setTotalSuminsured] = useState("1000000");
+    const [directDiscount, setDirectDiscount] = useState(true);
 
     const [errors, setErrors] = useState<Record<string, string>>({});
     const [inlineError, setInlineError] = useState("");
@@ -61,20 +51,31 @@ export default function GroupPersonalAccidentPage() {
         useState<GroupPersonalAccidentPremiumResponse | null>(null);
 
     const clearError = (key: string) => {
-        setErrors((prev) => ({
-            ...prev,
-            [key]: "",
-        }));
+        setErrors((prev) => {
+            const next = { ...prev };
+            delete next[key];
+            return next;
+        });
     };
 
-    const handleNumberChange = (value: string) => {
+    const handleNumberInput = (
+        value: string,
+        setter: React.Dispatch<React.SetStateAction<string>>,
+        errorKey: string,
+    ) => {
         const cleanValue = value.replace(/[^\d]/g, "");
-        setTotalSuminsured(cleanValue);
-        clearError("totalSuminsured");
+        setter(cleanValue);
+        clearError(errorKey);
     };
 
     const validate = () => {
         const newErrors: Record<string, string> = {};
+
+        if (!totalPerson.trim()) {
+            newErrors.totalPerson = "No. of person is required";
+        } else if (!/^\d+$/.test(totalPerson) || Number(totalPerson) <= 0) {
+            newErrors.totalPerson = "Enter valid no. of person";
+        }
 
         if (!totalSuminsured.trim()) {
             newErrors.totalSuminsured = "Total sum insured is required";
@@ -85,19 +86,16 @@ export default function GroupPersonalAccidentPage() {
             newErrors.totalSuminsured = "Enter valid total sum insured";
         }
 
-        if (!includeRsdCharge) {
-            newErrors.includeRsdCharge = "RSD charge option is required";
-        }
-
         return newErrors;
     };
 
     const buildPayload = (): GroupPersonalAccidentPremiumRequest => {
         return {
             class_id: "19",
-            include_rsd_charge: includeRsdCharge === "yes",
             total_suminsured: totalSuminsured,
-        };
+            get_direct_discount: directDiscount ? "y" : "n",
+            total_person: totalPerson,
+        } as GroupPersonalAccidentPremiumRequest;
     };
 
     const handleCalculate = async () => {
@@ -117,14 +115,14 @@ export default function GroupPersonalAccidentPage() {
 
             localStorage.setItem(
                 "accident.groupPersonalAccidentPayload",
-                JSON.stringify(payload)
+                JSON.stringify(payload),
             );
 
             const response = await getGroupPersonalAccidentPremium(payload);
 
             localStorage.setItem(
                 "accident.groupPersonalAccidentPremiumResponse",
-                JSON.stringify(response)
+                JSON.stringify(response),
             );
 
             setPremiumResponse(response);
@@ -132,7 +130,7 @@ export default function GroupPersonalAccidentPage() {
         } catch (error: any) {
             setInlineError(
                 error?.message ||
-                    "Failed to calculate group personal accident premium"
+                "Failed to calculate group personal accident premium",
             );
         } finally {
             setLoading(false);
@@ -158,6 +156,10 @@ export default function GroupPersonalAccidentPage() {
                             <h1 className="text-2xl font-bold text-black">
                                 Group Personal Accident Premium Details
                             </h1>
+
+                            <p className="mt-1 text-sm text-muted-foreground">
+                                Premium calculated for {totalPerson} person(s).
+                            </p>
                         </div>
                     </div>
 
@@ -168,7 +170,6 @@ export default function GroupPersonalAccidentPage() {
                     ) : (
                         <>
                             
-
                             <div className="overflow-hidden rounded-md border">
                                 <table className="w-full border-collapse text-sm">
                                     <thead>
@@ -176,43 +177,34 @@ export default function GroupPersonalAccidentPage() {
                                             <th className="border-r border-white px-4 py-3 text-left font-bold">
                                                 Particulars
                                             </th>
+
                                             <th className="px-4 py-3 text-right font-bold">
-                                                Value / Amount
+                                                Amount NPR
                                             </th>
                                         </tr>
                                     </thead>
 
                                     <tbody>
-
                                         <PremiumRow
                                             label="Sum Insured"
                                             value={amount.suminsured}
                                         />
 
                                         <PremiumRow
-                                            label="Premium Amount"
+                                            label="Basic Premium Amount"
                                             value={amount.premium_amount}
                                         />
 
                                         <PremiumRow
-                                            label="PA Amount"
-                                            value={amount.pa_amount}
-                                        />
-
-                                        <PremiumRow
-                                            label="TPL Amount"
-                                            value={amount.tpl_amount}
-                                        />
-
-                                        <PremiumRow
-                                            label="Pool Amount"
+                                            label="RS/MD/ST"
                                             value={amount.pool_amount}
                                         />
 
                                         <PremiumRow
-                                            label={`Direct Discount (${premiumResponse.direct_discount_percent}%)`}
+                                            label="Direct Discount"
                                             value={
-                                                premiumResponse.direct_discount_amount
+                                                premiumResponse.direct_discount_amount ??
+                                                0
                                             }
                                             isLess
                                         />
@@ -222,47 +214,22 @@ export default function GroupPersonalAccidentPage() {
                                             value={amount.taxable_amount}
                                         />
 
-                                        <PremiumRow
-                                            label={`VAT (${amount.vat_percent}%)`}
-                                            value={amount.vat_amount}
-                                        />
-
+                                        
                                         <PremiumRow
                                             label="Stamp Duty"
                                             value={amount.stamp_duty}
                                         />
 
-                                        <PremiumRow
-                                            label="Commission Percent"
-                                            value={`${amount.commission_percent}%`}
-                                            textOnly
-                                        />
-
-                                        <PremiumRow
-                                            label="Commission Amount"
-                                            value={amount.commission_amount}
-                                        />
-
-                                        <PremiumRow
-                                            label="Commission Tax Percent"
-                                            value={`${amount.commission_tax_percent}%`}
-                                            textOnly
-                                        />
-
-                                        <PremiumRow
-                                            label="Commission Tax Amount"
-                                            value={amount.commission_tax_amount}
-                                        />
-
+                                       
                                         <tr className="bg-[#b71319] text-white">
                                             <td className="border-r border-white px-4 py-4 text-base font-bold">
-                                                Total Premium With VAT
+                                                Total Premium
                                             </td>
 
                                             <td className="px-4 py-4 text-right text-base font-bold">
-                                                NPR{" "}
+                                                {" "}
                                                 {formatAmount(
-                                                    premiumResponse.total_premium_with_vat
+                                                    premiumResponse.total_premium_with_vat,
                                                 )}
                                             </td>
                                         </tr>
@@ -284,11 +251,9 @@ export default function GroupPersonalAccidentPage() {
                                 <Button
                                     type="button"
                                     className="gap-2 bg-[#f71920] text-white hover:bg-[#d9151b]"
-                                    onClick={() =>
-                                        navigate("/accident-insurance")
-                                    }
+                                    onClick={() => navigate("/login")}
                                 >
-                                    Done
+                                    Buy policy
                                     <ArrowRight className="h-4 w-4" />
                                 </Button>
                             </div>
@@ -313,11 +278,12 @@ export default function GroupPersonalAccidentPage() {
 
                     <div>
                         <h1 className="text-2xl font-bold text-black">
-                            Group Personal Accident
+                            Group Personal Accident Insurance
                         </h1>
 
                         <p className="mt-1 text-sm text-muted-foreground">
-                            Enter total sum insured to calculate GPA premium.
+                            Enter no. of person, total sum insured, and direct
+                            discount to calculate GPA premium.
                         </p>
                     </div>
                 </div>
@@ -329,127 +295,124 @@ export default function GroupPersonalAccidentPage() {
                     </div>
                 )}
 
-                <Card>
-                    <CardContent className="space-y-5 pt-6">
-                        <div className="grid gap-5 md:grid-cols-2">
-                            <div>
-                                <Label htmlFor="totalSuminsured">
-                                    Total Sum Insured *
-                                </Label>
+                <div className="grid gap-5 md:grid-cols-2">
+                    <div>
+                        <Label htmlFor="totalPerson">
+                            No. of Person *
+                        </Label>
 
-                                <Input
-                                    id="totalSuminsured"
-                                    type="text"
-                                    inputMode="numeric"
-                                    value={totalSuminsured}
-                                    placeholder="Enter total sum insured"
-                                    onChange={(event) =>
-                                        handleNumberChange(event.target.value)
-                                    }
-                                    className={`mt-2 h-12 ${
-                                        errors.totalSuminsured
-                                            ? "border-red-500"
-                                            : ""
-                                    }`}
+                        <Input
+                            id="totalPerson"
+                            type="text"
+                            inputMode="numeric"
+                            value={totalPerson}
+                            placeholder="Example: 4"
+                            onChange={(event) =>
+                                handleNumberInput(
+                                    event.target.value,
+                                    setTotalPerson,
+                                    "totalPerson",
+                                )
+                            }
+                            className={`mt-2 h-12 ${errors.totalPerson
+                                    ? "border-red-500"
+                                    : ""
+                                }`}
+                        />
+
+                        {errors.totalPerson && (
+                            <p className="mt-1 text-xs text-red-600">
+                                {errors.totalPerson}
+                            </p>
+                        )}
+                    </div>
+
+                    <div>
+                        <Label htmlFor="totalSuminsured">
+                            Total Sum Insured *
+                        </Label>
+
+                        <Input
+                            id="totalSuminsured"
+                            type="text"
+                            inputMode="numeric"
+                            value={totalSuminsured}
+                            placeholder="Example: 1000000"
+                            onChange={(event) =>
+                                handleNumberInput(
+                                    event.target.value,
+                                    setTotalSuminsured,
+                                    "totalSuminsured",
+                                )
+                            }
+                            className={`mt-2 h-12 ${errors.totalSuminsured
+                                    ? "border-red-500"
+                                    : ""
+                                }`}
+                        />
+
+                        {errors.totalSuminsured && (
+                            <p className="mt-1 text-xs text-red-600">
+                                {errors.totalSuminsured}
+                            </p>
+                        )}
+                    </div>
+                
+                    <div className="grid md:grid-cols-2 gap-4 pt-2">
+                            <div className="flex items-center gap-3">
+                                <Switch
+                                    id="directDiscount"
+                                    checked={true}
+                                    disabled
                                 />
-
-                                {errors.totalSuminsured && (
-                                    <p className="mt-1 text-xs text-red-600">
-                                        {errors.totalSuminsured}
-                                    </p>
-                                )}
-                            </div>
-
-                            <div>
-                                <Label htmlFor="includeRsdCharge">
-                                    Include RSD Charge *
-                                </Label>
-
-                                <Select
-                                    value={includeRsdCharge}
-                                    onValueChange={(value) => {
-                                        setIncludeRsdCharge(value);
-                                        clearError("includeRsdCharge");
-                                    }}
+                                <Label
+                                    htmlFor="directDiscount"
+                                    className="cursor-not-allowed text-muted-foreground"
                                 >
-                                    <SelectTrigger
-                                        id="includeRsdCharge"
-                                        className={`mt-2 h-12 ${
-                                            errors.includeRsdCharge
-                                                ? "border-red-500"
-                                                : ""
-                                        }`}
-                                    >
-                                        <SelectValue placeholder="Select RSD charge" />
-                                    </SelectTrigger>
-
-                                    <SelectContent>
-                                        {yesNoOptions.map((item) => (
-                                            <SelectItem
-                                                key={item.value}
-                                                value={item.value}
-                                            >
-                                                {item.label}
-                                            </SelectItem>
-                                        ))}
-                                    </SelectContent>
-                                </Select>
-
-                                {errors.includeRsdCharge && (
-                                    <p className="mt-1 text-xs text-red-600">
-                                        {errors.includeRsdCharge}
-                                    </p>
-                                )}
+                                    Direct discount
+                                </Label>
                             </div>
-
-                            
                         </div>
+                </div>
 
-                        <div className="flex justify-between pt-3">
-                            <Button
-                                type="button"
-                                variant="outline"
-                                className="gap-2"
-                                onClick={() => navigate("/accident-insurance")}
-                            >
-                                <ArrowLeft className="h-4 w-4" />
-                                Back
-                            </Button>
+                <div className="flex justify-between pt-3">
+                    <Button
+                        type="button"
+                        variant="outline"
+                        className="gap-2"
+                        onClick={() => navigate("/accident-insurance")}
+                    >
+                        <ArrowLeft className="h-4 w-4" />
+                        Back
+                    </Button>
 
-                            <Button
-                                type="button"
-                                size="lg"
-                                disabled={loading}
-                                onClick={handleCalculate}
-                                className="gap-2 bg-[#f71920] px-8 text-white hover:bg-[#d9151b]"
-                            >
-                                {loading ? (
-                                    <>
-                                        <Loader2 className="h-4 w-4 animate-spin" />
-                                        Calculating...
-                                    </>
-                                ) : (
-                                    <>
-                                        Calculate
-                                        <ArrowRight className="h-4 w-4" />
-                                    </>
-                                )}
-                            </Button>
-                        </div>
-                    </CardContent>
-                </Card>
+                    <Button
+                        type="button"
+                        size="lg"
+                        disabled={loading}
+                        onClick={handleCalculate}
+                        className="gap-2 bg-[#f71920] px-8 text-white hover:bg-[#d9151b]"
+                    >
+                        {loading ? (
+                            <>
+                                <Loader2 className="h-4 w-4 animate-spin" />
+                                Calculating...
+                            </>
+                        ) : (
+                            <>
+                                Calculate
+                                <ArrowRight className="h-4 w-4" />
+                            </>
+                        )}
+                    </Button>
+                </div>
+
             </div>
         </div>
     );
 }
 
-function SummaryCard({
-    label,
-    value,
-}: {
-    label: string;
-    value: string;
-}) {
+function SummaryCard({ label, value }: { label: string; value: string }) {
     return (
         <div className="rounded-lg border bg-muted/30 p-4">
             <p className="text-xs text-muted-foreground">{label}</p>
@@ -465,7 +428,7 @@ function PremiumRow({
     textOnly = false,
 }: {
     label: string;
-    value: number | string;
+    value: number | string | null | undefined;
     isLess?: boolean;
     textOnly?: boolean;
 }) {
@@ -484,7 +447,11 @@ function PremiumRow({
                     isLess ? "text-red-600" : "text-black"
                 }`}
             >
-                {textOnly ? value : `NPR ${formatAmount(value)}`}
+                {textOnly
+                    ? value
+                    : isLess
+                        ? `(${formatAmount(value)})`
+                        : formatAmount(value)}
             </td>
         </tr>
     );

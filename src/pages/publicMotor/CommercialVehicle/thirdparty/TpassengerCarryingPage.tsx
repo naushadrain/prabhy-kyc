@@ -245,7 +245,7 @@ export default function TpassengerCarryingPage() {
         },
         {
             key: "third_party_premium",
-            label: "Basic Third Party Premium as per Seat Capacity",
+            label: "Third Party Premium as per Seat Capacity",
             value: thirdPartyPremium,
         },
         {

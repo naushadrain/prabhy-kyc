@@ -1,6 +1,6 @@
 import React from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import { ChevronLeft } from "lucide-react";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -12,6 +12,7 @@ import {
   getTravelAgeBandsPublic,
   TravelPeriodResponse,
 } from "@/api/travels/GetTravelCataloguesPublic";
+import { Switch } from "@/components/ui/switch";
 
 type AgeBandItem = {
   value: string;
@@ -35,7 +36,7 @@ const STORAGE_KEY = "travelInsurance.details";
 function saveToStorage(data: Record<string, any>) {
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
-  } catch {}
+  } catch { }
 }
 
 function loadFromStorage(): Record<string, any> | null {
@@ -140,6 +141,7 @@ export default function TravelInsuranceDetails() {
 
   const [loadingAgeBands, setLoadingAgeBands] = React.useState(false);
   const [ageBandsError, setAgeBandsError] = React.useState<string | null>(null);
+  const directDiscount = true;
 
   React.useEffect(() => {
     const st = (location.state || {}) as CoverageState;
@@ -168,6 +170,7 @@ export default function TravelInsuranceDetails() {
       phoneNumber,
       periodId,
       ageBandValue,
+      get_direct_discount: "y",
     });
   }, [travelFrom, travelTo, noOfDays, numberOfTravelers, dob, age, passportNumber, phoneNumber, periodId, ageBandValue]);
 
@@ -320,7 +323,8 @@ export default function TravelInsuranceDetails() {
           planId,
           noOfDays,
           areaId,
-          packageId
+          packageId,
+
         );
 
         if (cancelled) return;
@@ -447,111 +451,135 @@ export default function TravelInsuranceDetails() {
 
   return (
     <>
-          <div className="border rounded-lg p-6 mb-6">
-            <div className="grid md:grid-cols-2 gap-4 mb-4">
-              <div>
-                <Label htmlFor="travelFrom">Travel Period From</Label>
-                <Input
-                  id="travelFrom"
-                  type="date"
-                  className="mt-2"
-                  value={travelFrom}
-                  onChange={(e) => onChangeTravelFrom(e.target.value)}
-                  min={todayStr}
-                />
-                {travelFromError && <p className="mt-1 text-sm text-red-600">{travelFromError}</p>}
-              </div>
-
-              <div>
-                <Label htmlFor="travelTo">Travel Period To</Label>
-                <Input
-                  id="travelTo"
-                  type="date"
-                  className="mt-2"
-                  value={travelTo}
-                  onChange={(e) => onChangeTravelTo(e.target.value)}
-                  min={travelFrom || todayStr}
-                  disabled={!travelFrom}
-                />
-                {travelToError && <p className="mt-1 text-sm text-red-600">{travelToError}</p>}
-              </div>
-            </div>
-
-            <div className="grid md:grid-cols-2 gap-4">
-              <div>
-                <Label htmlFor="noOfDays">No of Days</Label>
-                <Input
-                  id="noOfDays"
-                  type="number"
-                  className="mt-2"
-                  value={noOfDays}
-                  readOnly
-                />
-                {periodLoading && (
-                  <p className="text-xs mt-2 text-muted-foreground">Loading period...</p>
-                )}
-                {periodError && <p className="text-xs mt-2 text-red-600">{periodError}</p>}
-              </div>
-
-              <div>
-                <Label htmlFor="numberOfTravelers">Number of Travelers</Label>
-                <Input
-                  id="numberOfTravelers"
-                  type="number"
-                  min="1"
-                  max="10"
-                  value={numberOfTravelers}
-                  onChange={(e) => onChangeNumberOfTravelers(e.target.value)}
-                  className="mt-2"
-                />
-              </div>
-            </div>
+      <div className="border rounded-lg p-6 mb-6">
+        <div className="grid md:grid-cols-2 gap-4 mb-4">
+          <div>
+            <Label htmlFor="travelFrom">Travel Period From</Label>
+            <Input
+              id="travelFrom"
+              type="date"
+              className="mt-2"
+              value={travelFrom}
+              onChange={(e) => onChangeTravelFrom(e.target.value)}
+              min={todayStr}
+            />
+            {travelFromError && <p className="mt-1 text-sm text-red-600">{travelFromError}</p>}
           </div>
 
-          <div className="border rounded-lg p-6 mb-6">
-            <div className="grid md:grid-cols-2 gap-4">
-              <div>
-                <Label htmlFor="dob">Date of Birth</Label>
-                <Input
-                  id="dob"
-                  type="date"
-                  className="mt-2"
-                  value={dob}
-                  onChange={(e) => onChangeDob(e.target.value)}
-                  max={todayStr}
-                />
-                {dobError && <p className="mt-1 text-sm text-red-600">{dobError}</p>}
-                {ageBandError && <p className="mt-1 text-sm text-red-600">{ageBandError}</p>}
-                {ageBandsError && <p className="mt-1 text-sm text-red-600">{ageBandsError}</p>}
-                {loadingAgeBands && (
-                  <p className="mt-1 text-sm text-muted-foreground">Loading age bands...</p>
-                )}
-              </div>
+          <div>
+            <Label htmlFor="travelTo">Travel Period To</Label>
+            <Input
+              id="travelTo"
+              type="date"
+              className="mt-2"
+              value={travelTo}
+              onChange={(e) => onChangeTravelTo(e.target.value)}
+              min={travelFrom || todayStr}
+              disabled={!travelFrom}
+            />
+            {travelToError && <p className="mt-1 text-sm text-red-600">{travelToError}</p>}
+          </div>
+        </div>
 
-              <div>
-                <Label htmlFor="age">Age</Label>
-                <Input
-                  id="age"
-                  type="number"
-                  className="mt-2"
-                  value={age}
-                  readOnly
-                  placeholder="Auto calculated"
-                />
-              </div>
-            </div>
+        <div className="grid md:grid-cols-2 gap-4">
+          <div>
+            <Label htmlFor="noOfDays">No of Days</Label>
+            <Input
+              id="noOfDays"
+              type="number"
+              className="mt-2"
+              value={noOfDays}
+              readOnly
+            />
+            {periodLoading && (
+              <p className="text-xs mt-2 text-muted-foreground">Loading period...</p>
+            )}
+            {periodError && <p className="text-xs mt-2 text-red-600">{periodError}</p>}
           </div>
 
-          <div className="flex gap-4">
-            <Button variant="outline" onClick={handleBack} className="gap-2">
-              <ChevronLeft className="w-4 h-4" />
-              BACK
-            </Button>
-
-            <Button onClick={onNext} disabled={calculateDisabled}>
-              NEXT
-            </Button>
+          <div>
+            <Label htmlFor="numberOfTravelers">Number of Travelers</Label>
+            <Input
+              id="numberOfTravelers"
+              type="number"
+              min="1"
+              max="10"
+              value={numberOfTravelers}
+              onChange={(e) => onChangeNumberOfTravelers(e.target.value)}
+              className="mt-2"
+            />
           </div>
+        </div>
+      </div>
+
+      <div className="border rounded-lg p-6 mb-6">
+        <div className="grid md:grid-cols-2 gap-4">
+          <div>
+            <Label htmlFor="dob">Date of Birth</Label>
+            <Input
+              id="dob"
+              type="date"
+              className="mt-2"
+              value={dob}
+              onChange={(e) => onChangeDob(e.target.value)}
+              max={todayStr}
+            />
+            {dobError && <p className="mt-1 text-sm text-red-600">{dobError}</p>}
+            {ageBandError && <p className="mt-1 text-sm text-red-600">{ageBandError}</p>}
+            {ageBandsError && <p className="mt-1 text-sm text-red-600">{ageBandsError}</p>}
+            {loadingAgeBands && (
+              <p className="mt-1 text-sm text-muted-foreground">Loading age bands...</p>
+            )}
+          </div>
+
+          <div>
+            <Label htmlFor="age">Age</Label>
+            <Input
+              id="age"
+              type="number"
+              className="mt-2"
+              value={age}
+              readOnly
+              placeholder="Auto calculated"
+            />
+          </div>
+        </div>
+      </div>
+      <div className="mb-6">
+        <div className="inline-flex cursor-not-allowed items-center gap-3">
+          <Switch
+            id="directDiscount"
+            checked={true}
+            disabled
+          />
+
+          <Label
+            htmlFor="directDiscount"
+            className="cursor-not-allowed text-sm font-medium text-muted-foreground"
+          >
+            Direct discount
+          </Label>
+        </div>
+      </div>
+      <div className="flex items-center justify-between gap-4">
+        <Button
+          variant="outline"
+          onClick={handleBack}
+          className="gap-2"
+        >
+          <ChevronLeft className="h-4 w-4" />
+          BACK
+        </Button>
+
+        <Button
+          onClick={onNext}
+          disabled={calculateDisabled}
+          className="gap-2 bg-[#f71920] text-white hover:bg-[#d9151b]"
+        >
+          Calculate
+          <ChevronRight className="h-4 w-4" />
+        </Button>
+      </div>
     </>
   );
 }

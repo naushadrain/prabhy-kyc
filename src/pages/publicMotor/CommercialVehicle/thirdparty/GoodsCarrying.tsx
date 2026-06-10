@@ -1,13 +1,14 @@
 // CommercialVehicle/thirdparty/pages/TgoodsCarryingPage.tsx
 
 import { useState } from "react";
-import { ChevronLeft, Loader2, AlertCircle, ArrowLeft } from "lucide-react";
+import { ChevronLeft, Loader2, AlertCircle, ArrowLeft, ArrowRight } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
 
 import {
     getMotorPremiumCV,
@@ -16,7 +17,6 @@ import {
 
 import { GetPremiumResponse, PremiumAmountInfo } from "@/types/getpremium";
 import { toast } from "@/components/ui/sonner";
-import { string } from "zod";
 
 type RowType = "section" | "less" | "subtotal" | "total" | "normal";
 
@@ -38,29 +38,12 @@ const fmt = (value: number | string | null | undefined) => {
     });
 };
 
-const toNumber = (value: number | string | null | undefined) => {
-    const num = Number(value ?? 0);
-    return Number.isFinite(num) ? num : 0;
-};
-
-const getValue = (
-    obj: Record<string, unknown> | null | undefined,
-    keys: string[],
-    fallback: number | string = 0
-): number | string => {
-    if (!obj) return fallback;
-
-    for (const key of keys) {
-        const value = obj[key];
-
-        if (value !== undefined && value !== null && value !== "") {
-            if (typeof value === "string" || typeof value === "number") {
-                return value;
-            }
-        }
+const safeValue = (value: unknown): number | string | null => {
+    if (typeof value === "number" || typeof value === "string") {
+        return value;
     }
 
-    return fallback;
+    return null;
 };
 
 export default function TgoodsCarryingPage() {
@@ -70,6 +53,8 @@ export default function TgoodsCarryingPage() {
 
     const [carryingCapacity, setCarryingCapacity] = useState("");
     const [noOfSeats, setNoOfSeats] = useState("2");
+
+    const directDiscount = true;
 
     const [errors, setErrors] = useState<Record<string, string>>({});
     const [loading, setLoading] = useState(false);
@@ -126,7 +111,7 @@ export default function TgoodsCarryingPage() {
             calc_type: "p",
             noclaim_year: "0",
             is_tailor: "false",
-            get_direct_discount: "n",
+            get_direct_discount: "y",
             vehicle_reg: "e",
             include_towing_charge: "false",
             include_personal_use_discount: "false",
@@ -145,7 +130,7 @@ export default function TgoodsCarryingPage() {
                     value: "Commercial Vehicle Normal Good Carrying Policy",
                     additional_value: "CV",
                     title: "Normal Goods Carrying",
-                })
+                }),
             );
 
             localStorage.setItem(
@@ -156,7 +141,8 @@ export default function TgoodsCarryingPage() {
                     good_carrying_capacity: Number(carryingCapacity),
                     noOfSeatsIncludingDriver: noOfSeats,
                     passengerSeatCapacity: String(passengerSeatCapacity),
-                })
+                    directDiscount: true,
+                }),
             );
 
             const response = await getMotorPremiumCV(payload);
@@ -194,83 +180,54 @@ export default function TgoodsCarryingPage() {
 
     const amount: PremiumAmountInfo | undefined = premiumData?.amount_info;
 
-    const thirdPartyPremium = getValue(amount as any, [
-        "tpl_amount",
-        "third_party_premium",
-        "premium_amount",
-    ]);
-
-    const thirdPartyNcd = getValue(amount as any, [
-        "tpl_no_claim_discount_amount",
-        "third_party_no_claim_discount_amount",
-        "third_party_ncd_amount",
-        "no_claim_discount_amount",
-    ]);
-
-    const finalThirdPartyPremium =
-        toNumber(thirdPartyPremium) - toNumber(thirdPartyNcd);
-
-    const taxableAmount = getValue(amount as any, [
-        "taxable_amount",
-        "subtotal_amount",
-    ]);
-
-    const subTotal =
-        toNumber(taxableAmount) > 0 ? taxableAmount : finalThirdPartyPremium;
-
-    const vatPercent = getValue(amount as any, ["vat_percent"], 13);
-    const vatAmount = getValue(amount as any, ["vat_amount"]);
-    const stampDuty = getValue(amount as any, ["stamp_duty"]);
-
-    const totalPremium = getValue(amount as any, [
-        "total_amount",
-        "total_premium",
-        "payable_amount",
-    ]);
-
     const premiumRows: PremiumRow[] = [
         {
             key: "section",
             label: "Third Party Premium Calculation",
             type: "section",
         },
+    
         {
-            key: "third_party_premium",
-            label: "Basic Third Party Premium",
-            value: thirdPartyPremium,
+            key: "premium_amount",
+            label: "Premium Amount",
+            value: safeValue(amount?.premium_amount),
         },
         {
-            key: "third_party_ncd",
-            label: "Less : No Claim Discount",
-            value: thirdPartyNcd,
-            type: "less",
+            key: "pa_amount",
+            label: "PA Amount",
+            value: safeValue(amount?.pa_amount),
         },
         {
-            key: "third_party_total",
+            key: "tpl_amount",
             label: "Third Party Premium",
-            value: finalThirdPartyPremium,
+            value: safeValue(amount?.tpl_amount),
+        },
+        {
+            key: "taxable_amount",
+            label: "Taxable Amount",
+            value: safeValue(amount?.taxable_amount),
             type: "subtotal",
         },
         {
-            key: "subtotal",
-            label: "Sub Total",
-            value: subTotal,
-            type: "subtotal",
+            key: "vat_amount",
+            label: "VAT Amount",
+            value: safeValue(amount?.vat_amount),
         },
         {
-            key: "vat",
-            label: `Add : VAT ${vatPercent}%`,
-            value: vatAmount,
+            key: "stamp_duty",
+            label: "Stamp Duty",
+            value: safeValue(amount?.stamp_duty),
         },
+
+        
+    
         {
-            key: "stamp",
-            label: "Add : Stamp Duty",
-            value: stampDuty,
-        },
-        {
-            key: "total",
-            label: "Total Premium",
-            value: totalPremium,
+            key: "total_premium_with_vat",
+            label: "Total Premium With VAT",
+            value: safeValue(
+                (premiumData as Record<string, unknown> | null)
+                    ?.total_premium_with_vat,
+            ),
             type: "total",
         },
     ];
@@ -321,83 +278,52 @@ export default function TgoodsCarryingPage() {
                     </div>
                 </div>
 
-                <Card className="mb-6">
-                    <CardContent className="pt-6">
-                        <h2 className="mb-4 text-base font-semibold">
-                            Selected Vehicle Details
-                        </h2>
+                <div className="overflow-hidden rounded-lg border">
+                    <table className="w-full text-sm">
+                        <thead>
+                            <tr className="bg-primary text-primary-foreground">
+                                <th className="px-5 py-3 text-left font-semibold">
+                                    Description
+                                </th>
 
-                        <div className="grid gap-4 md:grid-cols-2">
-                            <div className="rounded-lg border bg-muted/30 p-4">
-                                <p className="text-xs text-muted-foreground">
-                                    Carrying Capacity in Ton
-                                </p>
-                                <p className="mt-1 font-semibold">
-                                    {carryingCapacity}
-                                </p>
-                            </div>
+                                <th className="px-5 py-3 text-right font-semibold">
+                                    Amount NPR
+                                </th>
+                            </tr>
+                        </thead>
 
-                            <div className="rounded-lg border bg-muted/30 p-4">
-                                <p className="text-xs text-muted-foreground">
-                                    No of Seats Including Driver
-                                </p>
-                                <p className="mt-1 font-semibold">
-                                    {noOfSeats}
-                                </p>
-                            </div>
+                        <tbody>
+                            {premiumRows.map((row, index) => (
+                                <tr
+                                    key={row.key}
+                                    className={getRowClass(row.type, index)}
+                                >
+                                    <td
+                                        className={`px-5 py-3 ${getLabelClass(
+                                            row.type,
+                                        )}`}
+                                    >
+                                        {row.label}
+                                    </td>
 
-                        </div>
-                    </CardContent>
-                </Card>
+                                    <td
+                                        className={`px-5 py-3 text-right ${getValueClass(
+                                            row.type,
+                                        )}`}
+                                    >
+                                        {row.type === "section"
+                                            ? ""
+                                            : row.type === "less"
+                                                ? `(${fmt(row.value)})`
+                                                : fmt(row.value)}
+                                    </td>
+                                </tr>
+                            ))}
+                        </tbody>
+                    </table>
+                </div>
 
-                <Card>
-                    <CardContent className="pt-6">
-                        <div className="overflow-hidden rounded-lg border">
-                            <table className="w-full text-sm">
-                                <thead>
-                                    <tr className="bg-primary text-primary-foreground">
-                                        <th className="px-5 py-3 text-left font-semibold">
-                                            Description
-                                        </th>
-
-                                        <th className="px-5 py-3 text-right font-semibold">
-                                            Amount (NPR)
-                                        </th>
-                                    </tr>
-                                </thead>
-
-                                <tbody>
-                                    {premiumRows.map((row, index) => (
-                                        <tr
-                                            key={row.key}
-                                            className={getRowClass(row.type, index)}
-                                        >
-                                            <td
-                                                className={`px-5 py-3 ${getLabelClass(
-                                                    row.type
-                                                )}`}
-                                            >
-                                                {row.label}
-                                            </td>
-
-                                            <td
-                                                className={`px-5 py-3 text-right ${getValueClass(
-                                                    row.type
-                                                )}`}
-                                            >
-                                                {row.type === "section"
-                                                    ? ""
-                                                    : fmt(row.value)}
-                                            </td>
-                                        </tr>
-                                    ))}
-                                </tbody>
-                            </table>
-                        </div>
-                    </CardContent>
-                </Card>
-
-                <div className="mt-6 flex gap-3">
+                <div className="mt-6 flex items-center justify-between gap-3">
                     <Button
                         variant="outline"
                         className="gap-2"
@@ -408,11 +334,12 @@ export default function TgoodsCarryingPage() {
                     </Button>
 
                     <Button
-                        onClick={() =>
-                            navigate("/motor/commercial-vehicle/third-party")
-                        }
+                        size="lg"
+                        className="px-8"
+                        onClick={() => navigate("/login")}
                     >
-                        Change Category
+                        Buy Policy
+                        <ArrowRight className="h-4 w-4" />
                     </Button>
                 </div>
             </>
@@ -443,9 +370,10 @@ export default function TgoodsCarryingPage() {
 
             <Card className="max-w-6xl">
                 <CardContent className="space-y-5 pt-6">
-                        <h2 className="text-base font-semibold text-blue-800">
-                            Third Party Normal Goods Carrying Insurance
-                        </h2>
+                    <h2 className="text-base font-semibold text-blue-800">
+                        Third Party Normal Goods Carrying Insurance
+                    </h2>
+
                     <div className="grid gap-5 md:grid-cols-2">
                         <div>
                             <Label htmlFor="carryingCapacity">
@@ -516,7 +444,30 @@ export default function TgoodsCarryingPage() {
                         </div>
                     </div>
 
-                    
+                    <div className="grid gap-5 md:grid-cols-2">
+                        <div className="flex items-center gap-3 pt-2">
+                            <Switch
+                                id="directDiscount"
+                                checked={true}
+                                disabled
+                            />
+
+                            <Label
+                                htmlFor="directDiscount"
+                                className="cursor-not-allowed text-muted-foreground"
+                            >
+                                Direct Discount
+                            </Label>
+                        </div>
+                    </div>
+
+                    {inlineError && (
+                        <div className="flex items-start gap-2 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+                            <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
+                            {inlineError}
+                        </div>
+                    )}
+
                     <div className="flex justify-between pt-2">
                         <Button
                             variant="outline"

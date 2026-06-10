@@ -15,7 +15,6 @@ import { z } from "zod";
 
 import { toast } from "@/components/ui/sonner";
 import { loginCustomer } from "@/api/auth/login/loginClient";
-import { Card } from "@/components/ui/card";
 
 /* =========================
     Zod schema validation
@@ -59,12 +58,44 @@ export const Login = () => {
 
   const redirectTimerRef = useRef<number | null>(null);
 
- const insurancePlans = [ 
-  { id: "two-wheeler", title: "Two Wheeler", icon: "🏍️", route: "/motor/two-wheeler" }, 
-  { id: "private", title: "Private Vehicle", icon: "🚗", route: "/motor/private-vehicle" }, 
-  { id: "commercial", title: "Commercial Vehicle", icon: "🚚", route: "/motor/commercial-vehicle" }, 
-  { id: "accident", title: "Accident Insurance", icon: "🛡️", route: "/accident-insurance" } 
- ];
+ const insurancePlans = [
+    {
+      id: "two-wheeler",
+      title: "Two Wheeler",
+      icon: "/motor.svg",
+      route: "/motor/two-wheeler",
+    },
+    {
+      id: "private",
+      title: "Private Vehicle",
+      icon: "/car-white.svg",
+      route: "/motor/private-vehicle",
+    },
+    {
+      id: "commercial",
+      title: "Commercial Vehicle",
+      icon: "/commercial.svg",
+      route: "/motor/commercial-vehicle",
+    },
+    {
+      id: "accident",
+      title: " Accidental Insurance",
+      icon: "/accident-white.svg",
+      route: "/accident-insurance",
+    },
+    {
+      id: "travel",
+      title: "Travel Insurance",
+      icon: "/travel-icon.svg",
+      route: "/travel-coverage",
+    },
+    {
+      id: "home",
+      title: "House & Property Insurance",
+      icon: "/Property-white.svg",
+      route: "/home-insurance",
+    },
+  ];
 
   const handlePlanSelect = (planId: string, route: string) => {
     localStorage.setItem("motor.vehicleType", planId);
@@ -121,39 +152,17 @@ export const Login = () => {
     <div className="min-h-screen bg-background">
       <div className="flex min-h-screen flex-col md:flex-row">
         {/* ================= LEFT SIDE INSURANCE CARDS ================= */}
-        <div className="order-2 flex-1 px-4 pb-10 pt-2 sm:px-8 md:order-1 md:px-10 md:py-12 lg:px-16 lg:py-16">
+        <div className="order-2 flex-1 bg-[#f7f7f7] px-4 pb-10 pt-6 sm:px-8 md:order-1 md:px-10 md:py-12 lg:px-16 lg:py-16">
           <div className="mx-auto w-full max-w-5xl">
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-              {/* Motor cards */}
+            <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 xl:grid-cols-3">
               {insurancePlans.map((plan) => (
-                <Card
+                <InsuranceCard
                   key={plan.id}
+                  icon={plan.icon}
+                  title={plan.title}
                   onClick={() => handlePlanSelect(plan.id, plan.route)}
-                  className="h-full cursor-pointer border-2 p-8 text-center transition-all hover:border-primary hover:shadow-lg"
-                >
-                  <h3 className="mb-8 text-lg font-bold">{plan.title}</h3>
-
-                  <div className="flex items-center justify-center py-8">
-                    <div className="text-7xl opacity-80">{plan.icon}</div>
-                  </div>
-                </Card>
+                />
               ))}
-
-              {/* Travel card */}
-              <InsuranceCard
-                type="travel"
-                title={t("insurance.travel")}
-                subtitle={t("insurance.travelIns")}
-                to="/travel-coverage"
-              />
-
-              {/* Home card */}
-              <InsuranceCard
-                type="home"
-                title={t("insurance.home")}
-                subtitle={t("insurance.homeIns")}
-                to="/home-insurance"
-              />
             </div>
           </div>
         </div>

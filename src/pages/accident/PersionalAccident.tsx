@@ -58,7 +58,7 @@ export default function AccidentPersionalAccidentPagee(){
                 <div className="mb-8 flex items-center gap-3">
                     <button
                         type="button"
-                        onClick={() => navigate("/")}
+                        onClick={() => navigate("/dashboard")}
                         className="flex h-8 w-8 items-center justify-center rounded-full hover:bg-gray-100"
                     >
                         <ChevronLeft className="h-5 w-5 text-black" />

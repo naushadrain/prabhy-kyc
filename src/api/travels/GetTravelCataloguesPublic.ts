@@ -11,6 +11,7 @@ type TravelPremiumPayload = {
   travel_area_id: string | number;
   travel_area_plan_id: string | number;
   period_id: string | number;
+  get_direct_discount: "y" | "n";
 };
 
 type PeriodApiItem = {
@@ -102,7 +103,7 @@ export async function getTravelPeriod(
   planId: string | number,
   days: string | number,
   area_id: string | number,
-  package_id: string | number
+  package_id: string | number,
 ): Promise<TravelPeriodResponse> {
   const headers = await makeAuthHeaders();
 

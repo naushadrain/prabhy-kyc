@@ -1,6 +1,6 @@
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { ChevronLeft, ArrowLeft, Loader2, AlertCircle} from 'lucide-react';
+import { ChevronLeft, ArrowLeft, Loader2, AlertCircle, ArrowRight } from 'lucide-react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useState, useMemo, useCallback, useEffect, } from 'react';
 import { toast } from '@/components/ui/sonner';
@@ -24,7 +24,7 @@ import {
     getVehicleAgeBands,
     type CatalogueItem,
 } from '@/api/motor/getMotorCatalogue';
-import { PremiumAmountInfo,GetPremiumResponse } from '@/types/getpremium';
+import { PremiumAmountInfo, GetPremiumResponse } from '@/types/getpremium';
 /* ──────────────────────────────────────────────────────────────────────────────
    Constants
    ────────────────────────────────────────────────────────────────────────────── */
@@ -204,7 +204,7 @@ export const PrivateVehiclePage = () => {
         const effectiveDate = todayISO();
         const [coverStrikeDamage, setCoverStrikeDamage] = useState<boolean>(savedCoverage?.coverStrikeDamage ?? true);
         const [noClaimYear, setNoClaimYear] = useState<string>(savedCoverage?.noClaimYear || "0");
-        const [directDiscount, setDirectDiscount] = useState<boolean>(savedCoverage?.directDiscount ?? true);
+        const directDiscount = true;
         const [privateRent, setPrivateRent] = useState<string>(savedCoverage?.privateRent || "no");
         const [towingCharge, setTowingCharge] = useState<string>(savedCoverage?.towingCharge || "no");
         const [loading, setLoading] = useState(false);
@@ -335,7 +335,7 @@ export const PrivateVehiclePage = () => {
                 calc_type: "p",
                 noclaim_year: isThirdParty ? "0" : noClaimYear,
                 is_tailor: "false",
-                get_direct_discount: directDiscount ? "y" : "n",
+                get_direct_discount: isThirdParty ? "n" : "y",
                 vehicle_reg: "e",
                 // conductor_helper_seat_capacity: "1",
                 include_towing_charge: isThirdParty ? "false" : (towingCharge === "yes" ? "true" : "false"),
@@ -670,8 +670,17 @@ export const PrivateVehiclePage = () => {
 
                         <div className="grid md:grid-cols-2 gap-4 pt-2">
                             <div className="flex items-center gap-3">
-                                <Switch id="directDiscount" checked={directDiscount} onCheckedChange={setDirectDiscount} />
-                                <Label htmlFor="directDiscount" className="cursor-pointer">Direct discount?</Label>
+                                <Switch
+                                    id="directDiscount"
+                                    checked={true}
+                                    disabled
+                                />
+                                <Label
+                                    htmlFor="directDiscount"
+                                    className="cursor-not-allowed text-muted-foreground"
+                                >
+                                    Direct discount
+                                </Label>
                             </div>
                         </div>
 
@@ -696,516 +705,295 @@ export const PrivateVehiclePage = () => {
         );
     };
 
-    /* ────────────────────────────────────────────────────────────────────────────
-       STEP 3 — Premium Details
-       ──────────────────────────────────────────────────────────────────────────── */
+    const Step3PremiumDetails = () => {
+        type RowType = "normal" | "section" | "less" | "subtotal" | "total" | "divider";
 
- const Step3PremiumDetails = () => {
-    type RowType = "normal" | "section" | "less" | "subtotal" | "total";
+        type PremiumTableRow = {
+            key: string;
+            label: string;
+            value?: number | string | null;
+            type?: RowType;
+        };
 
-    type PremiumTableRow = {
-        key: string;
-        label: string;
-        value?: number | string | null;
-        type?: RowType;
-    };
+        const insurancePlan =
+            localStorage.getItem("motor.insurancePlan") || "comprehensive";
 
-    const insurancePlan = localStorage.getItem("motor.insurancePlan") || "comprehensive";
-    const isThirdParty = insurancePlan === "third-party";
+        const isThirdParty = insurancePlan === "third-party";
 
-    const premiumData = useMemo<GetPremiumResponse | null>(() => {
-        try {
-            return JSON.parse(localStorage.getItem("motor.premiumResponse") || "null") as GetPremiumResponse | null;
-        } catch {
-            return null;
-        }
-    }, []);
-
-    const coverageForm = useMemo(() => {
-        try {
-            return JSON.parse(localStorage.getItem("motor.coverageForm") || "null");
-        } catch {
-            return null;
-        }
-    }, []);
-
-    const amount: PremiumAmountInfo | undefined = premiumData?.amount_info;
-    const hasData = !!amount;
-
-    const getValue = (
-        obj: PremiumAmountInfo | GetPremiumResponse | undefined | null,
-        keys: string[],
-        fallback: number | string = 0
-    ): number | string => {
-        if (!obj) return fallback;
-
-        for (const key of keys) {
-            const value = obj[key as keyof typeof obj];
-
-            if (value !== undefined && value !== null && value !== "") {
-                if (typeof value === "string" || typeof value === "number") {
-                    return value;
-                }
+        const premiumData = useMemo<GetPremiumResponse | null>(() => {
+            try {
+                return JSON.parse(
+                    localStorage.getItem("motor.premiumResponse") || "null",
+                ) as GetPremiumResponse | null;
+            } catch {
+                return null;
             }
-        }
+        }, []);
 
-        return fallback;
-    };
+        const amount: PremiumAmountInfo | undefined = premiumData?.amount_info;
+        const hasData = !!amount;
 
-    const toNumber = (value: number | string | null | undefined): number => {
-        const num = Number(value ?? 0);
-        return Number.isFinite(num) ? num : 0;
-    };
+        const safeValue = (value: unknown): number | string | null => {
+            if (typeof value === "number" || typeof value === "string") {
+                return value;
+            }
 
-    const formatAmount = (value: number | string | null | undefined) => {
-        if (value === null || value === undefined || value === "") return "—";
-        return fmt(value);
-    };
+            return null;
+        };
 
-    const ownDamagePremium = getValue(amount, [
-        "premium_amount",
-        "own_damage_premium",
-        "od_premium",
-    ]);
+        const formatAmount = (value: number | string | null | undefined) => {
+            if (value === null || value === undefined || value === "") return "—";
+            return fmt(value);
+        };
 
-    const oldVehicleCharge = getValue(amount, ["old_vehicle_charge"]);
+        const calculationRows: PremiumTableRow[] = isThirdParty
+            ? [
+                {
+                    key: "third_party_section",
+                    label: "Third Party Premium Calculation",
+                    type: "section",
+                },
+                {
+                    key: "tpl_amount",
+                    label: "Third Party Premium as per CC",
+                    value: safeValue(amount?.tpl_amount),
+                },
+                {
+                    key: "pa_amount",
+                    label: "Driver/Passenger Amount",
+                    value: safeValue(amount?.pa_amount),
+                },
+                {
+                    key: "vat_amount",
+                    label: "VAT Amount",
+                    value: safeValue(amount?.vat_amount),
+                },
+                {
+                    key: "stamp_duty",
+                    label: "Stamp Duty",
+                    value: safeValue(amount?.stamp_duty),
+                },
+                {
+                    key: "total_amount",
+                    label: "Total Amount",
+                    value: safeValue(amount?.total_amount),
+                    type: "total",
+                },
+            ]
+            : [
+                {
+                    key: "suminsured",
+                    label: "Sum Insured",
+                    value: safeValue(amount?.suminsured),
+                },
+                {
+                    key: "premium_amount",
+                    label: "Basic Premium Amount",
+                    value: safeValue(amount?.premium_amount),
+                },
+                {
+                    key: "direct_discount_amount",
+                    label: "Direct Discount Amount",
+                    value: safeValue(
+                        (premiumData as Record<string, unknown> | null)
+                            ?.direct_discount_amount,
+                    ),
+                    type: "less",
+                },
+                {
+                    key: "pa_amount",
+                    label: "Driver/Passenger Amount",
+                    value: safeValue(amount?.pa_amount),
+                },
+                {
+                    key: "tpl_amount",
+                    label: "Third Party Premium",
+                    value: safeValue(amount?.tpl_amount),
+                },
+                {
+                    key: "pool_amount",
+                    label: "RS/MD/ST",
+                    value: safeValue(amount?.pool_amount),
+                },
+                {
+                    key: "taxable_amount",
+                    label: "Taxable Amount",
+                    value: safeValue(amount?.taxable_amount),
+                    type: "subtotal",
+                },
+                {
+                    key: "vat_amount",
+                    label: "VAT Amount",
+                    value: safeValue(amount?.vat_amount),
+                },
+                {
+                    key: "stamp_duty",
+                    label: "Stamp Duty",
+                    value: safeValue(amount?.stamp_duty),
+                },
+                {
+                    key: "total_premium_with_vat",
+                    label: "Total Premium With VAT",
+                    value: safeValue(
+                        (premiumData as Record<string, unknown> | null)
+                            ?.total_premium_with_vat,
+                    ),
+                    type: "total",
+                },
+            ];
 
-    const voluntaryExcess = getValue(amount, [
-        "voluntary_excess_amount",
-        "voluntary_excess_discount",
-    ]);
+        return (
+            <>
+                <div className="mb-6 flex items-start gap-3">
+                    <button
+                        type="button"
+                        className="mt-1 flex h-8 w-8 items-center justify-center rounded-full hover:bg-gray-100"
+                        onClick={() => goToStep(2)}
+                    >
+                        <ChevronLeft className="h-5 w-5 text-black" />
+                    </button>
 
-    const noClaimDiscount = getValue(amount, [
-        "no_claim_discount_amount",
-        "ncd_amount",
-    ]);
+                    <div>
+                        <h1 className="text-xl font-bold text-black">
+                            {isThirdParty
+                                ? "Private Vehicle Third Party Premium Details"
+                                : "Private Vehicle Comprehensive Premium Details"}
+                        </h1>
 
-    const directDiscount = getValue(premiumData, ["direct_discount_amount"]);
-
-    const basicPremiumFromApi = getValue(amount, ["basic_premium"]);
-
-    const basicPremium =
-        toNumber(basicPremiumFromApi) > 0
-            ? basicPremiumFromApi
-            : toNumber(ownDamagePremium) +
-              toNumber(oldVehicleCharge) -
-              toNumber(voluntaryExcess) -
-              toNumber(noClaimDiscount) -
-              toNumber(directDiscount);
-
-    const thirdPartyPremium = getValue(amount, [
-        "tpl_amount",
-        "third_party_premium",
-    ]);
-
-    const thirdPartyNcd = getValue(amount, [
-        "tpl_no_claim_discount_amount",
-        "third_party_no_claim_discount_amount",
-        "third_party_ncd_amount",
-    ]);
-
-    const finalThirdPartyPremium =
-        toNumber(thirdPartyPremium) - toNumber(thirdPartyNcd);
-
-    const rsd = getValue(amount, ["rsd_amount", "rsd"]);
-    const rsdRider = getValue(amount, ["rsd_rider_amount", "rsd_rider"]);
-    const rsdPassenger = getValue(amount, ["rsd_passenger_amount", "rsd_passenger"]);
-
-    const poolPremiumFromApi = getValue(amount, ["pool_amount"]);
-
-    const poolPremium =
-        toNumber(poolPremiumFromApi) > 0
-            ? poolPremiumFromApi
-            : toNumber(rsd) + toNumber(rsdRider) + toNumber(rsdPassenger);
-
-    const taxableAmount = getValue(amount, [
-        "taxable_amount",
-        "subtotal_amount",
-    ]);
-
-    const subTotalABC =
-        toNumber(taxableAmount) > 0
-            ? taxableAmount
-            : toNumber(basicPremium) + toNumber(finalThirdPartyPremium) + toNumber(poolPremium);
-
-    const vatPercent = getValue(amount, ["vat_percent"], 13);
-    const vatAmount = getValue(amount, ["vat_amount"]);
-    const stampDuty = getValue(amount, ["stamp_duty"]);
-
-    const totalPremium = getValue(amount, [
-        "total_amount",
-        "total_premium",
-        "payable_amount",
-    ]);
-
-    const calculationRows: PremiumTableRow[] = isThirdParty
-        ? [
-              {
-                  key: "third_party_section",
-                  label: "Third Party Premium Calculation",
-                  type: "section",
-              },
-              {
-                  key: "third_party_premium",
-                  label: "Basic Third Party Premium as per CC",
-                  value: thirdPartyPremium,
-              },
-              {
-                  key: "third_party_ncd",
-                  label: "Less : No Claim Discount",
-                  value: thirdPartyNcd,
-                  type: "less",
-              },
-              {
-                  key: "third_party_total",
-                  label: "Third Party Premium(B)",
-                  value: finalThirdPartyPremium,
-                  type: "subtotal",
-              },
-              {
-                  key: "taxable_amount",
-                  label: "Sub Total",
-                  value: subTotalABC,
-                  type: "subtotal",
-              },
-              {
-                  key: "vat_amount",
-                  label: `Add : VAT ${vatPercent}%`,
-                  value: vatAmount,
-              },
-              {
-                  key: "stamp_duty",
-                  label: "Add : Stamp Duty",
-                  value: stampDuty,
-              },
-              {
-                  key: "total_premium",
-                  label: "Total Premium",
-                  value: totalPremium,
-                  type: "total",
-              },
-          ]
-        : [
-              {
-                  key: "premium",
-                  label: "Premium",
-                  value: ownDamagePremium,
-              },
-              {
-                  key: "old_vehicle_charge",
-                  label: "Add : Old Vehicle Charge",
-                  value: oldVehicleCharge,
-              },
-              {
-                  key: "subtotal_1",
-                  label: "Sub Total",
-                  value: toNumber(ownDamagePremium) + toNumber(oldVehicleCharge),
-                  type: "subtotal",
-              },
-              {
-                  key: "voluntary_excess",
-                  label: "Less : Voluntary Excess",
-                  value: voluntaryExcess,
-                  type: "less",
-              },
-              {
-                  key: "subtotal_2",
-                  label: "Sub Total",
-                  value:
-                      toNumber(ownDamagePremium) +
-                      toNumber(oldVehicleCharge) -
-                      toNumber(voluntaryExcess),
-                  type: "subtotal",
-              },
-              {
-                  key: "no_claim_discount",
-                  label: "Less : No Claim Discount",
-                  value: noClaimDiscount,
-                  type: "less",
-              },
-              {
-                  key: "subtotal_3",
-                  label: "Sub Total",
-                  value:
-                      toNumber(ownDamagePremium) +
-                      toNumber(oldVehicleCharge) -
-                      toNumber(voluntaryExcess) -
-                      toNumber(noClaimDiscount),
-                  type: "subtotal",
-              },
-              {
-                  key: "direct_discount",
-                  label: "Less : Direct Discount",
-                  value: directDiscount,
-                  type: "less",
-              },
-              {
-                  key: "basic_premium",
-                  label: "Basic Premium",
-                  value: basicPremium,
-                  type: "subtotal",
-              },
-              {
-                  key: "third_party_section",
-                  label: "Third Party Premium Calculation",
-                  type: "section",
-              },
-              {
-                  key: "third_party_premium",
-                  label: "Basic Third Party Premium as per CC",
-                  value: thirdPartyPremium,
-              },
-              {
-                  key: "third_party_ncd",
-                  label: "Less : No Claim Discount",
-                  value: thirdPartyNcd,
-                  type: "less",
-              },
-              {
-                  key: "third_party_total",
-                  label: "Third Party Premium(B)",
-                  value: finalThirdPartyPremium,
-                  type: "subtotal",
-              },
-              {
-                  key: "pool_section",
-                  label: "Pool Premium Calculation",
-                  type: "section",
-              },
-              {
-                  key: "rsd",
-                  label: "Add : RSD",
-                  value: rsd,
-              },
-              {
-                  key: "rsd_rider",
-                  label: "Add : RSD Rider",
-                  value: rsdRider,
-              },
-              {
-                  key: "rsd_passenger",
-                  label: "Add : RSD Passenger",
-                  value: rsdPassenger,
-              },
-              {
-                  key: "pool_premium",
-                  label: "Pool Premium(C)",
-                  value: poolPremium,
-                  type: "subtotal",
-              },
-              {
-                  key: "final_section",
-                  label: "Final Premium Calculation",
-                  type: "section",
-              },
-              {
-                  key: "subtotal_abc",
-                  label: "Sub Total(A+B+C)",
-                  value: subTotalABC,
-                  type: "subtotal",
-              },
-              {
-                  key: "vat_amount",
-                  label: `Add : VAT ${vatPercent}%`,
-                  value: vatAmount,
-              },
-              {
-                  key: "stamp_duty",
-                  label: "Add : Stamp Duty",
-                  value: stampDuty,
-              },
-              {
-                  key: "total_premium",
-                  label: "Total Premium",
-                  value: totalPremium,
-                  type: "total",
-              },
-          ];
-
-    const getRowClass = (type?: RowType, index?: number) => {
-        if (type === "section") return "bg-muted/70";
-        if (type === "total") return "bg-primary/10 border-t-2 border-primary/30";
-        if (type === "subtotal") return "bg-muted/30";
-        return index && index % 2 === 0 ? "bg-background" : "bg-muted/10";
-    };
-
-    const getLabelClass = (type?: RowType) => {
-        if (type === "section") return "font-bold text-foreground";
-        if (type === "total") return "font-bold text-primary";
-        if (type === "subtotal") return "font-semibold text-foreground";
-        if (type === "less") return "text-red-600";
-        return "text-muted-foreground";
-    };
-
-    const getValueClass = (type?: RowType) => {
-        if (type === "section") return "font-bold text-foreground";
-        if (type === "total") return "font-bold text-primary text-base";
-        if (type === "subtotal") return "font-semibold text-foreground";
-        if (type === "less") return "font-medium text-red-600";
-        return "font-medium text-foreground";
-    };
-
-    return (
-        <>
-            <div className="mb-6 flex items-center gap-3">
-                <button
-                    type="button"
-                    className="flex h-7 w-7 items-center justify-center rounded-full hover:bg-gray-100"
-                    onClick={() => goToStep(2)}
-                >
-                    <ChevronLeft className="h-5 w-5 text-black" />
-                </button>
-
-                <h1 className="text-lg font-bold text-black">Premium Details</h1>
-            </div>
-
-            {coverageForm && (
-                <Card className="mb-6">
-                    <CardContent className="pt-6">
-                        <h2 className="text-base font-semibold mb-3">Vehicle Details</h2>
-
-                        <div className="grid md:grid-cols-2 gap-x-8">
-                            <InfoRow
-                                label="Insurance Plan"
-                                value={isThirdParty ? "Third Party" : "Comprehensive"}
-                            />
-
-                           
-
-                            <InfoRow
-                                label="Sub Category"
-                                value={coverageForm.categoryLabel || "—"}
-                            />
-
-                            {!isThirdParty && (
-                                <InfoRow
-                                    label="Year of Manufacture"
-                                    value={coverageForm.yearOfManufacture || "—"}
-                                />
-                            )}
-
-                            <InfoRow
-                                label="Cubic Capacity"
-                                value={
-                                    CC_OPTIONS.find((c) => c.value === coverageForm.selectedCcRange)?.label ||
-                                    "—"
-                                }
-                            />
-
-                            <InfoRow
-                                label="No of Seat (Including Driver)"
-                                value={coverageForm.noOfSeat || "—"}
-                            />
-
-                            {!isThirdParty && (
-                                <InfoRow
-                                    label="Vehicle Cost (NPR)"
-                                    value={fmt(coverageForm.vehicleCost)}
-                                />
-                            )}
-
-                            {!isThirdParty && (
-                                <InfoRow
-                                    label="Voluntary Excess"
-                                    value={fmt(coverageForm.voluntaryExcess)}
-                                />
-                            )}
-
-                            {!isThirdParty && (
-                                <InfoRow
-                                    label="Compulsory Excess"
-                                    value={fmt(coverageForm.compulsoryExcess)}
-                                />
-                            )}
-
-                            {!isThirdParty && (
-                                <InfoRow
-                                    label="No Claim Discount Year"
-                                    value={`${coverageForm.noClaimYear ?? 0} ${
-                                        Number(coverageForm.noClaimYear) === 1 ? "Year" : "Years"
-                                    }`}
-                                />
-                            )}
-
-                            {!isThirdParty && (
-                                <InfoRow
-                                    label="Private Rent"
-                                    value={coverageForm.privateRent === "yes" ? "Yes" : "No"}
-                                />
-                            )}
-
-                            {!isThirdParty && (
-                                <InfoRow
-                                    label="Towing Charge"
-                                    value={coverageForm.towingCharge === "yes" ? "Yes" : "No"}
-                                />
-                            )}
-
-                            {!isThirdParty && (
-                                <InfoRow
-                                    label="Direct Discount"
-                                    value={coverageForm.directDiscount ? "Yes" : "No"}
-                                />
-                            )}
-                        </div>
-                    </CardContent>
-                </Card>
-            )}
-
-            {!hasData && (
-                <div className="flex items-center gap-3 rounded-lg border border-amber-200 bg-amber-50 px-5 py-4 text-sm text-amber-700 mb-6">
-                    <AlertCircle className="w-4 h-4 shrink-0" />
-                    No premium data found. Please go back and calculate first.
+                        <p className="mt-1 text-sm text-muted-foreground">
+                            Review the premium amount, VAT, stamp duty, and final payable amount.
+                        </p>
+                    </div>
                 </div>
-            )}
 
-            {hasData && (
-                <div className="space-y-2">
-                    <Card>
-                        <CardContent className="mt-3">
-                            <div className="rounded-lg overflow-hidden border">
-                                <table className="w-full text-sm">
-                                    <thead>
-                                        <tr className="bg-primary text-primary-foreground">
-                                            <th className="text-left px-5 py-3 font-semibold">
-                                                Description
-                                            </th>
-                                            <th className="text-right px-5 py-3 font-semibold">
-                                                Amount (NPR)
-                                            </th>
-                                        </tr>
-                                    </thead>
+                {!hasData && (
+                    <div className="mb-6 flex items-center gap-3 rounded-lg border border-amber-200 bg-amber-50 px-5 py-4 text-sm text-amber-700">
+                        <AlertCircle className="h-4 w-4 shrink-0" />
+                        No premium data found. Please go back and calculate first.
+                    </div>
+                )}
 
-                                    <tbody>
-                                        {calculationRows.map((row, index) => (
+                {hasData && (
+                    <div className="overflow-hidden rounded-md border">
+                        <table className="w-full border-collapse text-sm">
+                            <thead>
+                                <tr className="bg-[#e91d25] text-white">
+                                    <th className="border-r border-white px-4 py-3 text-left font-bold">
+                                        Particulars
+                                    </th>
+
+                                    <th className="px-4 py-3 text-right font-bold">
+                                        Amount NPR
+                                    </th>
+                                </tr>
+                            </thead>
+
+                            <tbody>
+                                {calculationRows.map((row) => {
+                                    if (row.type === "section") {
+                                        return (
                                             <tr
                                                 key={row.key}
-                                                className={getRowClass(row.type, index)}
+                                                className="border-b bg-[#fff7f3]"
                                             >
-                                                <td className={`px-5 py-3 ${getLabelClass(row.type)}`}>
+                                                <td
+                                                    colSpan={2}
+                                                    className="px-4 py-3 font-bold text-black"
+                                                >
                                                     {row.label}
                                                 </td>
-                                                <td className={`px-5 py-3 text-right ${getValueClass(row.type)}`}>
-                                                    {row.type === "section" ? "" : formatAmount(row.value)}
+                                            </tr>
+                                        );
+                                    }
+
+                                    if (row.type === "divider") {
+                                        return (
+                                            <tr key={row.key}>
+                                                <td
+                                                    colSpan={2}
+                                                    className="border-t-2 border-slate-300 p-0"
+                                                />
+                                            </tr>
+                                        );
+                                    }
+
+                                    if (row.type === "total") {
+                                        return (
+                                            <tr
+                                                key={row.key}
+                                                className="bg-[#b71319] text-white"
+                                            >
+                                                <td className="border-r border-white px-4 py-4 text-base font-bold">
+                                                    {row.label}
+                                                </td>
+
+                                                <td className="px-4 py-4 text-right text-base font-bold">
+                                                    {formatAmount(row.value)}
                                                 </td>
                                             </tr>
-                                        ))}
-                                    </tbody>
-                                </table>
-                            </div>
-                        </CardContent>
-                    </Card>
-                </div>
-            )}
+                                        );
+                                    }
 
-            <div className="flex mt-6 gap-2">
-                <Button variant="outline" className="gap-2" onClick={() => goToStep(2)}>
-                    <ArrowLeft className="w-4 h-4" /> Back
-                </Button>
-            </div>
-        </>
-    );
-};
+                                    return (
+                                        <tr
+                                            key={row.key}
+                                            className="border-b bg-[#fff7f3] last:border-b-0"
+                                        >
+                                            <td
+                                                className={`border-r border-white px-4 py-3 ${row.type === "less"
+                                                        ? "text-red-600"
+                                                        : row.type === "subtotal"
+                                                            ? "font-semibold text-black"
+                                                            : "text-black"
+                                                    }`}
+                                            >
+                                                {row.type === "less"
+                                                    ? `Less : ${row.label}`
+                                                    : row.label}
+                                            </td>
+
+                                            <td
+                                                className={`px-4 py-3 text-right font-medium ${row.type === "less"
+                                                        ? "text-red-600"
+                                                        : row.type === "subtotal"
+                                                            ? "font-semibold text-black"
+                                                            : "text-black"
+                                                    }`}
+                                            >
+                                                {row.type === "less"
+                                                    ? `(${formatAmount(row.value)})`
+                                                    : formatAmount(row.value)}
+                                            </td>
+                                        </tr>
+                                    );
+                                })}
+                            </tbody>
+                        </table>
+                    </div>
+                )}
+
+                <div className="mt-8 flex items-center justify-between gap-3">
+                    <Button
+                        variant="outline"
+                        className="gap-2"
+                        onClick={() => goToStep(2)}
+                    >
+                        <ArrowLeft className="h-4 w-4" />
+                        Back
+                    </Button>
+
+                    <Button
+                        size="lg"
+                        className="gap-2 bg-[#f71920] px-8 text-white hover:bg-[#d9151b]"
+                        onClick={() => navigate("/login")}
+                    >
+                        Buy Policy
+                        <ArrowRight className="h-4 w-4" />
+                    </Button>
+                </div>
+            </>
+        );
+    };
 
     /* ────────────────────────────────────────────────────────────────────────────
        RENDER

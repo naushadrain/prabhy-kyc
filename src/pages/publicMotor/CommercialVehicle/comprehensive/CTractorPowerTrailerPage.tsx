@@ -723,7 +723,7 @@ export default function CTractorPowerTrailerPage() {
                                     htmlFor="directDiscount"
                                     className="cursor-pointer"
                                 >
-                                    Direct discount?
+                                    Direct discount
                                 </Label>
                             </div>
                         </div>

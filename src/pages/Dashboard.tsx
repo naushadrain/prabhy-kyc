@@ -208,13 +208,7 @@ export const Dashboard = () => {
   const ui = noteMessage ? notesUi : statusUi;
   const statusLabel = statusRaw && statusRaw !== "Unknown" ? String(statusRaw) : "Unknown";
 
-  function openComingSoonModal(serviceName: string) {
-    setModalKind("info");
-    setModalTitle(serviceName);
-    setModalMsg("This feature is coming soon...");
-    setTargetRoute("");
-    setModalOpen(true);
-  }
+
 
   function checkKycAndNavigate(route: string, serviceName: string) {
     if (loading) {
@@ -242,8 +236,7 @@ export const Dashboard = () => {
       setModalKind("kyc");
       setModalTitle("KYC Verification Required");
       setModalMsg(
-        `Your KYC has been rejected. Please re-submit your KYC documents to access ${serviceName}.${
-          noteMessage ? `\n\nReason: ${noteMessage}` : ""
+        `Your KYC has been rejected. Please re-submit your KYC documents to access ${serviceName}.${noteMessage ? `\n\nReason: ${noteMessage}` : ""
         }`
       );
       setTargetRoute(route);
@@ -255,8 +248,7 @@ export const Dashboard = () => {
       setModalKind("kyc");
       setModalTitle("KYC Verification Pending");
       setModalMsg(
-        `Your KYC is currently under review. You'll be able to access ${serviceName} once your KYC is verified.${
-          noteMessage ? `\n\nStatus: ${noteMessage}` : ""
+        `Your KYC is currently under review. You'll be able to access ${serviceName} once your KYC is verified.${noteMessage ? `\n\nStatus: ${noteMessage}` : ""
         }`
       );
       setTargetRoute(route);
@@ -274,25 +266,25 @@ export const Dashboard = () => {
   const handleMotorClick = () => {
     checkKycAndNavigate("/motor-insurance", "Motor Insurance");
   };
-  const handleTwoWheelerClick = () =>{
-    checkKycAndNavigate("/two-wheeler","Two Wheeler");
+  const handleTwoWheelerClick = () => {
+    checkKycAndNavigate("/two-wheeler", "Two Wheeler");
   }
-   const handlePrivateVechicleClick = () =>{
-    checkKycAndNavigate("/private-vechicle","Two Wheeler");
+  const handlePrivateVechicleClick = () => {
+    checkKycAndNavigate("/private-vechicle", "Two Wheeler");
   }
 
-   const handleCommercialVehicleClick = () =>{
-    checkKycAndNavigate("/two-wheeler","Two Wheeler");
+  const handleCommercialVehicleClick = () => {
+    checkKycAndNavigate("/commercial-vehicle", "Two Wheeler");
   }
- const handleAccidenClick = () =>{
-    checkKycAndNavigate("/accidents","Two Wheeler");
+  const handleAccidenClick = () => {
+    checkKycAndNavigate("/accidents", "Two Wheeler");
   }
   const handleTravelClick = () => {
     checkKycAndNavigate("/travel-insurance-coverage", "Travel Insurance");
   };
 
   const handleHomeClick = () => {
-    openComingSoonModal("Home Insurance");
+    checkKycAndNavigate("/home-insurances", "Home Insurance");
   };
 
   function closeModal() {
@@ -323,7 +315,7 @@ export const Dashboard = () => {
         <main className="flex-1 p-6 lg:p-9">
           <h1 className="text-3xl lg:text-4xl font-bold mb-8">
             {t("home.title").split("Insurance Policy")[0]}
-            <span className="text-secondary">Insurance Policy</span>
+            <span className="text-red-500">Insurance Policy</span>
           </h1>
 
           {error && (
@@ -390,75 +382,56 @@ export const Dashboard = () => {
             </div>
           )}
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {/* <div
-              role="button"
-              tabIndex={0}
-              onClick={handleMotorClick}
-              onKeyDown={(e) => e.key === "Enter" && handleMotorClick()}
-              className="cursor-pointer transition-transform hover:scale-105"
-            >
-              <InsuranceCard
-                type="motor"
-                title={t("insurance.motor")}
-                subtitle={`${t("insurance.vehicle")} • KYC: ${statusLabel}`}
-                to="#"
-              />
-            </div> */}
+          <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 xl:grid-cols-3">
             <div
               role="button"
               tabIndex={0}
               onClick={handleTwoWheelerClick}
               onKeyDown={(e) => e.key === "Enter" && handleTwoWheelerClick()}
-              className="cursor-pointer transition-transform hover:scale-105"
+              className="cursor-pointer"
             >
               <InsuranceCard
-                type="two-wheeler"
                 title="Two Wheeler"
-                subtitle="Two Wheeler Insurance"
-                to="#"
+                icon="/motor.svg"
               />
             </div>
+
             <div
               role="button"
               tabIndex={0}
               onClick={handlePrivateVechicleClick}
               onKeyDown={(e) => e.key === "Enter" && handlePrivateVechicleClick()}
-              className="cursor-pointer transition-transform hover:scale-105"
+              className="cursor-pointer"
             >
               <InsuranceCard
-                type="private-vehicle"
-                title="Private Vihicle"
-                subtitle="Private Vehicle Insurance"
-                to="#"
+                title="Private Vehicle"
+                icon="/car-white.svg"
               />
             </div>
+
             <div
               role="button"
               tabIndex={0}
               onClick={handleCommercialVehicleClick}
               onKeyDown={(e) => e.key === "Enter" && handleCommercialVehicleClick()}
-              className="cursor-pointer transition-transform hover:scale-105"
+              className="cursor-pointer"
             >
               <InsuranceCard
-                type="commercial-vehicle"
                 title="Commercial Vehicle"
-                subtitle="Commercial Vehicle Insurance"
-                to="#"
+                icon="/commercial.svg"
               />
             </div>
+
             <div
               role="button"
               tabIndex={0}
               onClick={handleAccidenClick}
               onKeyDown={(e) => e.key === "Enter" && handleAccidenClick()}
-              className="cursor-pointer transition-transform hover:scale-105"
+              className="cursor-pointer"
             >
               <InsuranceCard
-                type="accident"
-                title="Accident"
-                subtitle="Accident Insurance"
-                to="#"
+                title="Accidental Insurance"
+                icon="/accident-white.svg"
               />
             </div>
 
@@ -467,13 +440,11 @@ export const Dashboard = () => {
               tabIndex={0}
               onClick={handleTravelClick}
               onKeyDown={(e) => e.key === "Enter" && handleTravelClick()}
-              className="cursor-pointer transition-transform hover:scale-105"
+              className="cursor-pointer"
             >
               <InsuranceCard
-                type="travel"
-                title={t("insurance.travel")}
-                subtitle={t("insurance.travelIns")}
-                to="#"
+                title="Travel Insurance"
+                icon="/travel-icon.svg"
               />
             </div>
 
@@ -482,13 +453,11 @@ export const Dashboard = () => {
               tabIndex={0}
               onClick={handleHomeClick}
               onKeyDown={(e) => e.key === "Enter" && handleHomeClick()}
-              className="cursor-pointer transition-transform hover:scale-105"
+              className="cursor-pointer"
             >
               <InsuranceCard
-                type="home"
                 title={t("insurance.home")}
-                subtitle={t("insurance.homeIns")}
-                to="#"
+                icon="/home-icon.svg"
               />
             </div>
           </div>

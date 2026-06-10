@@ -97,7 +97,7 @@ export const MotorPrivateVehiclePage = () => {
     const goToStep = useCallback((step: number) => setSearchParams({ step: String(step) }), [setSearchParams]);
 
     const vehicleType = localStorage.getItem('motor.vehicleType') || 'private';
-    const planTitle = vehicleType === 'two-wheeler' ? 'Two Wheeler Plan' : vehicleType === 'commercial' ? 'Commercial Vehicle Plan' : 'Private Vehicle Plan';
+    const planTitle = vehicleType === 'two-wheeler' ? 'Private Vehicle Plane' : vehicleType === 'commercial' ? 'Private Vehicle Plan' : 'Private Vehicle Plan';
 
     const Step1CoveragePlan = () => {
         const handlePlanSelect = (planType: 'comprehensive' | 'third-party') => {
@@ -108,7 +108,7 @@ export const MotorPrivateVehiclePage = () => {
         return (
             <>
                 <div className="mb-6 flex items-center gap-3">
-                    <button type="button" className="flex h-7 w-7 items-center justify-center rounded-full hover:bg-gray-100" onClick={() => navigate('/login')}>
+                    <button type="button" className="flex h-7 w-7 items-center justify-center rounded-full hover:bg-gray-100" onClick={() => navigate('/dashboard')}>
                         <ChevronLeft className="h-5 w-5 text-black" />
                     </button>
                     <h1 className="text-lg font-bold text-black">{planTitle}</h1>
@@ -441,7 +441,7 @@ export const MotorPrivateVehiclePage = () => {
 
                         {!isThirdParty && (
                             <div className="grid md:grid-cols-2 gap-4 pt-2">
-                                <div className="flex items-center gap-3"><Switch checked={directDiscount} onCheckedChange={setDirectDiscount} /><Label>Direct discount?</Label></div>
+                                <div className="flex items-center gap-3"><Switch checked={directDiscount} onCheckedChange={setDirectDiscount} /><Label>Direct discount</Label></div>
                                 <div className="flex items-center gap-3"><Switch checked={coverStrikeDamage} onCheckedChange={setCoverStrikeDamage} /><Label>Cover strike damage?</Label></div>
                             </div>
                         )}

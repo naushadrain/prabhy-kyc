@@ -1,7 +1,6 @@
 import { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import {
-  LogIn,
   ChevronLeft,
   ArrowLeft,
   ArrowRight,
@@ -9,20 +8,10 @@ import {
   AlertCircle,
 } from "lucide-react";
 
-import logo from "@/assets/logo.png";
-import { useLanguage } from "@/contexts/LanguageContext";
-
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { Switch } from "@/components/ui/switch";
 
 import {
   getPropertyListCatalogue,
@@ -35,19 +24,19 @@ import {
   type FireHousePremiumResponse,
 } from "@/api/home/getFireHousePremium";
 
-export default function FireHousePage() {
-  const { t } = useLanguage();
+const MAX_SUM_INSURED = 20000000;
+const inputClass =
+  "mt-2 bg-white text-black placeholder:text-muted-foreground focus-visible:ring-1 focus-visible:ring-primary";
 
+export default function FireHousePage() {
   const [currentStep, setCurrentStep] = useState(1);
   const [premiumResponse, setPremiumResponse] =
     useState<FireHousePremiumResponse | null>(null);
 
   return (
-    <div className="min-h-screen bg-background flex flex-col">
-      
-
-      <main className="flex-1 bg-[#fbf4f2]">
-        <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
+    <div className="flex min-h-screen flex-col bg-background">
+      <main className="flex-1">
+        <div className="mx-auto max-w-6xl px-4 py-6 sm:px-6 sm:py-8 lg:px-8">
           {currentStep === 1 && (
             <StepOne
               onSuccess={(response) => {
@@ -76,22 +65,21 @@ function StepOne({
 }: {
   onSuccess: (response: FireHousePremiumResponse) => void;
 }) {
-  const [propertyList, setPropertyList] = useState<HomeCatalogueItem[]>([]);
+  const navigate = useNavigate();
 
+  const [propertyList, setPropertyList] = useState<HomeCatalogueItem[]>([]);
   const [selectedProperty, setSelectedProperty] = useState("");
   const [sumInsured, setSumInsured] = useState("");
 
-  const [constructionType] = useState("1st Class Construction");
-  const [includeRsdCharge] = useState(false);
+  const constructionType = "1st Class Construction";
+  const includeRsdCharge = false;
+  const directDiscount = true;
 
   const [propertyLoading, setPropertyLoading] = useState(false);
   const [calculateLoading, setCalculateLoading] = useState(false);
-
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [inlineError, setInlineError] = useState("");
 
-  const MAX_SUM_INSURED = 20000000; // 2 crore
-  
   useEffect(() => {
     let cancelled = false;
 
@@ -121,43 +109,58 @@ function StepOne({
   }, []);
 
   const selectedPropertyItem = propertyList.find(
-    (item) => item.data === selectedProperty
+    (item) => item.data === selectedProperty,
   );
 
   const clearError = (name: string) => {
-    setErrors((prev) => ({
-      ...prev,
-      [name]: "",
-    }));
+    setErrors((prev) => {
+      const next = { ...prev };
+      delete next[name];
+      return next;
+    });
+  };
+
+  const formatInputAmount = (value: string) => {
+    const cleanValue = value.replace(/[^\d]/g, "");
+
+    if (!cleanValue) return "";
+
+    return Number(cleanValue).toLocaleString("en-IN");
+  };
+
+  const getCleanAmount = (value: string) => {
+    return value.replace(/[^\d]/g, "");
   };
 
   const handleSumInsuredChange = (value: string) => {
-    const cleanValue = value.replace(/[^\d]/g, "");
+    const cleanValue = getCleanAmount(value);
+    const amount = Number(cleanValue || 0);
 
     setSumInsured(cleanValue);
     clearError("sumInsured");
+
+    if (amount > MAX_SUM_INSURED) {
+      setErrors((prev) => ({
+        ...prev,
+        sumInsured: "Maximum sum insured allowed is NPR 2,00,00,000.",
+      }));
+    }
   };
 
   const validate = () => {
-  const newErrors: Record<string, string> = {};
+    const newErrors: Record<string, string> = {};
+    const sumInsuredAmount = Number(sumInsured || 0);
 
-  const sumInsuredAmount = Number(sumInsured || 0);
+    if (!sumInsured.trim()) {
+      newErrors.sumInsured = "Please enter sum insured amount.";
+    } else if (!/^\d+$/.test(sumInsured) || sumInsuredAmount <= 0) {
+      newErrors.sumInsured = "Please enter a valid sum insured amount.";
+    } else if (sumInsuredAmount > MAX_SUM_INSURED) {
+      newErrors.sumInsured = "Maximum sum insured allowed is NPR 2,00,00,000.";
+    }
 
-  if (!selectedProperty) {
-    newErrors.selectedProperty = "Property list is required";
-  }
-
-  if (!sumInsured.trim()) {
-    newErrors.sumInsured = "Sum insured is required";
-  } else if (!/^\d+$/.test(sumInsured) || sumInsuredAmount <= 0) {
-    newErrors.sumInsured = "Enter valid sum insured";
-  } else if (sumInsuredAmount > MAX_SUM_INSURED) {
-    newErrors.sumInsured =
-      "sum insured must not be greater than 2 crore";
-  }
-
-  return newErrors;
-};
+    return newErrors;
+  };
 
   const handleCalculate = async () => {
     setInlineError("");
@@ -169,31 +172,31 @@ function StepOne({
       return;
     }
 
-   const payload: FireHousePremiumRequest = {
-  class_id: "63",
-  location_count: "1",
-  include_rsd_charge: includeRsdCharge,
-  total_suminsured: sumInsured,
-  get_direct_discount:"y",
-  location_info: [
-    {
-      class_id: "62",
-      location_total_suminsured: sumInsured,
-      construction_type: constructionType,
-      near_premises_suminsured: "",
-      building_suminsured: sumInsured,
-      plant_machinery_suminsured: "",
-      raw_materials_suminsured: "",
-      work_in_progress_suminsured: "",
-      finished_goods_suminsured: "",
-      semi_finished_goods_suminsured: "",
-      furniture_suminsured: "",
-      cash_gold_suminsured: "",
-      maps_frame_suminsured: "",
-      others_suminsured: "",
-    },
-  ],
-};
+    const payload: FireHousePremiumRequest = {
+      class_id: "63",
+      location_count: "1",
+      include_rsd_charge: includeRsdCharge,
+      total_suminsured: sumInsured,
+      get_direct_discount: "y",
+      location_info: [
+        {
+          class_id: "62",
+          location_total_suminsured: sumInsured,
+          construction_type: constructionType,
+          near_premises_suminsured: "",
+          building_suminsured: sumInsured,
+          plant_machinery_suminsured: "",
+          raw_materials_suminsured: "",
+          work_in_progress_suminsured: "",
+          finished_goods_suminsured: "",
+          semi_finished_goods_suminsured: "",
+          furniture_suminsured: "",
+          cash_gold_suminsured: "",
+          maps_frame_suminsured: "",
+          others_suminsured: "",
+        },
+      ],
+    };
 
     try {
       setCalculateLoading(true);
@@ -204,7 +207,7 @@ function StepOne({
           data: selectedPropertyItem?.data || selectedProperty,
           value: selectedPropertyItem?.value || "",
           additional_value: selectedPropertyItem?.additional_value || "",
-        })
+        }),
       );
 
       localStorage.setItem("homeInsurancePayload", JSON.stringify(payload));
@@ -213,7 +216,7 @@ function StepOne({
 
       localStorage.setItem(
         "homeInsurancePremiumResponse",
-        JSON.stringify(response)
+        JSON.stringify(response),
       );
 
       onSuccess(response);
@@ -229,6 +232,7 @@ function StepOne({
       <div className="mb-6 flex items-center gap-3">
         <button
           type="button"
+          onClick={() => navigate("/home-insurance")}
           className="flex h-7 w-7 items-center justify-center rounded-full hover:bg-gray-100"
         >
           <ChevronLeft className="h-5 w-5 text-black" />
@@ -236,7 +240,9 @@ function StepOne({
 
         <div>
           <h1 className="text-lg font-bold text-black">Home Insurance</h1>
-          
+          <p className="mt-1 text-sm text-muted-foreground">
+            Enter sum insured and calculate your fire house insurance premium.
+          </p>
         </div>
       </div>
 
@@ -250,67 +256,58 @@ function StepOne({
       <div className="space-y-5">
         <div className="grid gap-4 md:grid-cols-2">
           <div>
-            <Label htmlFor="propertyList">Property Lists *</Label>
-
-            <Select
-              value={selectedProperty}
-              disabled={propertyLoading}
-              onValueChange={(value) => {
-                setSelectedProperty(value);
-                clearError("selectedProperty");
-              }}
-            >
-              <SelectTrigger
-                id="propertyList"
-                className={`mt-2 ${errors.selectedProperty ? "border-red-500" : ""
-                  }`}
-              >
-                <SelectValue
-                  placeholder={
-                    propertyLoading ? "Loading property list..." : "Select Property"
-                  }
-                />
-              </SelectTrigger>
-
-              <SelectContent>
-                {propertyList.map((item) => (
-                  <SelectItem key={item.data} value={item.data}>
-                    {item.value}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-
-            {errors.selectedProperty && (
-              <p className="mt-1 text-xs text-red-600">
-                {errors.selectedProperty}
-              </p>
-            )}
-          </div>
-
-          <div>
             <Label htmlFor="sumInsured">Sum Insured *</Label>
 
             <Input
               id="sumInsured"
               type="text"
               inputMode="numeric"
-              value={sumInsured}
-              onChange={(e) => handleSumInsuredChange(e.target.value)}
-              className={`mt-2 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none ${errors.sumInsured ? "border-red-500" : ""
+              value={formatInputAmount(sumInsured)}
+              onChange={(event) => handleSumInsuredChange(event.target.value)}
+              onKeyDown={(event) => {
+                if (["-", "+", ".", "e", "E"].includes(event.key)) {
+                  event.preventDefault();
+                }
+              }}
+              className={`${inputClass} [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none ${errors.sumInsured ? "border-red-500" : ""
                 }`}
-              placeholder="Enter sum insured, e.g. 1000000"
+              placeholder="Maximum NPR 2,00,00,000"
             />
 
-            {errors.sumInsured && (
-              <p className="mt-1 text-xs text-red-600">
-                {errors.sumInsured}
+            <div className="mt-1 flex items-center justify-between gap-2">
+              <p
+                className={`text-xs ${errors.sumInsured
+                  ? "text-red-600"
+                  : "text-muted-foreground"
+                  }`}
+              >
+                {errors.sumInsured ||
+                  "You can enter sum insured up to NPR 2,00,00,000."}
               </p>
-            )}
+            </div>
+          </div>
+
+          <div className="mt-4 inline-flex cursor-not-allowed items-center gap-3">
+            <Switch id="directDiscount" checked={directDiscount} disabled />
+
+            <Label
+              htmlFor="directDiscount"
+              className="cursor-not-allowed text-sm font-medium text-muted-foreground"
+            >
+              Direct Discount
+            </Label>
           </div>
         </div>
+
         <div className="flex justify-between pt-2">
-          <Button variant="outline">Back</Button>
+          <Button
+            onClick={() => navigate("/home-insurance")}
+            variant="outline"
+            className="gap-2"
+          >
+            <ArrowLeft className="h-4 w-4" />
+            Back
+          </Button>
 
           <Button
             onClick={handleCalculate}
@@ -344,11 +341,12 @@ function StepTwo({
   onBack: () => void;
   premiumResponse: FireHousePremiumResponse | null;
 }) {
+  const navigate = useNavigate();
   const amount = premiumResponse?.amount_info;
 
   return (
     <div className="rounded-md bg-white px-4 py-5 shadow-sm sm:px-5">
-      <div className="mb-4 flex items-center gap-3">
+      <div className="mb-5 flex items-center gap-3">
         <button
           type="button"
           onClick={onBack}
@@ -357,9 +355,15 @@ function StepTwo({
           <ChevronLeft className="h-5 w-5 text-black" />
         </button>
 
-        <h1 className="text-lg font-bold text-black">
-          Premium Calculation Details
-        </h1>
+        <div>
+          <h1 className="text-lg font-bold text-black">
+            Premium Calculation Details
+          </h1>
+          <p className="mt-1 text-sm text-muted-foreground">
+            Review your home insurance premium calculation details before
+            continuing.
+          </p>
+        </div>
       </div>
 
       {!premiumResponse || !amount ? (
@@ -367,145 +371,75 @@ function StepTwo({
           Premium response not found. Please calculate again.
         </div>
       ) : (
-        <>
-          <div>
-            <h2 className="mb-2 text-sm font-semibold text-black">
-              Risk Details
-            </h2>
+        <div className="overflow-hidden rounded-md border">
+          <table className="w-full border-collapse text-sm">
+            <thead>
+              <tr className="bg-[#e91d25] text-white">
+                <th className="border-r border-white px-4 py-3 text-left font-bold">
+                  Particulars
+                </th>
 
-            <div className="overflow-x-auto">
-              <table className="w-full border-collapse text-sm">
-                <thead>
-                  <tr className="bg-[#f71920] text-white">
-                    <th className="border-r border-white/70 px-3 py-2 text-left text-xs font-bold">
-                      Risk Description
-                    </th>
-                    <th className="border-r border-white/70 px-3 py-2 text-left text-xs font-bold">
-                      Risk Rate
-                    </th>
-                    <th className="px-3 py-2 text-left text-xs font-bold">
-                      Risk Amount
-                    </th>
-                  </tr>
-                </thead>
+                <th className="px-4 py-3 text-right font-bold">Amount NPR </th>
+              </tr>
+            </thead>
 
-                <tbody>
-                  <RiskRow
-                    title="Basic Premium"
-                    rate="-"
-                    amount={amount.premium_amount}
-                  />
+            <tbody>
+              <PremiumLineRow label="Sum Insured" value={amount.suminsured} />
 
-                  <RiskRow
-                    title="PA Amount"
-                    rate="-"
-                    amount={amount.pa_amount}
-                  />
+              <PremiumLineRow
+                label="Basic Premium"
+                value={amount.premium_amount}
+              />
 
-                  <RiskRow
-                    title="TPL Amount"
-                    rate="-"
-                    amount={amount.tpl_amount}
-                  />
+              <PremiumLineRow
+                label="RS/MD/ST"
+                value={amount.pool_amount}
+              />
 
-                  <RiskRow
-                    title="Pool / RSD Amount"
-                    rate="-"
-                    amount={amount.pool_amount}
-                  />
+              <PremiumLineRow
+                label="Direct Discount"
+                value={premiumResponse.direct_discount_amount || "0"}
+                isLess
+              />
 
-                  <RiskRow
-                    title="Direct Discount"
-                    rate={`${premiumResponse.direct_discount_percent || "0"}%`}
-                    amount={premiumResponse.direct_discount_amount || "0"}
-                  />
-                </tbody>
-              </table>
-            </div>
-          </div>
+              {/* <PremiumLineRow
+                label="Taxable Amount"
+                value={amount.taxable_amount}
+                isSubTotal
+              /> */}
 
-          <div className="mt-3">
-            <h2 className="mb-2 text-sm font-semibold text-black">
-              Premium Details
-            </h2>
+              <PremiumLineRow
+                label={`VAT (${amount.vat_percent || "13"}%)`}
+                value={amount.vat_amount}
+              />
 
-            <div className="overflow-x-auto">
-              <table className="w-full border-collapse text-sm">
-                <thead>
-                  <tr className="bg-[#f71920] text-white">
-                    <th className="border-r border-white/70 px-3 py-2 text-left text-xs font-bold">
-                      Sum Insured
-                    </th>
-                    <th className="border-r border-white/70 px-3 py-2 text-left text-xs font-bold">
-                      Basic Premium
-                    </th>
-                    <th className="border-r border-white/70 px-3 py-2 text-left text-xs font-bold">
-                      Pool Amount
-                    </th>
-                    <th className="border-r border-white/70 px-3 py-2 text-left text-xs font-bold">
-                      Taxable Amount
-                    </th>
-                    <th className="border-r border-white/70 px-3 py-2 text-left text-xs font-bold">
-                      VAT Amount
-                    </th>
-                    <th className="px-3 py-2 text-left text-xs font-bold">
-                      Sub Total Amount
-                    </th>
-                  </tr>
-                </thead>
+              <PremiumLineRow label="Stamp Duty" value={amount.stamp_duty} />
 
-                <tbody>
-                  <tr className="bg-[#fff7f3]">
-                    <PremiumCell value={amount.suminsured} />
-                    <PremiumCell value={amount.premium_amount} />
-                    <PremiumCell value={amount.pool_amount} />
-                    <PremiumCell value={amount.taxable_amount} />
-                    <PremiumCell value={amount.vat_amount} />
-                    <PremiumCell value={amount.total_amount} />
-                  </tr>
-                </tbody>
-              </table>
+              <tr className="bg-[#b71319] text-white">
+                <td className="border-r border-white px-4 py-4 text-base font-bold">
+                  Total Premium Amount
+                </td>
 
-              <table className="w-full border-collapse text-sm">
-                <thead>
-                  <tr className="bg-[#f71920] text-white">
-                    <th className="w-[41%] border-r border-white/70 px-3 py-2 text-left text-xs font-bold">
-                      Stamp Amount
-                    </th>
-
-                    <th className="px-3 py-2 text-left text-xs font-bold">
-                      Total Premium Amount
-                    </th>
-                  </tr>
-                </thead>
-
-                <tbody>
-                  <tr className="bg-[#fff7f3]">
-                    <PremiumCell value={amount.stamp_duty} />
-
-                    <PremiumCell
-                      value={premiumResponse.total_premium_with_vat}
-                    />
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-          </div>
-        </>
+                <td className="px-4 py-4 text-right text-base font-bold">
+                  {formatAmount(premiumResponse.total_premium_with_vat)}
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
       )}
 
-      <div className="mt-5 flex items-center justify-between">
-        <Button
-          variant="outline"
-          onClick={onBack}
-          className="gap-2 border-blue-500 text-blue-500 hover:bg-blue-50 hover:text-blue-600"
-        >
+      <div className="mt-8 flex items-center justify-between">
+        <Button variant="outline" onClick={onBack} className="gap-2">
           <ArrowLeft className="h-4 w-4" />
-          BACK
+          Back
         </Button>
 
-        <Button className="gap-2 bg-[#f71920] text-white hover:bg-[#d9151b]">
-          NEXT
+        <Button
+          className="gap-2 bg-[#f71920] text-white hover:bg-[#d9151b]"
+          onClick={() => navigate("/login")}
+        >
+          Buy Policy
           <ArrowRight className="h-4 w-4" />
         </Button>
       </div>
@@ -515,34 +449,47 @@ function StepTwo({
 
 /* ---------------- SMALL COMPONENTS ---------------- */
 
-function RiskRow({
-  title,
-  rate,
-  amount,
+function PremiumLineRow({
+  label,
+  value,
+  isLess = false,
+  isSubTotal = false,
 }: {
-  title: string;
-  rate: string;
-  amount: number | string;
+  label: string;
+  value: number | string | null | undefined;
+  isLess?: boolean;
+  isSubTotal?: boolean;
 }) {
   return (
-    <tr className="bg-[#fff7f3]">
-      <td className="border-r border-white px-3 py-2 text-center">{title}</td>
-      <td className="border-r border-white px-3 py-2 text-center">{rate}</td>
-      <td className="px-3 py-2 text-center">{formatAmount(amount)}</td>
+    <tr className={`border-b ${isSubTotal ? "bg-muted/30" : "bg-[#fff7f3]"}`}>
+      <td
+        className={`border-r border-white px-4 py-3 ${isLess
+          ? "font-medium text-red-600"
+          : isSubTotal
+            ? "font-semibold text-black"
+            : "text-black"
+          }`}
+      >
+        {isLess ? `Less : ${label}` : label}
+      </td>
+
+      <td
+        className={`px-4 py-3 text-right ${isLess
+          ? "font-medium text-red-600"
+          : isSubTotal
+            ? "font-semibold text-black"
+            : "font-medium text-black"
+          }`}
+      >
+        {isLess ? `(${formatAmount(value)})` : formatAmount(value)}
+      </td>
     </tr>
   );
 }
 
-function PremiumCell({ value }: { value: number | string }) {
-  return (
-    <td className="border-r border-white px-3 py-2 text-center">
-      {formatAmount(value)}
-    </td>
-  );
-}
-
 function formatAmount(value: number | string | null | undefined) {
-  const num = Number(value ?? 0);
+  const cleanValue = String(value ?? "0").replace(/,/g, "");
+  const num = Number(cleanValue);
 
   if (!Number.isFinite(num)) {
     return "0.00";

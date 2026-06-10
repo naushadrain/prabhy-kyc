@@ -259,7 +259,7 @@ export default function CNormalGoodsPage() {
             newErrors.compulsoryExcess = "Enter valid compulsory excess";
         }
 
-        
+
 
         if (!voluntaryExcess) {
             newErrors.voluntaryExcess = "Voluntary excess is required";
@@ -421,10 +421,10 @@ export default function CNormalGoodsPage() {
         toNumber(basicPremiumFromApi) > 0
             ? basicPremiumFromApi
             : toNumber(ownDamagePremium) +
-              toNumber(oldVehicleCharge) -
-              toNumber(voluntaryExcessAmount) -
-              toNumber(noClaimDiscount) -
-              toNumber(directDiscountAmount);
+            toNumber(oldVehicleCharge) -
+            toNumber(voluntaryExcessAmount) -
+            toNumber(noClaimDiscount) -
+            toNumber(directDiscountAmount);
 
     const thirdPartyPremium = getValue(amount as any, [
         "tpl_amount",
@@ -442,8 +442,8 @@ export default function CNormalGoodsPage() {
         toNumber(taxableAmount) > 0
             ? taxableAmount
             : toNumber(basicPremium) +
-              toNumber(thirdPartyPremium) +
-              toNumber(poolPremium);
+            toNumber(thirdPartyPremium) +
+            toNumber(poolPremium);
 
     const vatPercent = getValue(amount as any, ["vat_percent"], 13);
     const vatAmount = getValue(amount as any, ["vat_amount"]);
@@ -589,129 +589,51 @@ export default function CNormalGoodsPage() {
                     </div>
                 </div>
 
-                <Card className="mb-6">
-                    <CardContent className="pt-6">
-                        <h2 className="mb-4 text-base font-semibold">
-                            Selected Normal Goods Details
-                        </h2>
+                <div className="overflow-hidden rounded-lg border">
+                    <table className="w-full text-sm">
+                        <thead>
+                            <tr className="bg-primary text-primary-foreground">
+                                <th className="px-5 py-3 text-left font-semibold">
+                                    Description
+                                </th>
 
-                        <div className="grid gap-4 md:grid-cols-2">
-                            <DetailCard
-                                label="Good Carrying Capacity"
-                                value={`${goodCarryingCapacity} Ton`}
-                            />
+                                <th className="px-5 py-3 text-right font-semibold">
+                                    Amount (NPR)
+                                </th>
+                            </tr>
+                        </thead>
 
-                            <DetailCard
-                                label="No of Seats Including Driver"
-                                value={noOfSeats}
-                            />
+                        <tbody>
+                            {premiumRows.map((row, index) => (
+                                <tr
+                                    key={row.key}
+                                    className={getRowClass(
+                                        row.type,
+                                        index
+                                    )}
+                                >
+                                    <td
+                                        className={`px-5 py-3 ${getLabelClass(
+                                            row.type
+                                        )}`}
+                                    >
+                                        {row.label}
+                                    </td>
 
-                            <DetailCard
-                                label="Helper"
-                                value={helper === "yes" ? "Yes" : "No"}
-                            />
-
-                            <DetailCard
-                                label="Passenger Seat Capacity"
-                                value={String(
-                                    Math.max(
-                                        0,
-                                        Number(noOfSeats) -
-                                            1 -
-                                            (helper === "yes" ? 1 : 0)
-                                    )
-                                )}
-                            />
-
-                            <DetailCard
-                                label="Sum Insured"
-                                value={`NPR ${fmt(sumInsured)}`}
-                            />
-
-                            <DetailCard
-                                label="Year of Manufacture"
-                                value={yearOfManufacture}
-                            />
-
-                            <DetailCard
-                                label="Compulsory Excess"
-                                value={`NPR ${compulsoryExcess}`}
-                            />
-
-                        
-
-                            <DetailCard
-                                label="Voluntary Excess"
-                                value={`NPR ${fmt(voluntaryExcess)}`}
-                            />
-
-                            <DetailCard
-                                label="No Claim Discount"
-                                value={`${noClaimYear} Year`}
-                            />
-
-                            <DetailCard
-                                label="Towing Charge"
-                                value={towingCharge === "yes" ? "Yes" : "No"}
-                            />
-
-                            <DetailCard
-                                label="Direct Discount"
-                                value={directDiscount ? "Yes" : "No"}
-                            />
-                        </div>
-                    </CardContent>
-                </Card>
-
-                <Card>
-                    <CardContent className="pt-6">
-                        <div className="overflow-hidden rounded-lg border">
-                            <table className="w-full text-sm">
-                                <thead>
-                                    <tr className="bg-primary text-primary-foreground">
-                                        <th className="px-5 py-3 text-left font-semibold">
-                                            Description
-                                        </th>
-
-                                        <th className="px-5 py-3 text-right font-semibold">
-                                            Amount (NPR)
-                                        </th>
-                                    </tr>
-                                </thead>
-
-                                <tbody>
-                                    {premiumRows.map((row, index) => (
-                                        <tr
-                                            key={row.key}
-                                            className={getRowClass(
-                                                row.type,
-                                                index
-                                            )}
-                                        >
-                                            <td
-                                                className={`px-5 py-3 ${getLabelClass(
-                                                    row.type
-                                                )}`}
-                                            >
-                                                {row.label}
-                                            </td>
-
-                                            <td
-                                                className={`px-5 py-3 text-right ${getValueClass(
-                                                    row.type
-                                                )}`}
-                                            >
-                                                {row.type === "section"
-                                                    ? ""
-                                                    : fmt(row.value)}
-                                            </td>
-                                        </tr>
-                                    ))}
-                                </tbody>
-                            </table>
-                        </div>
-                    </CardContent>
-                </Card>
+                                    <td
+                                        className={`px-5 py-3 text-right ${getValueClass(
+                                            row.type
+                                        )}`}
+                                    >
+                                        {row.type === "section"
+                                            ? ""
+                                            : fmt(row.value)}
+                                    </td>
+                                </tr>
+                            ))}
+                        </tbody>
+                    </table>
+                </div>
 
                 <div className="mt-6 flex gap-3">
                     <Button
@@ -781,11 +703,8 @@ export default function CNormalGoodsPage() {
                                         "goodCarryingCapacity"
                                     )
                                 }
-                                className={`mt-2 ${
-                                    errors.goodCarryingCapacity
-                                        ? "border-red-500"
-                                        : ""
-                                }`}
+                                className={`mt-2 ${errors.noOfSeats ? "border-red-500" : ""
+                                    }`}
                             />
 
                             {errors.goodCarryingCapacity && (
@@ -794,7 +713,43 @@ export default function CNormalGoodsPage() {
                                 </p>
                             )}
                         </div>
+                        <div>
+                            <Label htmlFor="yearOfManufacture">
+                                Year of Manufacture *
+                            </Label>
 
+                            <Select
+                                value={yearOfManufacture}
+                                onValueChange={(value) => {
+                                    setYearOfManufacture(value);
+                                    clearError("yearOfManufacture");
+                                }}
+                            >
+                                <SelectTrigger
+                                    id="yearOfManufacture"
+                                    className={`mt-2 ${errors.yearOfManufacture
+                                        ? "border-red-500"
+                                        : ""
+                                        }`}
+                                >
+                                    <SelectValue placeholder="Select year" />
+                                </SelectTrigger>
+
+                                <SelectContent>
+                                    {yearOptions.map((year) => (
+                                        <SelectItem key={year} value={year}>
+                                            {year}
+                                        </SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+
+                            {errors.yearOfManufacture && (
+                                <p className="mt-1 text-xs text-red-600">
+                                    {errors.yearOfManufacture}
+                                </p>
+                            )}
+                        </div>
                         <div>
                             <Label htmlFor="noOfSeats">
                                 No of Seats Including Driver *
@@ -813,9 +768,8 @@ export default function CNormalGoodsPage() {
                                         "noOfSeats"
                                     )
                                 }
-                                className={`mt-2 ${
-                                    errors.noOfSeats ? "border-red-500" : ""
-                                }`}
+                                className={`mt-2 ${errors.noOfSeats ? "border-red-500" : ""
+                                    }`}
                             />
 
                             {errors.noOfSeats && (
@@ -837,9 +791,8 @@ export default function CNormalGoodsPage() {
                             >
                                 <SelectTrigger
                                     id="helper"
-                                    className={`mt-2 ${
-                                        errors.helper ? "border-red-500" : ""
-                                    }`}
+                                    className={`mt-2 ${errors.helper ? "border-red-500" : ""
+                                        }`}
                                 >
                                     <SelectValue placeholder="Select helper" />
                                 </SelectTrigger>
@@ -879,9 +832,8 @@ export default function CNormalGoodsPage() {
                                         "sumInsured"
                                     )
                                 }
-                                className={`mt-2 ${
-                                    errors.sumInsured ? "border-red-500" : ""
-                                }`}
+                                className={`mt-2 ${errors.sumInsured ? "border-red-500" : ""
+                                    }`}
                             />
 
                             {errors.sumInsured && (
@@ -890,46 +842,6 @@ export default function CNormalGoodsPage() {
                                 </p>
                             )}
                         </div>
-
-                        <div>
-                            <Label htmlFor="yearOfManufacture">
-                                Year of Manufacture *
-                            </Label>
-
-                            <Select
-                                value={yearOfManufacture}
-                                onValueChange={(value) => {
-                                    setYearOfManufacture(value);
-                                    clearError("yearOfManufacture");
-                                }}
-                            >
-                                <SelectTrigger
-                                    id="yearOfManufacture"
-                                    className={`mt-2 ${
-                                        errors.yearOfManufacture
-                                            ? "border-red-500"
-                                            : ""
-                                    }`}
-                                >
-                                    <SelectValue placeholder="Select year" />
-                                </SelectTrigger>
-
-                                <SelectContent>
-                                    {yearOptions.map((year) => (
-                                        <SelectItem key={year} value={year}>
-                                            {year}
-                                        </SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </Select>
-
-                            {errors.yearOfManufacture && (
-                                <p className="mt-1 text-xs text-red-600">
-                                    {errors.yearOfManufacture}
-                                </p>
-                            )}
-                        </div>
-
                         <div>
                             <Label htmlFor="compulsoryExcess">
                                 Compulsory Excess *
@@ -945,11 +857,10 @@ export default function CNormalGoodsPage() {
                                 }
                                 disabled
                                 readOnly
-                                className={`mt-2 cursor-not-allowed bg-muted ${
-                                    errors.compulsoryExcess
-                                        ? "border-red-500"
-                                        : ""
-                                }`}
+                                className={`mt-2 cursor-not-allowed bg-muted ${errors.compulsoryExcess
+                                    ? "border-red-500"
+                                    : ""
+                                    }`}
                             />
 
                             <p className="mt-1 text-xs text-muted-foreground">
@@ -962,9 +873,6 @@ export default function CNormalGoodsPage() {
                                 </p>
                             )}
                         </div>
-
-                       
-
                         <div>
                             <Label htmlFor="voluntaryExcess">
                                 Voluntary Excess *
@@ -979,11 +887,10 @@ export default function CNormalGoodsPage() {
                             >
                                 <SelectTrigger
                                     id="voluntaryExcess"
-                                    className={`mt-2 ${
-                                        errors.voluntaryExcess
-                                            ? "border-red-500"
-                                            : ""
-                                    }`}
+                                    className={`mt-2 ${errors.voluntaryExcess
+                                        ? "border-red-500"
+                                        : ""
+                                        }`}
                                 >
                                     <SelectValue placeholder="Select voluntary excess" />
                                 </SelectTrigger>
@@ -1021,11 +928,10 @@ export default function CNormalGoodsPage() {
                             >
                                 <SelectTrigger
                                     id="noClaimYear"
-                                    className={`mt-2 ${
-                                        errors.noClaimYear
-                                            ? "border-red-500"
-                                            : ""
-                                    }`}
+                                    className={`mt-2 ${errors.noClaimYear
+                                        ? "border-red-500"
+                                        : ""
+                                        }`}
                                 >
                                     <SelectValue placeholder="Select no claim discount" />
                                 </SelectTrigger>
@@ -1076,19 +982,18 @@ export default function CNormalGoodsPage() {
                             </Select>
                         </div>
 
-                        <div className="rounded-lg border bg-muted/30 p-4">
-                            <div className="flex items-center gap-3 pt-2">
+                        <div className="grid md:grid-cols-2 gap-4 pt-2">
+                            <div className="flex items-center gap-3">
                                 <Switch
                                     id="directDiscount"
-                                    checked={directDiscount}
-                                    onCheckedChange={setDirectDiscount}
+                                    checked={true}
+                                    disabled
                                 />
-
                                 <Label
                                     htmlFor="directDiscount"
-                                    className="cursor-pointer"
+                                    className="cursor-not-allowed text-muted-foreground"
                                 >
-                                    Direct discount?
+                                    Direct discount
                                 </Label>
                             </div>
                         </div>
