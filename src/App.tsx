@@ -87,6 +87,10 @@ import PTempoERikshawPage from "./pages/motor/commercial-vehicle/PTempoERikshaw"
 import PAgricultureForestryPage from "./pages/motor/commercial-vehicle/PAgricultureForestry";
 import PConstructionEquipmentPage from "./pages/motor/commercial-vehicle/PConstructionEquipment";
 import FirePropertyInsurancePage from "./pages/home-insurance-fire/FirePropertyInsurancePage";
+import BurglaryHousebreakingPage from "./pages/BurglaryHousebreakingPage";
+import CashInsurancePage from "./pages/CashInsurancePage ";
+import MarineInsurancePage from "./pages/MarineInsurancePage";
+import AgricultureInsurancePage from "./pages/AgricultureInsurancePage";
 
 const queryClient = new QueryClient();
 
@@ -110,6 +114,10 @@ const App = () => {
                 <Route path="/forgot-password" element={<ForgotPasswordPage />} />
                 <Route path="/reset-password" element={<ResetPasswordPage />} />
 
+                <Route path="/burglary-housebreaking" element={<BurglaryHousebreakingPage />} />
+                <Route path="/cash-insurance" element={<CashInsurancePage />} />
+                <Route path="/marine-insurance" element={<MarineInsurancePage/>} />
+                <Route path="/agriculture-insurance" element={<AgricultureInsurancePage/>} />
                 {/* Public travel routes — shared layout */}
                 <Route element={<PublicTravelLayout />}>
                   <Route path="/travel-coverage" element={<TravelCoverage />} />
@@ -210,7 +218,7 @@ const App = () => {
                   <Route element={<ProtectedHomeLayout />}>
                     <Route path="/home-insurances" element={<HomeInsurancesPage />} />
                     <Route path="/home-insurances/fire-house" element={<FireHouseInsurancePage />} />
-                    <Route path="/home-insurances/fire-property" element={<FirePropertyInsurancePage />}/>
+                    <Route path="/home-insurances/fire-property" element={<FirePropertyInsurancePage />} />
 
                   </Route>
 

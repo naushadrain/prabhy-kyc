@@ -1,7 +1,7 @@
 // CommercialVehicle/thirdparty/pages/TgoodsCarryingPage.tsx
 
 import { useState } from "react";
-import { ChevronLeft, Loader2, AlertCircle, ArrowLeft, ArrowRight } from "lucide-react";
+import { ChevronLeft, Loader2, AlertCircle, ArrowLeft,ArrowRight } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
 import { Card, CardContent } from "@/components/ui/card";
@@ -186,27 +186,15 @@ export default function TgoodsCarryingPage() {
             label: "Third Party Premium Calculation",
             type: "section",
         },
-    
-        {
-            key: "premium_amount",
-            label: "Premium Amount",
-            value: safeValue(amount?.premium_amount),
-        },
-        {
-            key: "pa_amount",
-            label: "PA Amount",
-            value: safeValue(amount?.pa_amount),
-        },
         {
             key: "tpl_amount",
-            label: "Third Party Premium",
+            label: "Third Party Premium as per CC",
             value: safeValue(amount?.tpl_amount),
         },
         {
-            key: "taxable_amount",
-            label: "Taxable Amount",
-            value: safeValue(amount?.taxable_amount),
-            type: "subtotal",
+            key: "pa_amount",
+            label: "Driver/Passenger Premium",
+            value: safeValue(amount?.pa_amount),
         },
         {
             key: "vat_amount",
@@ -218,42 +206,17 @@ export default function TgoodsCarryingPage() {
             label: "Stamp Duty",
             value: safeValue(amount?.stamp_duty),
         },
-
-        
-    
         {
             key: "total_premium_with_vat",
-            label: "Total Premium With VAT",
+            label: "Total Amount",
             value: safeValue(
                 (premiumData as Record<string, unknown> | null)
-                    ?.total_premium_with_vat,
+                    ?.total_premium_with_vat ??
+                amount?.total_amount,
             ),
             type: "total",
         },
     ];
-
-    const getRowClass = (type?: RowType, index?: number) => {
-        if (type === "section") return "bg-muted/70";
-        if (type === "total") return "border-t-2 border-primary/30 bg-primary/10";
-        if (type === "subtotal") return "bg-muted/30";
-        return index && index % 2 === 0 ? "bg-background" : "bg-muted/10";
-    };
-
-    const getLabelClass = (type?: RowType) => {
-        if (type === "section") return "font-bold text-foreground";
-        if (type === "total") return "font-bold text-primary";
-        if (type === "subtotal") return "font-semibold text-foreground";
-        if (type === "less") return "text-red-600";
-        return "text-muted-foreground";
-    };
-
-    const getValueClass = (type?: RowType) => {
-        if (type === "section") return "font-bold text-foreground";
-        if (type === "total") return "text-base font-bold text-primary";
-        if (type === "subtotal") return "font-semibold text-foreground";
-        if (type === "less") return "font-medium text-red-600";
-        return "font-medium text-foreground";
-    };
 
     if (step === 2 && premiumData) {
         return (
@@ -278,52 +241,69 @@ export default function TgoodsCarryingPage() {
                     </div>
                 </div>
 
-                <div className="overflow-hidden rounded-lg border">
-                    <table className="w-full text-sm">
+                <div className="overflow-hidden rounded-md border">
+                    <table className="w-full border-collapse text-sm">
                         <thead>
-                            <tr className="bg-primary text-primary-foreground">
-                                <th className="px-5 py-3 text-left font-semibold">
-                                    Description
+                            <tr className="bg-[#e91d25] text-white">
+                                <th className="border-r border-white px-4 py-3 text-left font-bold">
+                                    Particulars
                                 </th>
 
-                                <th className="px-5 py-3 text-right font-semibold">
+                                <th className="px-4 py-3 text-right font-bold">
                                     Amount NPR
                                 </th>
                             </tr>
                         </thead>
 
                         <tbody>
-                            {premiumRows.map((row, index) => (
-                                <tr
-                                    key={row.key}
-                                    className={getRowClass(row.type, index)}
-                                >
-                                    <td
-                                        className={`px-5 py-3 ${getLabelClass(
-                                            row.type,
-                                        )}`}
-                                    >
-                                        {row.label}
-                                    </td>
+                            {premiumRows.map((row) => {
+                                if (row.type === "section") {
+                                    return (
+                                        <tr key={row.key} className="border-b bg-[#fff7f3]">
+                                            <td
+                                                colSpan={2}
+                                                className="px-4 py-3 font-bold text-black"
+                                            >
+                                                {row.label}
+                                            </td>
+                                        </tr>
+                                    );
+                                }
 
-                                    <td
-                                        className={`px-5 py-3 text-right ${getValueClass(
-                                            row.type,
-                                        )}`}
+                                if (row.type === "total") {
+                                    return (
+                                        <tr key={row.key} className="bg-[#b71319] text-white">
+                                            <td className="border-r border-white px-4 py-4 text-base font-bold">
+                                                {row.label}
+                                            </td>
+
+                                            <td className="px-4 py-4 text-right text-base font-bold">
+                                                {fmt(row.value)}
+                                            </td>
+                                        </tr>
+                                    );
+                                }
+
+                                return (
+                                    <tr
+                                        key={row.key}
+                                        className="border-b bg-[#fff7f3] last:border-b-0"
                                     >
-                                        {row.type === "section"
-                                            ? ""
-                                            : row.type === "less"
-                                                ? `(${fmt(row.value)})`
-                                                : fmt(row.value)}
-                                    </td>
-                                </tr>
-                            ))}
+                                        <td className="border-r border-white px-4 py-3 text-black">
+                                            {row.label}
+                                        </td>
+
+                                        <td className="px-4 py-3 text-right font-medium text-black">
+                                            {fmt(row.value)}
+                                        </td>
+                                    </tr>
+                                );
+                            })}
                         </tbody>
                     </table>
                 </div>
 
-                <div className="mt-6 flex items-center justify-between gap-3">
+                <div className="mt-8 flex items-center justify-between gap-3">
                     <Button
                         variant="outline"
                         className="gap-2"
@@ -335,7 +315,7 @@ export default function TgoodsCarryingPage() {
 
                     <Button
                         size="lg"
-                        className="px-8"
+                        className="gap-2 bg-[#f71920] px-8 text-white hover:bg-[#d9151b]"
                         onClick={() => navigate("/login")}
                     >
                         Buy Policy
@@ -367,137 +347,171 @@ export default function TgoodsCarryingPage() {
                     </p>
                 </div>
             </div>
+            <div className="grid gap-5 md:grid-cols-2">
+                <div>
+                    <Label htmlFor="carryingCapacity">
+                        Carrying Capacity in Ton *
+                    </Label>
 
-            <Card className="max-w-6xl">
-                <CardContent className="space-y-5 pt-6">
-                    <h2 className="text-base font-semibold text-blue-800">
-                        Third Party Normal Goods Carrying Insurance
-                    </h2>
+                    <Input
+                        id="carryingCapacity"
+                        type="text"
+                        inputMode="decimal"
+                        placeholder="Enter carrying capacity, e.g. 5"
+                        className={`mt-2 ${errors.carryingCapacity ? "border-red-500" : ""
+                            }`}
+                        value={carryingCapacity}
+                        onChange={(e) => {
+                            const value = e.target.value;
 
-                    <div className="grid gap-5 md:grid-cols-2">
-                        <div>
-                            <Label htmlFor="carryingCapacity">
-                                Carrying Capacity in Ton *
-                            </Label>
-
-                            <Input
-                                id="carryingCapacity"
-                                type="text"
-                                inputMode="decimal"
-                                placeholder="Enter carrying capacity, e.g. 5"
-                                className={`mt-2 ${
-                                    errors.carryingCapacity ? "border-red-500" : ""
-                                }`}
-                                value={carryingCapacity}
-                                onChange={(e) => {
-                                    const value = e.target.value;
-
-                                    if (value === "" || /^\d*\.?\d*$/.test(value)) {
-                                        setCarryingCapacity(value);
-                                        setErrors((prev) => ({
-                                            ...prev,
-                                            carryingCapacity: "",
-                                        }));
-                                    }
-                                }}
-                            />
-
-                            {errors.carryingCapacity && (
-                                <p className="mt-1 text-xs text-red-600">
-                                    {errors.carryingCapacity}
-                                </p>
-                            )}
-                        </div>
-
-                        <div>
-                            <Label htmlFor="noOfSeats">
-                                No of Seats Including Driver *
-                            </Label>
-
-                            <Input
-                                id="noOfSeats"
-                                type="text"
-                                inputMode="numeric"
-                                placeholder="Enter no of seats including driver"
-                                className={`mt-2 ${
-                                    errors.noOfSeats ? "border-red-500" : ""
-                                }`}
-                                value={noOfSeats}
-                                onChange={(e) => {
-                                    const value = e.target.value;
-
-                                    if (value === "" || /^\d+$/.test(value)) {
-                                        setNoOfSeats(value);
-                                        setErrors((prev) => ({
-                                            ...prev,
-                                            noOfSeats: "",
-                                        }));
-                                    }
-                                }}
-                            />
-
-                            {errors.noOfSeats && (
-                                <p className="mt-1 text-xs text-red-600">
-                                    {errors.noOfSeats}
-                                </p>
-                            )}
-                        </div>
-                    </div>
-
-                    <div className="grid gap-5 md:grid-cols-2">
-                        <div className="flex items-center gap-3 pt-2">
-                            <Switch
-                                id="directDiscount"
-                                checked={true}
-                                disabled
-                            />
-
-                            <Label
-                                htmlFor="directDiscount"
-                                className="cursor-not-allowed text-muted-foreground"
-                            >
-                                Direct Discount
-                            </Label>
-                        </div>
-                    </div>
-
-                    {inlineError && (
-                        <div className="flex items-start gap-2 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
-                            <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
-                            {inlineError}
-                        </div>
-                    )}
-
-                    <div className="flex justify-between pt-2">
-                        <Button
-                            variant="outline"
-                            className="gap-2"
-                            onClick={() =>
-                                navigate("/motor/commercial-vehicle/third-party")
+                            if (value === "" || /^\d*\.?\d*$/.test(value)) {
+                                setCarryingCapacity(value);
+                                setErrors((prev) => ({
+                                    ...prev,
+                                    carryingCapacity: "",
+                                }));
                             }
-                        >
-                            <ArrowLeft className="h-4 w-4" />
-                            Back
-                        </Button>
+                        }}
+                    />
 
-                        <Button
-                            size="lg"
-                            className="px-8"
-                            disabled={loading}
-                            onClick={handleCalculate}
-                        >
-                            {loading ? (
-                                <>
-                                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                                    Calculating...
-                                </>
-                            ) : (
-                                "Calculate"
-                            )}
-                        </Button>
-                    </div>
-                </CardContent>
-            </Card>
+                    {errors.carryingCapacity && (
+                        <p className="mt-1 text-xs text-red-600">
+                            {errors.carryingCapacity}
+                        </p>
+                    )}
+                </div>
+
+                <div>
+                    <Label htmlFor="noOfSeats">
+                        No of Seats Including Driver *
+                    </Label>
+
+                    <Input
+                        id="noOfSeats"
+                        type="text"
+                        inputMode="numeric"
+                        placeholder="Enter no of seats including driver"
+                        className={`mt-2 ${errors.noOfSeats ? "border-red-500" : ""
+                            }`}
+                        value={noOfSeats}
+                        onChange={(e) => {
+                            const value = e.target.value;
+
+                            if (value === "" || /^\d+$/.test(value)) {
+                                setNoOfSeats(value);
+                                setErrors((prev) => ({
+                                    ...prev,
+                                    noOfSeats: "",
+                                }));
+                            }
+                        }}
+                    />
+
+                    {errors.noOfSeats && (
+                        <p className="mt-1 text-xs text-red-600">
+                            {errors.noOfSeats}
+                        </p>
+                    )}
+                </div>
+                <div className="flex items-center gap-3 pt-2 mb-4">
+                    <Switch
+                        id="directDiscount"
+                        checked={true}
+                        disabled
+                    />
+
+                    <Label
+                        htmlFor="directDiscount"
+                        className="cursor-not-allowed text-muted-foreground"
+                    >
+                        Direct Discount
+                    </Label>
+                </div>
+            </div>
+
+
+            {inlineError && (
+                <div className="flex items-start gap-2 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+                    <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
+                    {inlineError}
+                </div>
+            )}
+
+            <div className="flex justify-between pt-2">
+                <Button
+                    variant="outline"
+                    className="gap-2"
+                    onClick={() =>
+                        navigate("/motor/commercial-vehicle/third-party")
+                    }
+                >
+                    <ArrowLeft className="h-4 w-4" />
+                    Back
+                </Button>
+
+                <Button
+                    size="lg"
+                    className="px-8"
+                    disabled={loading}
+                    onClick={handleCalculate}
+                >
+                    {loading ? (
+                        <>
+                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                            Calculating...
+                        </>
+                    ) : (
+                        "Calculate"
+                    )}
+                    <ArrowRight className="h-4 w-4" />
+                </Button>
+            </div>
+
         </>
+    );
+}
+
+function PremiumListRow({
+    label,
+    value,
+    type,
+}: {
+    label: string;
+    value?: number | string | null;
+    type?: RowType;
+}) {
+    if (type === "total") {
+        return (
+            <div className="flex items-center justify-between rounded-b-md bg-[#b71319] px-5 py-4 text-white">
+                <span className="text-base font-bold">{label}</span>
+                <span className="text-base font-bold">{fmt(value)}</span>
+            </div>
+        );
+    }
+
+    return (
+        <div className="flex items-center justify-between border-b bg-[#fff7f3] px-5 py-3 last:border-b-0">
+            <span
+                className={`text-sm ${type === "less"
+                    ? "font-medium text-red-600"
+                    : type === "subtotal"
+                        ? "font-semibold text-black"
+                        : "text-black"
+                    }`}
+            >
+                {type === "less" ? `Less : ${label}` : label}
+            </span>
+
+            <span
+                className={`text-sm font-medium ${type === "less"
+                    ? "text-red-600"
+                    : type === "subtotal"
+                        ? "font-semibold text-black"
+                        : "text-black"
+                    }`}
+            >
+                {type === "less" ? `(${fmt(value)})` : fmt(value)}
+            </span>
+        </div>
     );
 }

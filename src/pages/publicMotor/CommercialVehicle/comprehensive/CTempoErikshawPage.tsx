@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import {
     AlertCircle,
     ArrowLeft,
+    ArrowRight,
     ChevronLeft,
     Loader2,
 } from "lucide-react";
@@ -256,7 +257,7 @@ export default function CTempoErikshawPage() {
             newErrors.compulsoryExcess = "Enter valid compulsory excess";
         }
 
-        
+
 
         if (!voluntaryExcess) {
             newErrors.voluntaryExcess = "Voluntary excess is required";
@@ -309,6 +310,7 @@ export default function CTempoErikshawPage() {
             get_direct_discount: directDiscount ? "y" : "n",
             vehicle_reg: "e",
             include_towing_charge: towingCharge === "yes" ? "true" : "false",
+            include_rsd_charge: rsdTerrorismRisk === "yes" ? "true" : "false",
         } as any;
 
         try {
@@ -417,10 +419,10 @@ export default function CTempoErikshawPage() {
         toNumber(basicPremiumFromApi) > 0
             ? basicPremiumFromApi
             : toNumber(ownDamagePremium) +
-              toNumber(oldVehicleCharge) -
-              toNumber(voluntaryExcessAmount) -
-              toNumber(noClaimDiscount) -
-              toNumber(directDiscountAmount);
+            toNumber(oldVehicleCharge) -
+            toNumber(voluntaryExcessAmount) -
+            toNumber(noClaimDiscount) -
+            toNumber(directDiscountAmount);
 
     const thirdPartyPremium = getValue(amount as any, [
         "tpl_amount",
@@ -438,8 +440,8 @@ export default function CTempoErikshawPage() {
         toNumber(taxableAmount) > 0
             ? taxableAmount
             : toNumber(basicPremium) +
-              toNumber(thirdPartyPremium) +
-              toNumber(poolPremium);
+            toNumber(thirdPartyPremium) +
+            toNumber(poolPremium);
 
     const vatPercent = getValue(amount as any, ["vat_percent"], 13);
     const vatAmount = getValue(amount as any, ["vat_amount"]);
@@ -450,117 +452,58 @@ export default function CTempoErikshawPage() {
         "total_premium",
         "payable_amount",
     ]);
-
     const premiumRows: PremiumRowType[] = [
         {
-            key: "premium",
-            label: "Premium",
-            value: ownDamagePremium,
+            key: "suminsured",
+            label: "Sum Insured",
+            value: getValue(amount as any, ["suminsured"]),
         },
         {
-            key: "old_vehicle_charge",
-            label: "Add : Old Vehicle Charge",
-            value: oldVehicleCharge,
-        },
-        {
-            key: "voluntary_excess",
-            label: "Less : Voluntary Excess",
-            value: voluntaryExcessAmount,
-            type: "less",
-        },
-        {
-            key: "no_claim_discount",
-            label: "Less : No Claim Discount",
-            value: noClaimDiscount,
-            type: "less",
-        },
-        {
-            key: "direct_discount",
-            label: "Less : Direct Discount",
-            value: directDiscountAmount,
-            type: "less",
-        },
-        {
-            key: "basic_premium",
+            key: "premium_amount",
             label: "Basic Premium",
-            value: basicPremium,
-            type: "subtotal",
+            value: getValue(amount as any, ["premium_amount"]),
         },
         {
-            key: "third_party_section",
-            label: "Third Party Premium Calculation",
-            type: "section",
+            key: "pa_amount",
+            label: "Driver/Passenger Premium",
+            value: getValue(amount as any, ["pa_amount"]),
         },
         {
-            key: "third_party_premium",
+            key: "tpl_amount",
             label: "Third Party Premium",
-            value: thirdPartyPremium,
+            value: getValue(amount as any, ["tpl_amount"]),
         },
         {
-            key: "pool_section",
-            label: "Pool Premium Calculation",
-            type: "section",
+            key: "pool_amount",
+            label: "RS/MD/ST",
+            value: getValue(amount as any, ["pool_amount"]),
         },
         {
-            key: "pool_premium",
-            label: "Pool Premium",
-            value: poolPremium,
-            type: "subtotal",
+            key: "taxable_amount",
+            label: "Taxable Amount",
+            value: getValue(amount as any, ["taxable_amount"]),
         },
         {
-            key: "final_section",
-            label: "Final Premium Calculation",
-            type: "section",
+            key: "vat_amount",
+            label: "VAT",
+            value: getValue(amount as any, ["vat_amount"]),
         },
         {
-            key: "subtotal_abc",
-            label: "Sub Total",
-            value: subTotalABC,
-            type: "subtotal",
+            key: "stamp_duty",
+            label: "Stamp Duty",
+            value: getValue(amount as any, ["stamp_duty"]),
         },
         {
-            key: "vat",
-            label: `Add : VAT ${vatPercent}%`,
-            value: vatAmount,
-        },
-        {
-            key: "stamp",
-            label: "Add : Stamp Duty",
-            value: stampDuty,
-        },
-        {
-            key: "total",
+            key: "total_premium_with_vat",
             label: "Total Premium",
-            value: totalPremium,
+            value: getValue(
+                premiumData as any,
+                ["total_premium_with_vat"],
+                getValue(amount as any, ["total_amount"])
+            ),
             type: "total",
         },
     ];
-
-    const getRowClass = (type?: RowType, index?: number) => {
-        if (type === "section") return "bg-muted/70";
-        if (type === "total") return "border-t-2 border-primary/30 bg-primary/10";
-        if (type === "subtotal") return "bg-muted/30";
-
-        return index && index % 2 === 0 ? "bg-background" : "bg-muted/10";
-    };
-
-    const getLabelClass = (type?: RowType) => {
-        if (type === "section") return "font-bold text-foreground";
-        if (type === "total") return "font-bold text-primary";
-        if (type === "subtotal") return "font-semibold text-foreground";
-        if (type === "less") return "text-red-600";
-
-        return "text-muted-foreground";
-    };
-
-    const getValueClass = (type?: RowType) => {
-        if (type === "section") return "font-bold text-foreground";
-        if (type === "total") return "text-base font-bold text-primary";
-        if (type === "subtotal") return "font-semibold text-foreground";
-        if (type === "less") return "font-medium text-red-600";
-
-        return "font-medium text-foreground";
-    };
 
     if (step === 2 && premiumData) {
         return (
@@ -576,7 +519,7 @@ export default function CTempoErikshawPage() {
 
                     <div>
                         <h1 className="text-2xl font-bold text-black">
-                            Comprehensive Tempo/E-Rikshaw Premium Details
+                            Comprehensive Tempo / E-Rikshaw Premium Details
                         </h1>
 
                         <p className="mt-1 text-sm text-muted-foreground">
@@ -585,53 +528,59 @@ export default function CTempoErikshawPage() {
                     </div>
                 </div>
 
-                        <div className="overflow-hidden rounded-lg border">
-                            <table className="w-full text-sm">
-                                <thead>
-                                    <tr className="bg-primary text-primary-foreground">
-                                        <th className="px-5 py-3 text-left font-semibold">
-                                            Description
-                                        </th>
+                <div className="overflow-hidden rounded-md border">
+                    <table className="w-full border-collapse text-sm">
+                        <thead>
+                            <tr className="bg-[#e91d25] text-white">
+                                <th className="border-r border-white px-4 py-3 text-left font-bold">
+                                    Particulars
+                                </th>
 
-                                        <th className="px-5 py-3 text-right font-semibold">
-                                            Amount (NPR)
-                                        </th>
-                                    </tr>
-                                </thead>
+                                <th className="px-4 py-3 text-right font-bold">
+                                    Amount NPR
+                                </th>
+                            </tr>
+                        </thead>
 
-                                <tbody>
-                                    {premiumRows.map((row, index) => (
+                        <tbody>
+                            {premiumRows.map((row) => {
+                                if (row.type === "total") {
+                                    return (
                                         <tr
                                             key={row.key}
-                                            className={getRowClass(
-                                                row.type,
-                                                index
-                                            )}
+                                            className="bg-[#b71319] text-white"
                                         >
-                                            <td
-                                                className={`px-5 py-3 ${getLabelClass(
-                                                    row.type
-                                                )}`}
-                                            >
+                                            <td className="border-r border-white px-4 py-4 text-base font-bold">
                                                 {row.label}
                                             </td>
 
-                                            <td
-                                                className={`px-5 py-3 text-right ${getValueClass(
-                                                    row.type
-                                                )}`}
-                                            >
-                                                {row.type === "section"
-                                                    ? ""
-                                                    : fmt(row.value)}
+                                            <td className="px-4 py-4 text-right text-base font-bold">
+                                                {fmt(row.value)}
                                             </td>
                                         </tr>
-                                    ))}
-                                </tbody>
-                            </table>
-                        </div>
+                                    );
+                                }
 
-                <div className="mt-6 flex gap-3">
+                                return (
+                                    <tr
+                                        key={row.key}
+                                        className="border-b bg-[#fff7f3] last:border-b-0"
+                                    >
+                                        <td className="border-r border-white px-4 py-3 text-black">
+                                            {row.label}
+                                        </td>
+
+                                        <td className="px-4 py-3 text-right font-medium text-black">
+                                            {fmt(row.value)}
+                                        </td>
+                                    </tr>
+                                );
+                            })}
+                        </tbody>
+                    </table>
+                </div>
+
+                <div className="mt-8 flex items-center justify-between gap-3">
                     <Button
                         variant="outline"
                         className="gap-2"
@@ -642,11 +591,11 @@ export default function CTempoErikshawPage() {
                     </Button>
 
                     <Button
-                        onClick={() =>
-                            navigate("/motor/commercial-vehicle/comprehensive")
-                        }
+                        className="gap-2 bg-[#f71920] text-white hover:bg-[#d9151b]"
+                        onClick={() => navigate("/login")}
                     >
-                        Change Category
+                        Buy Policy
+                        <ArrowRight className="h-4 w-4" />
                     </Button>
                 </div>
             </>
@@ -695,11 +644,10 @@ export default function CTempoErikshawPage() {
                             >
                                 <SelectTrigger
                                     id="engineCapacityCc"
-                                    className={`mt-2 ${
-                                        errors.engineCapacityCc
+                                    className={`mt-2 ${errors.engineCapacityCc
                                             ? "border-red-500"
                                             : ""
-                                    }`}
+                                        }`}
                                 >
                                     <SelectValue placeholder="Select vehicle CC" />
                                 </SelectTrigger>
@@ -722,7 +670,43 @@ export default function CTempoErikshawPage() {
                                 </p>
                             )}
                         </div>
+                        <div>
+                            <Label htmlFor="yearOfManufacture">
+                                Year of Manufacture *
+                            </Label>
 
+                            <Select
+                                value={yearOfManufacture}
+                                onValueChange={(value) => {
+                                    setYearOfManufacture(value);
+                                    clearError("yearOfManufacture");
+                                }}
+                            >
+                                <SelectTrigger
+                                    id="yearOfManufacture"
+                                    className={`mt-2 ${errors.yearOfManufacture
+                                            ? "border-red-500"
+                                            : ""
+                                        }`}
+                                >
+                                    <SelectValue placeholder="Select year" />
+                                </SelectTrigger>
+
+                                <SelectContent>
+                                    {yearOptions.map((year) => (
+                                        <SelectItem key={year} value={year}>
+                                            {year}
+                                        </SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+
+                            {errors.yearOfManufacture && (
+                                <p className="mt-1 text-xs text-red-600">
+                                    {errors.yearOfManufacture}
+                                </p>
+                            )}
+                        </div>
                         <div>
                             <Label htmlFor="noOfSeats">
                                 No of Seats Including Driver *
@@ -741,9 +725,8 @@ export default function CTempoErikshawPage() {
                                         "noOfSeats"
                                     )
                                 }
-                                className={`mt-2 ${
-                                    errors.noOfSeats ? "border-red-500" : ""
-                                }`}
+                                className={`mt-2 ${errors.noOfSeats ? "border-red-500" : ""
+                                    }`}
                             />
 
                             {errors.noOfSeats && (
@@ -765,9 +748,8 @@ export default function CTempoErikshawPage() {
                             >
                                 <SelectTrigger
                                     id="helper"
-                                    className={`mt-2 ${
-                                        errors.helper ? "border-red-500" : ""
-                                    }`}
+                                    className={`mt-2 ${errors.helper ? "border-red-500" : ""
+                                        }`}
                                 >
                                     <SelectValue placeholder="Select helper" />
                                 </SelectTrigger>
@@ -807,9 +789,8 @@ export default function CTempoErikshawPage() {
                                         "sumInsured"
                                     )
                                 }
-                                className={`mt-2 ${
-                                    errors.sumInsured ? "border-red-500" : ""
-                                }`}
+                                className={`mt-2 ${errors.sumInsured ? "border-red-500" : ""
+                                    }`}
                             />
 
                             {errors.sumInsured && (
@@ -819,44 +800,7 @@ export default function CTempoErikshawPage() {
                             )}
                         </div>
 
-                        <div>
-                            <Label htmlFor="yearOfManufacture">
-                                Year of Manufacture *
-                            </Label>
 
-                            <Select
-                                value={yearOfManufacture}
-                                onValueChange={(value) => {
-                                    setYearOfManufacture(value);
-                                    clearError("yearOfManufacture");
-                                }}
-                            >
-                                <SelectTrigger
-                                    id="yearOfManufacture"
-                                    className={`mt-2 ${
-                                        errors.yearOfManufacture
-                                            ? "border-red-500"
-                                            : ""
-                                    }`}
-                                >
-                                    <SelectValue placeholder="Select year" />
-                                </SelectTrigger>
-
-                                <SelectContent>
-                                    {yearOptions.map((year) => (
-                                        <SelectItem key={year} value={year}>
-                                            {year}
-                                        </SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </Select>
-
-                            {errors.yearOfManufacture && (
-                                <p className="mt-1 text-xs text-red-600">
-                                    {errors.yearOfManufacture}
-                                </p>
-                            )}
-                        </div>
 
                         <div>
                             <Label htmlFor="compulsoryExcess">
@@ -873,11 +817,10 @@ export default function CTempoErikshawPage() {
                                 }
                                 disabled
                                 readOnly
-                                className={`mt-2 cursor-not-allowed bg-muted ${
-                                    errors.compulsoryExcess
+                                className={`mt-2 cursor-not-allowed bg-muted ${errors.compulsoryExcess
                                         ? "border-red-500"
                                         : ""
-                                }`}
+                                    }`}
                             />
 
                             <p className="mt-1 text-xs text-muted-foreground">
@@ -891,7 +834,7 @@ export default function CTempoErikshawPage() {
                             )}
                         </div>
 
-                        
+
 
                         <div>
                             <Label htmlFor="voluntaryExcess">
@@ -907,11 +850,10 @@ export default function CTempoErikshawPage() {
                             >
                                 <SelectTrigger
                                     id="voluntaryExcess"
-                                    className={`mt-2 ${
-                                        errors.voluntaryExcess
+                                    className={`mt-2 ${errors.voluntaryExcess
                                             ? "border-red-500"
                                             : ""
-                                    }`}
+                                        }`}
                                 >
                                     <SelectValue placeholder="Select voluntary excess" />
                                 </SelectTrigger>
@@ -949,11 +891,10 @@ export default function CTempoErikshawPage() {
                             >
                                 <SelectTrigger
                                     id="noClaimYear"
-                                    className={`mt-2 ${
-                                        errors.noClaimYear
+                                    className={`mt-2 ${errors.noClaimYear
                                             ? "border-red-500"
                                             : ""
-                                    }`}
+                                        }`}
                                 >
                                     <SelectValue placeholder="Select no claim discount" />
                                 </SelectTrigger>
@@ -989,6 +930,33 @@ export default function CTempoErikshawPage() {
                                     className="mt-2"
                                 >
                                     <SelectValue placeholder="Select towing charge" />
+                                </SelectTrigger>
+
+                                <SelectContent>
+                                    {yesNoOptions.map((item) => (
+                                        <SelectItem
+                                            key={item.value}
+                                            value={item.value}
+                                        >
+                                            {item.label}
+                                        </SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                        </div>
+
+                        <div>
+                            <Label htmlFor="rsdTerrorismRisk">RS/MD/ST Risk</Label>
+
+                            <Select
+                                value={rsdTerrorismRisk}
+                                onValueChange={setRsdTerrorismRisk}
+                            >
+                                <SelectTrigger
+                                    id="rsdTerrorismRisk"
+                                    className="mt-2"
+                                >
+                                    <SelectValue placeholder="Select" />
                                 </SelectTrigger>
 
                                 <SelectContent>
@@ -1044,7 +1012,7 @@ export default function CTempoErikshawPage() {
 
                         <Button
                             size="lg"
-                            className="px-8"
+                            className="gap-2 px-8"
                             disabled={loading || compulsoryLoading}
                             onClick={handleCalculate}
                         >
@@ -1054,7 +1022,10 @@ export default function CTempoErikshawPage() {
                                     Calculating...
                                 </>
                             ) : (
-                                "Calculate"
+                                <>
+                                    Calculate
+                                    <ArrowRight className="h-4 w-4" />
+                                </>
                             )}
                         </Button>
                     </div>

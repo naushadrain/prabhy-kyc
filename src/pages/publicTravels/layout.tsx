@@ -23,8 +23,9 @@ export default function PublicTravelLayout() {
         <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
           <div className="h-16 flex items-center justify-between gap-3">
             <div className="flex items-center gap-3 min-w-0">
-              <img src={logo} alt="Prabhu Insurance" className="h-9 w-auto shrink-0" />
-             
+              <Link to="/" className="hover:opacity-80 transition-opacity">
+                <img src={logo} alt="Prabhu Insurance" className="h-9 w-auto shrink-0" />
+              </Link>
             </div>
 
             <div className="flex items-center gap-2 shrink-0">

@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import {
     AlertCircle,
     ArrowLeft,
+    ArrowRight,
     ChevronLeft,
     Loader2,
 } from "lucide-react";
@@ -90,7 +91,8 @@ const yesNoOptions = [
 ];
 
 const fmt = (value: number | string | null | undefined) => {
-    const num = Number(value ?? 0);
+    const cleanValue = String(value ?? "0").replace(/,/g, "");
+    const num = Number(cleanValue);
 
     if (!Number.isFinite(num)) return "0.00";
 
@@ -98,11 +100,6 @@ const fmt = (value: number | string | null | undefined) => {
         minimumFractionDigits: 2,
         maximumFractionDigits: 2,
     });
-};
-
-const toNumber = (value: number | string | null | undefined) => {
-    const num = Number(value ?? 0);
-    return Number.isFinite(num) ? num : 0;
 };
 
 const getValue = (
@@ -155,7 +152,8 @@ export default function CPassengerCarryingPage() {
     const [voluntaryExcess, setVoluntaryExcess] = useState("");
     const [noClaimYear, setNoClaimYear] = useState("0");
     const [towingCharge, setTowingCharge] = useState("no");
-    const [directDiscount, setDirectDiscount] = useState(true);
+    const [rsdTerrorismRisk, setRsdTerrorismRisk] = useState("no");
+    const [directDiscount] = useState(true);
 
     const [errors, setErrors] = useState<Record<string, string>>({});
     const [loading, setLoading] = useState(false);
@@ -251,6 +249,7 @@ export default function CPassengerCarryingPage() {
         const newErrors: Record<string, string> = {};
 
         const totalSeats = Number(noOfSeats || 0);
+
         if (!noOfSeats.trim()) {
             newErrors.noOfSeats = "No of seats including driver is required";
         } else if (!/^\d+$/.test(noOfSeats) || totalSeats <= 0) {
@@ -321,38 +320,24 @@ export default function CPassengerCarryingPage() {
             class_id: "5",
             cover_type_id: "Comprehensive",
             is_government: "1",
-
             good_carrying_capacity: null,
-
             engine_capcity_cc: "12",
-
             driver_seat_capacity: "1",
-
             passenger_seat_capacity: String(passengerSeatCapacity),
-
             conductor_helper_seat_capacity: String(
                 conductorHelperSeatCapacity
             ),
-
             compulsory_excess: compulsoryExcess,
-
             voluntary_excess: voluntaryExcess,
-
             vehicle_age_in_years: String(vehicleAge),
-
             vehicle_suminsured_amount: sumInsured,
-
             calc_type: "p",
-
             noclaim_year: noClaimYear,
-
             is_tailor: "false",
-
             get_direct_discount: directDiscount ? "y" : "n",
-
             vehicle_reg: "e",
-
             include_towing_charge: towingCharge === "yes" ? "true" : "false",
+            include_rsd_charge: rsdTerrorismRisk === "yes" ? "true" : "false",
         };
 
         try {
@@ -395,6 +380,7 @@ export default function CPassengerCarryingPage() {
                     voluntaryExcess,
                     noClaimYear,
                     towingCharge,
+                    rsdTerrorismRisk,
                     directDiscount,
                     payload,
                 })
@@ -435,223 +421,58 @@ export default function CPassengerCarryingPage() {
 
     const amount: PremiumAmountInfo | undefined = premiumData?.amount_info;
 
-    const ownDamagePremium = getValue(amount as any, [
-        "premium_amount",
-        "own_damage_premium",
-        "od_premium",
-    ]);
-
-    const oldVehicleCharge = getValue(amount as any, ["old_vehicle_charge"]);
-
-    const voluntaryExcessAmount = getValue(amount as any, [
-        "voluntary_excess_amount",
-        "voluntary_excess_discount",
-    ]);
-
-    const noClaimDiscount = getValue(amount as any, [
-        "no_claim_discount_amount",
-        "ncd_amount",
-    ]);
-
-    const directDiscountAmount = getValue(premiumData as any, [
-        "direct_discount_amount",
-    ]);
-
-    const basicPremiumFromApi = getValue(amount as any, ["basic_premium"]);
-
-    const basicPremium =
-        toNumber(basicPremiumFromApi) > 0
-            ? basicPremiumFromApi
-            : toNumber(ownDamagePremium) +
-              toNumber(oldVehicleCharge) -
-              toNumber(voluntaryExcessAmount) -
-              toNumber(noClaimDiscount) -
-              toNumber(directDiscountAmount);
-
-    const thirdPartyPremium = getValue(amount as any, [
-        "tpl_amount",
-        "third_party_premium",
-    ]);
-
-    const thirdPartyNcd = getValue(amount as any, [
-        "tpl_no_claim_discount_amount",
-        "third_party_no_claim_discount_amount",
-        "third_party_ncd_amount",
-    ]);
-
-    const finalThirdPartyPremium =
-        toNumber(thirdPartyPremium) - toNumber(thirdPartyNcd);
-
-
-    const rsdRider = getValue(amount as any, [
-        "rsd_rider_amount",
-        "rsd_rider",
-    ]);
-
-    const rsdPassenger = getValue(amount as any, [
-        "rsd_passenger_amount",
-        "rsd_passenger",
-    ]);
-
-    const poolPremiumFromApi = getValue(amount as any, ["pool_amount"]);
-
-
-    const taxableAmount = getValue(amount as any, [
-        "taxable_amount",
-        "subtotal_amount",
-    ]);
-
-    
-
-    const vatPercent = getValue(amount as any, ["vat_percent"], 13);
-    const vatAmount = getValue(amount as any, ["vat_amount"]);
-    const stampDuty = getValue(amount as any, ["stamp_duty"]);
-
-    const totalPremium = getValue(amount as any, [
-        "total_amount",
-        "total_premium",
-        "payable_amount",
-    ]);
-
     const premiumRows: PremiumRow[] = [
         {
-            key: "premium",
-            label: "Premium",
-            value: ownDamagePremium,
+            key: "suminsured",
+            label: "Sum Insured",
+            value: getValue(amount as any, ["suminsured"]),
         },
         {
-            key: "old_vehicle_charge",
-            label: "Add : Old Vehicle Charge",
-            value: oldVehicleCharge,
-        },
-        {
-            key: "subtotal_1",
-            label: "Sub Total",
-            value: toNumber(ownDamagePremium) + toNumber(oldVehicleCharge),
-            type: "subtotal",
-        },
-        {
-            key: "voluntary_excess",
-            label: "Less : Voluntary Excess",
-            value: voluntaryExcessAmount,
-            type: "less",
-        },
-        {
-            key: "subtotal_2",
-            label: "Sub Total",
-            value:
-                toNumber(ownDamagePremium) +
-                toNumber(oldVehicleCharge) -
-                toNumber(voluntaryExcessAmount),
-            type: "subtotal",
-        },
-        {
-            key: "no_claim_discount",
-            label: "Less : No Claim Discount",
-            value: noClaimDiscount,
-            type: "less",
-        },
-        {
-            key: "subtotal_3",
-            label: "Sub Total",
-            value:
-                toNumber(ownDamagePremium) +
-                toNumber(oldVehicleCharge) -
-                toNumber(voluntaryExcessAmount) -
-                toNumber(noClaimDiscount),
-            type: "subtotal",
-        },
-        {
-            key: "direct_discount",
-            label: "Less : Direct Discount",
-            value: directDiscountAmount,
-            type: "less",
-        },
-        {
-            key: "basic_premium",
+            key: "premium_amount",
             label: "Basic Premium",
-            value: basicPremium,
-            type: "subtotal",
+            value: getValue(amount as any, ["premium_amount"]),
         },
         {
-            key: "third_party_section",
-            label: "Third Party Premium Calculation",
-            type: "section",
+            key: "pa_amount",
+            label: "Driver/Passenger Premium",
+            value: getValue(amount as any, ["pa_amount"]),
         },
         {
-            key: "third_party_premium",
-            label: "Basic Third Party Premium",
-            value: thirdPartyPremium,
+            key: "tpl_amount",
+            label: "Third Party Premium",
+            value: getValue(amount as any, ["tpl_amount"]),
         },
         {
-            key: "third_party_ncd",
-            label: "Less : No Claim Discount",
-            value: thirdPartyNcd,
-            type: "less",
+            key: "pool_amount",
+            label: "RS/MD/ST",
+            value: getValue(amount as any, ["pool_amount"]),
         },
         {
-            key: "third_party_total",
-            label: "Third Party Premium(B)",
-            value: finalThirdPartyPremium,
-            type: "subtotal",
+            key: "taxable_amount",
+            label: "Taxable Amount",
+            value: getValue(amount as any, ["taxable_amount"]),
         },
         {
-            key: "pool_section",
-            label: "Pool Premium Calculation",
-            type: "section",
-        },
-        
-        
-        
-        {
-            key: "final_section",
-            label: "Final Premium Calculation",
-            type: "section",
-        },
-        
-        {
-            key: "vat",
-            label: `Add : VAT ${vatPercent}%`,
-            value: vatAmount,
+            key: "vat_amount",
+            label: "VAT",
+            value: getValue(amount as any, ["vat_amount"]),
         },
         {
-            key: "stamp",
-            label: "Add : Stamp Duty",
-            value: stampDuty,
+            key: "stamp_duty",
+            label: "Stamp Duty",
+            value: getValue(amount as any, ["stamp_duty"]),
         },
         {
-            key: "total",
-            label: "Total Premium",
-            value: totalPremium,
+            key: "total_premium_with_vat",
+            label: "Total Premium With VAT",
+            value: getValue(
+                premiumData as any,
+                ["total_premium_with_vat"],
+                getValue(amount as any, ["total_amount"])
+            ),
             type: "total",
         },
     ];
-
-    const getRowClass = (type?: RowType, index?: number) => {
-        if (type === "section") return "bg-muted/70";
-        if (type === "total") return "border-t-2 border-primary/30 bg-primary/10";
-        if (type === "subtotal") return "bg-muted/30";
-
-        return index && index % 2 === 0 ? "bg-background" : "bg-muted/10";
-    };
-
-    const getLabelClass = (type?: RowType) => {
-        if (type === "section") return "font-bold text-foreground";
-        if (type === "total") return "font-bold text-primary";
-        if (type === "subtotal") return "font-semibold text-foreground";
-        if (type === "less") return "text-red-600";
-
-        return "text-muted-foreground";
-    };
-
-    const getValueClass = (type?: RowType) => {
-        if (type === "section") return "font-bold text-foreground";
-        if (type === "total") return "text-base font-bold text-primary";
-        if (type === "subtotal") return "font-semibold text-foreground";
-        if (type === "less") return "font-medium text-red-600";
-
-        return "font-medium text-foreground";
-    };
 
     if (step === 2 && premiumData) {
         return (
@@ -671,58 +492,61 @@ export default function CPassengerCarryingPage() {
                         </h1>
 
                         <p className="mt-1 text-sm text-muted-foreground">
-                            Comprehensive premium calculation details.
+                            Comprehensive passenger carrying premium calculation details.
                         </p>
                     </div>
                 </div>
 
-                        <div className="overflow-hidden rounded-lg border">
-                            <table className="w-full text-sm">
-                                <thead>
-                                    <tr className="bg-primary text-primary-foreground">
-                                        <th className="px-5 py-3 text-left font-semibold">
-                                            Description
-                                        </th>
+                <div className="overflow-hidden rounded-md border">
+                    <table className="w-full border-collapse text-sm">
+                        <thead>
+                            <tr className="bg-[#e91d25] text-white">
+                                <th className="border-r border-white px-4 py-3 text-left font-bold">
+                                    Particulars
+                                </th>
 
-                                        <th className="px-5 py-3 text-right font-semibold">
-                                            Amount (NPR)
-                                        </th>
-                                    </tr>
-                                </thead>
+                                <th className="px-4 py-3 text-right font-bold">
+                                    Amount NPR
+                                </th>
+                            </tr>
+                        </thead>
 
-                                <tbody>
-                                    {premiumRows.map((row, index) => (
-                                        <tr
-                                            key={row.key}
-                                            className={getRowClass(
-                                                row.type,
-                                                index
-                                            )}
-                                        >
-                                            <td
-                                                className={`px-5 py-3 ${getLabelClass(
-                                                    row.type
-                                                )}`}
-                                            >
+                        <tbody>
+                            {premiumRows.map((row) => {
+                                if (row.type === "total") {
+                                    return (
+                                        <tr key={row.key} className="bg-[#b71319] text-white">
+                                            <td className="border-r border-white px-4 py-4 text-base font-bold">
                                                 {row.label}
                                             </td>
 
-                                            <td
-                                                className={`px-5 py-3 text-right ${getValueClass(
-                                                    row.type
-                                                )}`}
-                                            >
-                                                {row.type === "section"
-                                                    ? ""
-                                                    : fmt(row.value)}
+                                            <td className="px-4 py-4 text-right text-base font-bold">
+                                                {fmt(row.value)}
                                             </td>
                                         </tr>
-                                    ))}
-                                </tbody>
-                            </table>
-                        </div>
-                
-                <div className="mt-6 flex gap-3">
+                                    );
+                                }
+
+                                return (
+                                    <tr
+                                        key={row.key}
+                                        className="border-b bg-[#fff7f3] last:border-b-0"
+                                    >
+                                        <td className="border-r border-white px-4 py-3 text-black">
+                                            {row.label}
+                                        </td>
+
+                                        <td className="px-4 py-3 text-right font-medium text-black">
+                                            {fmt(row.value)}
+                                        </td>
+                                    </tr>
+                                );
+                            })}
+                        </tbody>
+                    </table>
+                </div>
+
+                <div className="mt-8 flex items-center justify-between gap-3">
                     <Button
                         variant="outline"
                         className="gap-2"
@@ -733,11 +557,11 @@ export default function CPassengerCarryingPage() {
                     </Button>
 
                     <Button
-                        onClick={() =>
-                            navigate("/motor/commercial-vehicle/comprehensive")
-                        }
+                        className="gap-2 bg-[#f71920] text-white hover:bg-[#d9151b]"
+                        onClick={() => navigate("/login")}
                     >
-                        Change Category
+                        Buy Policy
+                        <ArrowRight className="h-4 w-4" />
                     </Button>
                 </div>
             </>
@@ -772,8 +596,6 @@ export default function CPassengerCarryingPage() {
             <Card className="max-w-5xl">
                 <CardContent className="space-y-5 pt-6">
                     <div className="grid gap-5 md:grid-cols-2">
-                        
-
                         <div>
                             <Label htmlFor="noOfSeats">
                                 No of Seats Including Driver *
@@ -784,9 +606,8 @@ export default function CPassengerCarryingPage() {
                                 type="text"
                                 inputMode="numeric"
                                 placeholder="Enter no of seats including driver"
-                                className={`mt-2 ${
-                                    errors.noOfSeats ? "border-red-500" : ""
-                                }`}
+                                className={`mt-2 ${errors.noOfSeats ? "border-red-500" : ""
+                                    }`}
                                 value={noOfSeats}
                                 onChange={(e) =>
                                     handleNumberInput(
@@ -800,6 +621,44 @@ export default function CPassengerCarryingPage() {
                             {errors.noOfSeats && (
                                 <p className="mt-1 text-xs text-red-600">
                                     {errors.noOfSeats}
+                                </p>
+                            )}
+                        </div>
+
+                        <div>
+                            <Label htmlFor="yearOfManufacture">
+                                Year of Manufacture *
+                            </Label>
+
+                            <Select
+                                value={yearOfManufacture}
+                                onValueChange={(value) => {
+                                    setYearOfManufacture(value);
+                                    clearError("yearOfManufacture");
+                                }}
+                            >
+                                <SelectTrigger
+                                    id="yearOfManufacture"
+                                    className={`mt-2 ${errors.yearOfManufacture
+                                        ? "border-red-500"
+                                        : ""
+                                        }`}
+                                >
+                                    <SelectValue placeholder="Select year" />
+                                </SelectTrigger>
+
+                                <SelectContent>
+                                    {yearOptions.map((year) => (
+                                        <SelectItem key={year} value={year}>
+                                            {year}
+                                        </SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+
+                            {errors.yearOfManufacture && (
+                                <p className="mt-1 text-xs text-red-600">
+                                    {errors.yearOfManufacture}
                                 </p>
                             )}
                         </div>
@@ -834,9 +693,8 @@ export default function CPassengerCarryingPage() {
                                 type="text"
                                 inputMode="numeric"
                                 placeholder="Enter vehicle sum insured"
-                                className={`mt-2 ${
-                                    errors.sumInsured ? "border-red-500" : ""
-                                }`}
+                                className={`mt-2 ${errors.sumInsured ? "border-red-500" : ""
+                                    }`}
                                 value={sumInsured}
                                 onChange={(e) =>
                                     handleNumberInput(
@@ -855,45 +713,6 @@ export default function CPassengerCarryingPage() {
                         </div>
 
                         <div>
-                            <Label htmlFor="yearOfManufacture">
-                                Year of Manufacture *
-                            </Label>
-
-                            <Select
-                                value={yearOfManufacture}
-                                onValueChange={(value) => {
-                                    setYearOfManufacture(value);
-                                    clearError("yearOfManufacture");
-                                }}
-                            >
-                                <SelectTrigger
-                                    id="yearOfManufacture"
-                                    className={`mt-2 ${
-                                        errors.yearOfManufacture
-                                            ? "border-red-500"
-                                            : ""
-                                    }`}
-                                >
-                                    <SelectValue placeholder="Select year" />
-                                </SelectTrigger>
-
-                                <SelectContent>
-                                    {yearOptions.map((year) => (
-                                        <SelectItem key={year} value={year}>
-                                            {year}
-                                        </SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </Select>
-
-                            {errors.yearOfManufacture && (
-                                <p className="mt-1 text-xs text-red-600">
-                                    {errors.yearOfManufacture}
-                                </p>
-                            )}
-                        </div>
-
-                        <div>
                             <Label htmlFor="compulsoryExcess">
                                 Compulsory Excess *
                             </Label>
@@ -901,11 +720,10 @@ export default function CPassengerCarryingPage() {
                             <Input
                                 id="compulsoryExcess"
                                 type="text"
-                                className={`mt-2 cursor-not-allowed bg-muted ${
-                                    errors.compulsoryExcess
-                                        ? "border-red-500"
-                                        : ""
-                                }`}
+                                className={`mt-2 cursor-not-allowed bg-muted ${errors.compulsoryExcess
+                                    ? "border-red-500"
+                                    : ""
+                                    }`}
                                 value={
                                     compulsoryLoading
                                         ? "Loading..."
@@ -948,11 +766,10 @@ export default function CPassengerCarryingPage() {
                             >
                                 <SelectTrigger
                                     id="voluntaryExcess"
-                                    className={`mt-2 ${
-                                        errors.voluntaryExcess
-                                            ? "border-red-500"
-                                            : ""
-                                    }`}
+                                    className={`mt-2 ${errors.voluntaryExcess
+                                        ? "border-red-500"
+                                        : ""
+                                        }`}
                                 >
                                     <SelectValue placeholder="Select voluntary excess" />
                                 </SelectTrigger>
@@ -990,11 +807,10 @@ export default function CPassengerCarryingPage() {
                             >
                                 <SelectTrigger
                                     id="noClaimYear"
-                                    className={`mt-2 ${
-                                        errors.noClaimYear
-                                            ? "border-red-500"
-                                            : ""
-                                    }`}
+                                    className={`mt-2 ${errors.noClaimYear
+                                        ? "border-red-500"
+                                        : ""
+                                        }`}
                                 >
                                     <SelectValue placeholder="Select no claim discount" />
                                 </SelectTrigger>
@@ -1026,6 +842,14 @@ export default function CPassengerCarryingPage() {
                             options={yesNoOptions}
                         />
 
+                        <SelectBox
+                            id="rsdTerrorismRisk"
+                            label="RS/MD/ST Risk"
+                            value={rsdTerrorismRisk}
+                            onChange={setRsdTerrorismRisk}
+                            options={yesNoOptions}
+                        />
+
                         <div className="grid md:grid-cols-2 gap-4 pt-2">
                             <div className="flex items-center gap-3">
                                 <Switch
@@ -1043,7 +867,13 @@ export default function CPassengerCarryingPage() {
                         </div>
                     </div>
 
-                    
+                    {inlineError && (
+                        <div className="flex items-start gap-2 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+                            <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
+                            {inlineError}
+                        </div>
+                    )}
+
                     <div className="flex justify-between pt-2">
                         <Button
                             variant="outline"
@@ -1060,7 +890,7 @@ export default function CPassengerCarryingPage() {
 
                         <Button
                             size="lg"
-                            className="px-8"
+                            className="gap-2 px-8"
                             disabled={loading || compulsoryLoading}
                             onClick={handleCalculate}
                         >
@@ -1070,7 +900,10 @@ export default function CPassengerCarryingPage() {
                                     Calculating...
                                 </>
                             ) : (
-                                "Calculate"
+                                <>
+                                    Calculate
+                                    <ArrowRight className="h-4 w-4" />
+                                </>
                             )}
                         </Button>
                     </div>

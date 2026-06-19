@@ -124,53 +124,54 @@ export const PrivateVehiclePage = () => {
                         <ChevronLeft className="h-5 w-5 text-black" />
                     </button>
 
-                    <h1 className="text-lg font-bold text-black">{planTitle}</h1>
+                    <div>
+                        <h1 className="text-2xl font-bold text-black">{planTitle}</h1>
+                        <p className="mt-1 text-sm text-muted-foreground">Select insurance type to continue.</p>
+                    </div>
                 </div>
-                <p className="text-sm text-muted-foreground mb-4">Select the insurance plan that best suits you.</p>
 
-
-                <div className="grid md:grid-cols-2 gap-6 max-w-3xl">
+                <div className="grid max-w-5xl gap-6 md:grid-cols-2">
                     <Card
-                        className="p-6 hover:shadow-lg transition-shadow cursor-pointer border-2 hover:border-primary"
+                        className="cursor-pointer border-2 p-6 transition-all hover:-translate-y-1 hover:border-primary hover:shadow-xl"
                         onClick={() => handlePlanSelect('comprehensive')}
                     >
-                        <h3 className="text-lg font-bold mb-2 text-center">Comprehensive Insurance</h3>
-                        <div className="flex justify-center my-8">
-                            <div className="w-32 h-32 flex items-center justify-center">
-                                <svg viewBox="0 0 100 100" className="w-full h-full">
+                        <h3 className="mb-2 text-center text-lg font-bold">Comprehensive Insurance</h3>
+                        <div className="my-8 flex justify-center">
+                            <div className="flex h-32 w-32 items-center justify-center rounded-full bg-primary/10">
+                                <svg viewBox="0 0 100 100" className="h-full w-full p-6">
                                     <path d="M50 10 L65 25 L65 50 L50 60 L35 50 L35 25 Z" fill="none" stroke="hsl(var(--primary))" strokeWidth="2" />
                                     <circle cx="50" cy="35" r="8" fill="hsl(var(--primary))" />
                                     <path d="M42 42 L42 50 L58 50 L58 42" fill="hsl(var(--primary))" />
                                 </svg>
                             </div>
                         </div>
-                        <p className="text-xs text-center text-muted-foreground">Covers all damages including you and other third-party damages.</p>
+                        <p className="text-center text-xs text-muted-foreground">Covers own damage and third-party damages.</p>
                     </Card>
 
                     <Card
-                        className="p-6 hover:shadow-lg transition-shadow cursor-pointer border-2 hover:border-primary"
+                        className="cursor-pointer border-2 p-6 transition-all hover:-translate-y-1 hover:border-primary hover:shadow-xl"
                         onClick={() => handlePlanSelect('third-party')}
                     >
-                        <h3 className="text-lg font-bold mb-2 text-center">Third Party Insurance</h3>
-                        <div className="flex justify-center my-8">
-                            <div className="w-32 h-32 flex items-center justify-center">
-                                <svg viewBox="0 0 100 100" className="w-full h-full">
+                        <h3 className="mb-2 text-center text-lg font-bold">Third Party Insurance</h3>
+                        <div className="my-8 flex justify-center">
+                            <div className="flex h-32 w-32 items-center justify-center rounded-full bg-primary/10">
+                                <svg viewBox="0 0 100 100" className="h-full w-full p-6">
                                     <path d="M50 10 L65 25 L65 50 L50 60 L35 50 L35 25 Z" fill="none" stroke="hsl(var(--primary))" strokeWidth="2" />
                                     <path d="M42 32 L48 38 L58 28" fill="none" stroke="hsl(var(--primary))" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
                                     <path d="M40 45 L40 52 L60 52 L60 45" fill="hsl(var(--primary))" />
                                 </svg>
                             </div>
                         </div>
-                        <p className="text-xs text-center text-muted-foreground">All third-party damages are covered.</p>
+                        <p className="text-center text-xs text-muted-foreground">Covers only third-party damages.</p>
                     </Card>
                 </div>
 
-                <div className="mt-8 space-y-4 max-w-3xl">
-                    <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                        <p className="text-sm text-blue-700">All third-party damages are covered.</p>
+                <div className="mt-8 grid max-w-5xl gap-4 md:grid-cols-2">
+                    <div className="rounded-lg border border-green-200 bg-green-50 p-4">
+                        <p className="text-sm text-green-700">Comprehensive insurance covers own damage and third-party damage.</p>
                     </div>
-                    <div className="bg-green-50 border border-green-200 rounded-lg p-4">
-                        <p className="text-sm text-green-700">Covers all damages including you and other third-party damages.</p>
+                    <div className="rounded-lg border border-blue-200 bg-blue-50 p-4">
+                        <p className="text-sm text-blue-700">Third-party insurance covers third-party damage only.</p>
                     </div>
                 </div>
             </>
@@ -207,6 +208,7 @@ export const PrivateVehiclePage = () => {
         const directDiscount = true;
         const [privateRent, setPrivateRent] = useState<string>(savedCoverage?.privateRent || "no");
         const [towingCharge, setTowingCharge] = useState<string>(savedCoverage?.towingCharge || "no");
+        const [rsdTerrorismRisk, setRsdTerrorismRisk] = useState<string>(savedCoverage?.rsdTerrorismRisk || "no");
         const [loading, setLoading] = useState(false);
         const [inlineError, setInlineError] = useState<string | null>(null);
         const [topCategory, setTopCategory] = useState<string>(savedCoverage?.topCategory || "");
@@ -340,6 +342,7 @@ export const PrivateVehiclePage = () => {
                 // conductor_helper_seat_capacity: "1",
                 include_towing_charge: isThirdParty ? "false" : (towingCharge === "yes" ? "true" : "false"),
                 include_personal_use_discount: isThirdParty ? "false" : (privateRent === "yes" ? "true" : "false"),
+                include_rsd_charge: rsdTerrorismRisk === "yes" ? "true" : "false",
             };
 
             try {
@@ -375,6 +378,7 @@ export const PrivateVehiclePage = () => {
                         directDiscount,
                         privateRent,
                         towingCharge,
+                        rsdTerrorismRisk,
                     }),
                 );
 
@@ -631,6 +635,19 @@ export const PrivateVehiclePage = () => {
                             </div>
 
                             <div>
+                                <Label htmlFor="rsdTerrorismRisk">RS/MD/ST Risk</Label>
+                                <Select value={rsdTerrorismRisk} onValueChange={setRsdTerrorismRisk}>
+                                    <SelectTrigger id="rsdTerrorismRisk" className="mt-2">
+                                        <SelectValue placeholder="Select" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="yes">Yes</SelectItem>
+                                        <SelectItem value="no">No</SelectItem>
+                                    </SelectContent>
+                                </Select>
+                            </div>
+
+                            <div>
                                 <Label>P.A. to Driver</Label>
                                 <Input type="number" className="mt-2" value={paDriver} disabled />
                             </div>
@@ -666,10 +683,7 @@ export const PrivateVehiclePage = () => {
                                 </Select>
                                 {errors.noClaimYear && <p className="text-xs text-red-600 mt-1">{errors.noClaimYear}</p>}
                             </div>
-                        </div>
-
-                        <div className="grid md:grid-cols-2 gap-4 pt-2">
-                            <div className="flex items-center gap-3">
+                            <div className="flex items-center gap-3 mt-4">
                                 <Switch
                                     id="directDiscount"
                                     checked={true}
@@ -683,7 +697,6 @@ export const PrivateVehiclePage = () => {
                                 </Label>
                             </div>
                         </div>
-
                         {inlineError && (
                             <div className="flex items-start gap-2 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
                                 <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
@@ -760,7 +773,7 @@ export const PrivateVehiclePage = () => {
                 },
                 {
                     key: "pa_amount",
-                    label: "Driver/Passenger Amount",
+                    label: "Driver/Passenger Premium",
                     value: safeValue(amount?.pa_amount),
                 },
                 {
@@ -791,18 +804,18 @@ export const PrivateVehiclePage = () => {
                     label: "Basic Premium Amount",
                     value: safeValue(amount?.premium_amount),
                 },
-                {
-                    key: "direct_discount_amount",
-                    label: "Direct Discount Amount",
-                    value: safeValue(
-                        (premiumData as Record<string, unknown> | null)
-                            ?.direct_discount_amount,
-                    ),
-                    type: "less",
-                },
+                // {
+                //     key: "direct_discount_amount",
+                //     label: "Direct Discount Amount",
+                //     value: safeValue(
+                //         (premiumData as Record<string, unknown> | null)
+                //             ?.direct_discount_amount,
+                //     ),
+                //     type: "less",
+                // },
                 {
                     key: "pa_amount",
-                    label: "Driver/Passenger Amount",
+                    label: "Driver/Passenger Premium",
                     value: safeValue(amount?.pa_amount),
                 },
                 {

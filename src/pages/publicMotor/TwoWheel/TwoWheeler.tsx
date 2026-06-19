@@ -127,9 +127,9 @@ export const TwoWheelerPage = () => {
                     Select the insurance plan that best suits you.
                 </p>
 
-                <div className="grid max-w-3xl gap-6 md:grid-cols-2">
+                <div className="grid max-w-5xl gap-6 md:grid-cols-2">
                     <Card
-                        className="cursor-pointer border-2 p-6 transition-shadow hover:border-primary hover:shadow-lg"
+                        className="cursor-pointer border-2 p-6 transition-all hover:-translate-y-1 hover:border-primary hover:shadow-xl"
                         onClick={() => handlePlanSelect("comprehensive")}
                     >
                         <h3 className="mb-2 text-center text-lg font-bold">
@@ -137,8 +137,8 @@ export const TwoWheelerPage = () => {
                         </h3>
 
                         <div className="my-8 flex justify-center">
-                            <div className="flex h-32 w-32 items-center justify-center">
-                                <svg viewBox="0 0 100 100" className="h-full w-full">
+                            <div className="flex h-32 w-32 items-center justify-center rounded-full bg-primary/10">
+                                <svg viewBox="0 0 100 100" className="h-full w-full p-6">
                                     <path
                                         d="M50 10 L65 25 L65 50 L50 60 L35 50 L35 25 Z"
                                         fill="none"
@@ -160,12 +160,12 @@ export const TwoWheelerPage = () => {
                         </div>
 
                         <p className="text-center text-xs text-muted-foreground">
-                            Covers all damages including you and other third-party damages.
+                            Covers own damage and third-party damages.
                         </p>
                     </Card>
 
                     <Card
-                        className="cursor-pointer border-2 p-6 transition-shadow hover:border-primary hover:shadow-lg"
+                        className="cursor-pointer border-2 p-6 transition-all hover:-translate-y-1 hover:border-primary hover:shadow-xl"
                         onClick={() => handlePlanSelect("third-party")}
                     >
                         <h3 className="mb-2 text-center text-lg font-bold">
@@ -173,8 +173,8 @@ export const TwoWheelerPage = () => {
                         </h3>
 
                         <div className="my-8 flex justify-center">
-                            <div className="flex h-32 w-32 items-center justify-center">
-                                <svg viewBox="0 0 100 100" className="h-full w-full">
+                            <div className="flex h-32 w-32 items-center justify-center rounded-full bg-primary/10">
+                                <svg viewBox="0 0 100 100" className="h-full w-full p-6">
                                     <path
                                         d="M50 10 L65 25 L65 50 L50 60 L35 50 L35 25 Z"
                                         fill="none"
@@ -198,24 +198,24 @@ export const TwoWheelerPage = () => {
                         </div>
 
                         <p className="text-center text-xs text-muted-foreground">
-                            All third-party damages are covered.
+                            Covers only third-party damages.
                         </p>
                     </Card>
                 </div>
 
-                <div className="mt-8 max-w-3xl space-y-4">
-                    <div className="rounded-lg border border-blue-200 bg-blue-50 p-4">
-                        <p className="text-sm text-blue-700">
-                            All third-party damages are covered.
-                        </p>
-                    </div>
-
-                    <div className="rounded-lg border border-green-200 bg-green-50 p-4">
-                        <p className="text-sm text-green-700">
-                            Covers all damages including you and other third-party damages.
-                        </p>
-                    </div>
+                <div className="mt-8 grid max-w-5xl gap-4 md:grid-cols-2">
+                <div className="rounded-lg border border-green-200 bg-green-50 p-4">
+                    <p className="text-sm text-green-700">
+                        Comprehensive insurance covers own damage and third-party damage.
+                    </p>
                 </div>
+
+                <div className="rounded-lg border border-blue-200 bg-blue-50 p-4">
+                    <p className="text-sm text-blue-700">
+                        Third-party insurance covers third-party damage only.
+                    </p>
+                </div>
+            </div>
             </>
         );
     };
@@ -268,6 +268,10 @@ export const TwoWheelerPage = () => {
 
         const [noClaimYear, setNoClaimYear] = useState<string>(
             savedCoverage?.noClaimYear || "0",
+        );
+
+        const [rsdTerrorismRisk, setRsdTerrorismRisk] = useState<string>(
+            savedCoverage?.rsdTerrorismRisk || "no",
         );
 
         const directDiscount = true;
@@ -348,6 +352,7 @@ export const TwoWheelerPage = () => {
                 is_tailor: "false",
                 get_direct_discount: isThirdParty ? "n" : "y",
                 vehicle_reg: "e",
+                include_rsd_charge: rsdTerrorismRisk === "yes" ? "true" : "false",
             };
 
             try {
@@ -381,6 +386,7 @@ export const TwoWheelerPage = () => {
                         noClaimYear: isThirdParty ? "" : noClaimYear,
                         coverStrikeDamage: isThirdParty ? false : coverStrikeDamage,
                         directDiscount: isThirdParty ? false : directDiscount,
+                        rsdTerrorismRisk: isThirdParty ? "no" : rsdTerrorismRisk,
                     }),
                 );
 
@@ -698,6 +704,26 @@ export const TwoWheelerPage = () => {
                             </div>
                         </div>
 
+                        <div className="grid gap-4 md:grid-cols-2">
+                            <div>
+                                <Label htmlFor="rsdTerrorismRisk">RS/MD/ST Risk</Label>
+
+                                <Select
+                                    value={rsdTerrorismRisk}
+                                    onValueChange={setRsdTerrorismRisk}
+                                >
+                                    <SelectTrigger id="rsdTerrorismRisk" className="mt-2">
+                                        <SelectValue placeholder="Select" />
+                                    </SelectTrigger>
+
+                                    <SelectContent>
+                                        <SelectItem value="yes">Yes</SelectItem>
+                                        <SelectItem value="no">No</SelectItem>
+                                    </SelectContent>
+                                </Select>
+                            </div>
+                        </div>
+
                         <div className="grid gap-4 pt-2 md:grid-cols-2">
                             <div className="flex items-center gap-3">
                                 <Switch id="directDiscount" checked={true} disabled />
@@ -870,15 +896,15 @@ export const TwoWheelerPage = () => {
                   label: "Basic Premium",
                   value: safeValue(amount?.premium_amount),
               },
-              {
-                  key: "direct_discount_amount",
-                  label: "Direct Discount Amount",
-                  value: safeValue(
-                      (premiumData as Record<string, unknown> | null)
-                          ?.direct_discount_amount,
-                  ),
-                  type: "less",
-              },
+            //   {
+            //       key: "direct_discount_amount",
+            //       label: "Direct Discount Amount",
+            //       value: safeValue(
+            //           (premiumData as Record<string, unknown> | null)
+            //               ?.direct_discount_amount,
+            //       ),
+            //       type: "less",
+            //   },
               {
                   key: "tpl_amount",
                   label: "Third Party Premium",

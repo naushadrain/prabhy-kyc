@@ -1,12 +1,19 @@
 // CommercialVehicle/thirdparty/pages/TtaxiPage.tsx
 
 import { useMemo, useState } from "react";
-import { ChevronLeft, Loader2, AlertCircle, ArrowLeft } from "lucide-react";
+import {
+    ChevronLeft,
+    Loader2,
+    AlertCircle,
+    ArrowLeft,
+    ArrowRight,
+} from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
 
 import {
     Select,
@@ -23,7 +30,6 @@ import {
 
 import { GetPremiumResponse, PremiumAmountInfo } from "@/types/getpremium";
 import { toast } from "@/components/ui/sonner";
-import { Input } from "@/components/ui/input";
 
 type CcOption = {
     label: string;
@@ -58,12 +64,11 @@ const vehicleCcOptions: CcOption[] = [
     },
 ];
 
-
-
 const fmt = (value: number | string | null | undefined) => {
-    const num = Number(value ?? 0);
+    const cleanValue = String(value ?? "0").replace(/,/g, "");
+    const num = Number(cleanValue);
 
-    if (!Number.isFinite(num)) return "—";
+    if (!Number.isFinite(num)) return "0.00";
 
     return num.toLocaleString("en-IN", {
         minimumFractionDigits: 2,
@@ -71,25 +76,32 @@ const fmt = (value: number | string | null | undefined) => {
     });
 };
 
-const toNumber = (value: number | string | null | undefined) => {
-    const num = Number(value ?? 0);
-    return Number.isFinite(num) ? num : 0;
+const getAmountValue = (
+    amount: PremiumAmountInfo | undefined,
+    key: string,
+    fallback: number | string = 0,
+): number | string => {
+    const value = (amount as Record<string, unknown> | undefined)?.[key];
+
+    if (value !== undefined && value !== null && value !== "") {
+        if (typeof value === "string" || typeof value === "number") {
+            return value;
+        }
+    }
+
+    return fallback;
 };
 
-const getValue = (
-    obj: Record<string, unknown> | null | undefined,
-    keys: string[],
-    fallback: number | string = 0
+const getRootValue = (
+    premiumData: GetPremiumResponse | null,
+    key: string,
+    fallback: number | string = 0,
 ): number | string => {
-    if (!obj) return fallback;
+    const value = (premiumData as Record<string, unknown> | null)?.[key];
 
-    for (const key of keys) {
-        const value = obj[key];
-
-        if (value !== undefined && value !== null && value !== "") {
-            if (typeof value === "string" || typeof value === "number") {
-                return value;
-            }
+    if (value !== undefined && value !== null && value !== "") {
+        if (typeof value === "string" || typeof value === "number") {
+            return value;
         }
     }
 
@@ -109,7 +121,7 @@ export default function TtaxiPage() {
     const [inlineError, setInlineError] = useState<string | null>(null);
 
     const [premiumData, setPremiumData] = useState<GetPremiumResponse | null>(
-        null
+        null,
     );
 
     const selectedCcOption = useMemo(() => {
@@ -123,8 +135,10 @@ export default function TtaxiPage() {
             newErrors.vehicleCc = "Vehicle CC is required";
         }
 
-        if (!noOfSeats) {
+        if (!noOfSeats.trim()) {
             newErrors.noOfSeats = "No of seats including driver is required";
+        } else if (!/^\d+$/.test(noOfSeats) || Number(noOfSeats) <= 0) {
+            newErrors.noOfSeats = "Enter valid no of seats";
         }
 
         return newErrors;
@@ -142,7 +156,6 @@ export default function TtaxiPage() {
         }
 
         const ccApiValue = selectedCcOption?.apiValue || "999";
-
         const passengerSeatCapacity = Math.max(0, Number(noOfSeats) - 1);
 
         const payload: GetPremiumRequestCV = {
@@ -180,7 +193,7 @@ export default function TtaxiPage() {
                     value: "Taxi Policy",
                     additional_value: "CV",
                     title: "Taxi Policy",
-                })
+                }),
             );
 
             localStorage.setItem(
@@ -193,7 +206,7 @@ export default function TtaxiPage() {
                     engine_capcity_cc: ccApiValue,
                     noOfSeatsIncludingDriver: noOfSeats,
                     passengerSeatCapacity: String(passengerSeatCapacity),
-                })
+                }),
             );
 
             const response = await getMotorPremiumCV(payload);
@@ -216,8 +229,8 @@ export default function TtaxiPage() {
 
             try {
                 msg =
-                    JSON.parse(error?.message || "")?.error_list?.[0]
-                        ?.error_message || msg;
+                    JSON.parse(error?.message || "")?.error_list?.[0]?.error_message ||
+                    msg;
             } catch {
                 msg = error?.message || msg;
             }
@@ -231,42 +244,6 @@ export default function TtaxiPage() {
 
     const amount: PremiumAmountInfo | undefined = premiumData?.amount_info;
 
-    const thirdPartyPremium = getValue(amount as any, [
-        "tpl_amount",
-        "third_party_premium",
-        "premium_amount",
-    ]);
-
-    const thirdPartyNcd = getValue(amount as any, [
-        "tpl_no_claim_discount_amount",
-        "third_party_no_claim_discount_amount",
-        "third_party_ncd_amount",
-        "no_claim_discount_amount",
-    ]);
-
-    const finalThirdPartyPremium =
-        toNumber(thirdPartyPremium) - toNumber(thirdPartyNcd);
-
-    const taxableAmount = getValue(amount as any, [
-        "taxable_amount",
-        "subtotal_amount",
-    ]);
-
-    const subTotal =
-        toNumber(taxableAmount) > 0 ? taxableAmount : finalThirdPartyPremium;
-
-    const vatPercent = getValue(amount as any, ["vat_percent"], 13);
-
-    const vatAmount = getValue(amount as any, ["vat_amount"]);
-
-    const stampDuty = getValue(amount as any, ["stamp_duty"]);
-
-    const totalPremium = getValue(amount as any, [
-        "total_amount",
-        "total_premium",
-        "payable_amount",
-    ]);
-
     const premiumRows: PremiumRow[] = [
         {
             key: "section",
@@ -274,62 +251,37 @@ export default function TtaxiPage() {
             type: "section",
         },
         {
-            key: "third_party_premium",
-            label: "Basic Third Party Premium as per CC",
-            value: thirdPartyPremium,
+            key: "tpl_amount",
+            label: "Third Party Premium as per CC",
+            value: getAmountValue(amount, "tpl_amount"),
         },
         {
-            key: "third_party_total",
-            label: "Third Party Premium",
-            value: finalThirdPartyPremium,
-            type: "subtotal",
+            key: "pa_amount",
+            label: "Driver/Passenger Premium",
+            value: getAmountValue(amount, "pa_amount"),
         },
         {
-            key: "subtotal",
-            label: "Sub Total",
-            value: subTotal,
-            type: "subtotal",
+            key: "vat_amount",
+            label: "VAT Amount",
+            value: getAmountValue(amount, "vat_amount"),
         },
         {
-            key: "vat",
-            label: `Add : VAT ${vatPercent}%`,
-            value: vatAmount,
+            key: "stamp_duty",
+            label: "Stamp Duty",
+            value: getAmountValue(amount, "stamp_duty"),
         },
+
         {
-            key: "stamp",
-            label: "Add : Stamp Duty",
-            value: stampDuty,
-        },
-        {
-            key: "total",
+            key: "total_premium_with_vat",
             label: "Total Premium",
-            value: totalPremium,
+            value: getRootValue(
+                premiumData,
+                "total_premium_with_vat",
+                getAmountValue(amount, "total_amount"),
+            ),
             type: "total",
         },
     ];
-
-    const getRowClass = (type?: RowType, index?: number) => {
-        if (type === "section") return "bg-muted/70";
-        if (type === "total") return "border-t-2 border-primary/30 bg-primary/10";
-        if (type === "subtotal") return "bg-muted/30";
-        return index && index % 2 === 0 ? "bg-background" : "bg-muted/10";
-    };
-
-    const getLabelClass = (type?: RowType) => {
-        if (type === "section") return "font-bold text-foreground";
-        if (type === "total") return "font-bold text-primary";
-        if (type === "subtotal") return "font-semibold text-foreground";
-        if (type === "less") return "text-red-600";
-        return "text-muted-foreground";
-    };
-
-    const getValueClass = (type?: RowType) => {
-        if (type === "section") return "font-bold text-foreground";
-        if (type === "total") return "text-base font-bold text-primary";
-        if (type === "subtotal") return "font-semibold text-foreground";
-        if (type === "less") return "font-medium text-red-600";
-        return "font-medium text-foreground";
-    };
 
     if (step === 2 && premiumData) {
         return (
@@ -362,9 +314,7 @@ export default function TtaxiPage() {
                                     Particulars
                                 </th>
 
-                                <th className="px-4 py-3 text-right font-bold">
-                                    Amount
-                                </th>
+                                <th className="px-4 py-3 text-right font-bold">Amount NPR</th>
                             </tr>
                         </thead>
 
@@ -421,7 +371,9 @@ export default function TtaxiPage() {
                                                         : "text-black"
                                                 }`}
                                         >
-                                            {row.type === "less" ? `(${fmt(row.value)})` : fmt(row.value)}
+                                            {row.type === "less"
+                                                ? `(${fmt(row.value)})`
+                                                : fmt(row.value)}
                                         </td>
                                     </tr>
                                 );
@@ -445,6 +397,7 @@ export default function TtaxiPage() {
                         onClick={() => navigate("/login")}
                     >
                         Buy Policy
+                        <ArrowRight className="h-4 w-4" />
                     </Button>
                 </div>
             </>
@@ -463,9 +416,7 @@ export default function TtaxiPage() {
                 </button>
 
                 <div>
-                    <h1 className="text-2xl font-bold text-black">
-                        Taxi Policy
-                    </h1>
+                    <h1 className="text-2xl font-bold text-black">Taxi Policy</h1>
 
                     <p className="mt-1 text-sm text-muted-foreground">
                         Third-party taxi insurance form.
@@ -473,115 +424,133 @@ export default function TtaxiPage() {
                 </div>
             </div>
 
-            <h2 className="text-base font-semibold text-blue-800">
-                Third Party Taxi Insurance
-            </h2>
-            <div className="grid gap-5 md:grid-cols-2">
-                <div>
-                    <Label htmlFor="vehicleCc">Vehicle CC *</Label>
+            {inlineError && (
+                <div className="mb-5 flex items-start gap-2 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+                    <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
+                    {inlineError}
+                </div>
+            )}
 
-                    <Select
-                        value={vehicleCc}
-                        onValueChange={(value) => {
-                            setVehicleCc(value);
-                            setErrors((prev) => ({
-                                ...prev,
-                                vehicleCc: "",
-                            }));
-                        }}
-                    >
-                        <SelectTrigger
-                            id="vehicleCc"
-                            className={`mt-2 ${errors.vehicleCc ? "border-red-500" : ""
-                                }`}
-                        >
-                            <SelectValue placeholder="Select Vehicle CC" />
-                        </SelectTrigger>
+            <Card className="max-w-6xl">
+                <CardContent className="space-y-5 pt-6">
+                    <div>
+                        <h2 className="text-xl font-bold text-black">
+                            Third Party Taxi Insurance
+                        </h2>
 
-                        <SelectContent>
-                            {vehicleCcOptions.map((item) => (
-                                <SelectItem
-                                    key={item.value}
-                                    value={item.value}
+                        <p className="mt-1 text-sm text-muted-foreground">
+                            Enter taxi details to calculate third-party premium.
+                        </p>
+                    </div>
+
+                    <div className="grid gap-5 md:grid-cols-2">
+                        <div>
+                            <Label htmlFor="vehicleCc">Vehicle CC *</Label>
+
+                            <Select
+                                value={vehicleCc}
+                                onValueChange={(value) => {
+                                    setVehicleCc(value);
+                                    setErrors((prev) => ({
+                                        ...prev,
+                                        vehicleCc: "",
+                                    }));
+                                }}
+                            >
+                                <SelectTrigger
+                                    id="vehicleCc"
+                                    className={`mt-2 ${errors.vehicleCc ? "border-red-500" : ""
+                                        }`}
                                 >
-                                    {item.label}
-                                </SelectItem>
-                            ))}
-                        </SelectContent>
-                    </Select>
+                                    <SelectValue placeholder="Select Vehicle CC" />
+                                </SelectTrigger>
 
-                    {errors.vehicleCc && (
-                        <p className="mt-1 text-xs text-red-600">
-                            {errors.vehicleCc}
-                        </p>
-                    )}
-                </div>
+                                <SelectContent>
+                                    {vehicleCcOptions.map((item) => (
+                                        <SelectItem key={item.value} value={item.value}>
+                                            {item.label}
+                                        </SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
 
-                <div>
-                    <Label htmlFor="noOfSeats">
-                        No of Seats Including Driver *
-                    </Label>
+                            {errors.vehicleCc && (
+                                <p className="mt-1 text-xs text-red-600">
+                                    {errors.vehicleCc}
+                                </p>
+                            )}
+                        </div>
 
-                    <Input
-                        id="noOfSeats"
-                        type="text"
-                        inputMode="numeric"
-                        placeholder="Enter no of seats including driver"
-                        className={`mt-2 ${errors.noOfSeats ? "border-red-500" : ""
-                            }`}
-                        value={noOfSeats}
-                        onChange={(e) => {
-                            const value = e.target.value;
+                        <div>
+                            <Label htmlFor="noOfSeats">
+                                No of Seats Including Driver *
+                            </Label>
 
-                            if (value === "" || /^\d+$/.test(value)) {
-                                setNoOfSeats(value);
+                            <Input
+                                id="noOfSeats"
+                                type="text"
+                                inputMode="numeric"
+                                placeholder="Enter no of seats including driver"
+                                className={`mt-2 ${errors.noOfSeats ? "border-red-500" : ""
+                                    }`}
+                                value={noOfSeats}
+                                onChange={(event) => {
+                                    const value = event.target.value.replace(/[^\d]/g, "");
+                                    setNoOfSeats(value);
 
-                                setErrors((prev) => ({
-                                    ...prev,
-                                    noOfSeats: "",
-                                }));
+                                    setErrors((prev) => ({
+                                        ...prev,
+                                        noOfSeats: "",
+                                    }));
+                                }}
+                                onKeyDown={(event) => {
+                                    if (["-", "+", ".", "e", "E"].includes(event.key)) {
+                                        event.preventDefault();
+                                    }
+                                }}
+                            />
+
+                            {errors.noOfSeats && (
+                                <p className="mt-1 text-xs text-red-600">
+                                    {errors.noOfSeats}
+                                </p>
+                            )}
+                        </div>
+                    </div>
+
+                    <div className="flex justify-between pt-2">
+                        <Button
+                            variant="outline"
+                            className="gap-2"
+                            onClick={() =>
+                                navigate("/motor/commercial-vehicle/third-party")
                             }
-                        }}
-                    />
+                        >
+                            <ArrowLeft className="h-4 w-4" />
+                            Back
+                        </Button>
 
-                    {errors.noOfSeats && (
-                        <p className="mt-1 text-xs text-red-600">
-                            {errors.noOfSeats}
-                        </p>
-                    )}
-                </div>
-            </div>
-
-
-            <div className="flex justify-between pt-2">
-                <Button
-                    variant="outline"
-                    className="gap-2"
-                    onClick={() =>
-                        navigate("/motor/commercial-vehicle/third-party")
-                    }
-                >
-                    <ArrowLeft className="h-4 w-4" />
-                    Back
-                </Button>
-
-                <Button
-                    size="lg"
-                    className="px-8"
-                    disabled={loading}
-                    onClick={handleCalculate}
-                >
-                    {loading ? (
-                        <>
-                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                            Calculating...
-                        </>
-                    ) : (
-                        "Calculate"
-                    )}
-                </Button>
-            </div>
-
+                        <Button
+                            size="lg"
+                            className="gap-2 bg-[#f71920] px-8 text-white hover:bg-[#d9151b]"
+                            disabled={loading}
+                            onClick={handleCalculate}
+                        >
+                            {loading ? (
+                                <>
+                                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                    Calculating...
+                                </>
+                            ) : (
+                                <>
+                                    Calculate
+                                    <ArrowRight className="h-4 w-4" />
+                                </>
+                            )}
+                        </Button>
+                    </div>
+                </CardContent>
+            </Card>
         </>
     );
 }

@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import {
     AlertCircle,
     ArrowLeft,
+    ArrowRight,
     ChevronLeft,
     Loader2,
 } from "lucide-react";
@@ -228,7 +229,7 @@ export default function CConstructionEquipmentPage() {
             newErrors.compulsoryExcess = "Compulsory excess is required";
         }
 
-        
+
 
         if (!voluntaryExcess) {
             newErrors.voluntaryExcess = "Voluntary excess is required";
@@ -281,7 +282,7 @@ export default function CConstructionEquipmentPage() {
             get_direct_discount: directDiscount ? "y" : "n",
             vehicle_reg: "e",
             include_towing_charge: towingCharge === "yes" ? "true" : "false",
-            
+            include_rsd_charge: rsdTerrorismRisk === "yes" ? "true" : "false",
         } as any;
 
         try {
@@ -362,6 +363,60 @@ export default function CConstructionEquipmentPage() {
 
     const amount = premiumData?.amount_info;
 
+
+    const premiumRows = [
+        {
+            key: "suminsured",
+            label: "Sum Insured",
+            value: getValue(amount, ["suminsured"]),
+        },
+        {
+            key: "premium_amount",
+            label: "Basic Premium",
+            value: getValue(amount, ["premium_amount"]),
+        },
+        {
+            key: "pa_amount",
+            label: "Driver/Passenger Premium",
+            value: getValue(amount, ["pa_amount"]),
+        },
+        {
+            key: "tpl_amount",
+            label: "Third Party Premium",
+            value: getValue(amount, ["tpl_amount"]),
+        },
+        {
+            key: "pool_amount",
+            label: "RS/MD/ST",
+            value: getValue(amount, ["pool_amount"]),
+        },
+        {
+            key: "taxable_amount",
+            label: "Taxable Amount",
+            value: getValue(amount, ["taxable_amount"]),
+        },
+        {
+            key: "vat_amount",
+            label: "VAT",
+            value: getValue(amount, ["vat_amount"]),
+        },
+        {
+            key: "stamp_duty",
+            label: "Stamp Duty",
+            value: getValue(amount, ["stamp_duty"]),
+        },
+        {
+            key: "total_premium_with_vat",
+            label: "Total Premium",
+            value: getValue(
+                premiumData as any,
+                ["total_premium_with_vat"],
+                getValue(amount, ["total_amount"])
+            ),
+            type: "total",
+        },
+    ];
+
     if (step === 2 && premiumData && amount) {
         return (
             <>
@@ -380,92 +435,64 @@ export default function CConstructionEquipmentPage() {
                         </h1>
 
                         <p className="mt-1 text-sm text-muted-foreground">
-                            Comprehensive premium calculation details.
+                            Comprehensive construction equipment premium calculation details.
                         </p>
                     </div>
                 </div>
-                        <div className="overflow-hidden rounded-lg border">
-                            <table className="w-full text-sm">
-                                <thead>
-                                    <tr className="bg-primary text-primary-foreground">
-                                        <th className="px-5 py-3 text-left">
-                                            Description
-                                        </th>
 
-                                        <th className="px-5 py-3 text-right">
-                                            Amount (NPR)
-                                        </th>
-                                    </tr>
-                                </thead>
+                <div className="overflow-hidden rounded-md border">
+                    <table className="w-full border-collapse text-sm">
+                        <thead>
+                            <tr className="bg-[#e91d25] text-white">
+                                <th className="border-r border-white px-4 py-3 text-left font-bold">
+                                    Particulars
+                                </th>
 
-                                <tbody>
-                                    <PremiumRow
-                                        label="Premium"
-                                        value={getValue(amount, [
-                                            "premium_amount",
-                                            "own_damage_premium",
-                                            "od_premium",
-                                        ])}
-                                    />
+                                <th className="px-4 py-3 text-right font-bold">
+                                    Amount NPR
+                                </th>
+                            </tr>
+                        </thead>
 
-                                    <PremiumRow
-                                        label="Third Party Premium"
-                                        value={getValue(amount, [
-                                            "tpl_amount",
-                                            "third_party_premium",
-                                        ])}
-                                    />
+                        <tbody>
+                            {premiumRows.map((row) => {
+                                if (row.type === "total") {
+                                    return (
+                                        <tr
+                                            key={row.key}
+                                            className="bg-[#b71319] text-white"
+                                        >
+                                            <td className="border-r border-white px-4 py-4 text-base font-bold">
+                                                {row.label}
+                                            </td>
 
-                                    <PremiumRow
-                                        label="Pool Premium"
-                                        value={getValue(amount, [
-                                            "pool_amount",
-                                        ])}
-                                    />
+                                            <td className="px-4 py-4 text-right text-base font-bold">
+                                                {fmt(row.value)}
+                                            </td>
+                                        </tr>
+                                    );
+                                }
 
-                                    <PremiumRow
-                                        label="Taxable Amount"
-                                        value={getValue(amount, [
-                                            "taxable_amount",
-                                            "subtotal_amount",
-                                        ])}
-                                    />
-
-                                    <PremiumRow
-                                        label={`VAT ${getValue(
-                                            amount,
-                                            ["vat_percent"],
-                                            13
-                                        )}%`}
-                                        value={getValue(amount, ["vat_amount"])}
-                                    />
-
-                                    <PremiumRow
-                                        label="Stamp Duty"
-                                        value={getValue(amount, ["stamp_duty"])}
-                                    />
-
-                                    <tr className="bg-primary/10 font-bold text-primary">
-                                        <td className="px-5 py-4">
-                                            Total Premium
+                                return (
+                                    <tr
+                                        key={row.key}
+                                        className="border-b bg-[#fff7f3] last:border-b-0"
+                                    >
+                                        <td className="border-r border-white px-4 py-3 text-black">
+                                            {row.label}
                                         </td>
 
-                                        <td className="px-5 py-4 text-right">
-                                            NPR{" "}
-                                            {fmt(
-                                                getValue(amount, [
-                                                    "total_amount",
-                                                    "total_premium",
-                                                    "payable_amount",
-                                                ])
-                                            )}
+                                        <td className="px-4 py-3 text-right font-medium text-black">
+                                            {fmt(row.value)}
                                         </td>
                                     </tr>
-                                </tbody>
-                            </table>
-                        </div>
+                                );
+                            })}
+                        </tbody>
+                    </table>
+                </div>
 
-                <div className="mt-6 flex gap-3">
+                <div className="mt-8 flex items-center justify-between gap-3">
                     <Button
                         variant="outline"
                         className="gap-2"
@@ -476,11 +503,11 @@ export default function CConstructionEquipmentPage() {
                     </Button>
 
                     <Button
-                        onClick={() =>
-                            navigate("/motor/commercial-vehicle/comprehensive")
-                        }
+                        className="gap-2 bg-[#f71920] text-white hover:bg-[#d9151b]"
+                        onClick={() => navigate("/login")}
                     >
-                        Change Category
+                        Buy Policy
+                        <ArrowRight className="h-4 w-4" />
                     </Button>
                 </div>
             </>
@@ -529,7 +556,21 @@ export default function CConstructionEquipmentPage() {
                                 )
                             }
                         />
-
+                        <SelectBox
+                            label="Year of Manufacture *"
+                            id="yearOfManufacture"
+                            value={yearOfManufacture}
+                            error={errors.yearOfManufacture}
+                            placeholder="Select year"
+                            options={yearOptions.map((year) => ({
+                                label: year,
+                                value: year,
+                            }))}
+                            onChange={(value) => {
+                                setYearOfManufacture(value);
+                                clearError("yearOfManufacture");
+                            }}
+                        />
                         <InputBox
                             label="No of Seats Including Driver *"
                             id="noOfSeats"
@@ -573,21 +614,7 @@ export default function CConstructionEquipmentPage() {
                             }
                         />
 
-                        <SelectBox
-                            label="Year of Manufacture *"
-                            id="yearOfManufacture"
-                            value={yearOfManufacture}
-                            error={errors.yearOfManufacture}
-                            placeholder="Select year"
-                            options={yearOptions.map((year) => ({
-                                label: year,
-                                value: year,
-                            }))}
-                            onChange={(value) => {
-                                setYearOfManufacture(value);
-                                clearError("yearOfManufacture");
-                            }}
-                        />
+
 
                         <div>
                             <Label htmlFor="compulsoryExcess">
@@ -604,11 +631,10 @@ export default function CConstructionEquipmentPage() {
                                 }
                                 disabled
                                 readOnly
-                                className={`mt-2 cursor-not-allowed bg-muted ${
-                                    errors.compulsoryExcess
-                                        ? "border-red-500"
-                                        : ""
-                                }`}
+                                className={`mt-2 cursor-not-allowed bg-muted ${errors.compulsoryExcess
+                                    ? "border-red-500"
+                                    : ""
+                                    }`}
                             />
 
                             <p className="mt-1 text-xs text-muted-foreground">
@@ -622,7 +648,7 @@ export default function CConstructionEquipmentPage() {
                             )}
                         </div>
 
-                        
+
 
                         <SelectBox
                             label="Voluntary Excess *"
@@ -657,6 +683,15 @@ export default function CConstructionEquipmentPage() {
                             placeholder="Select towing charge"
                             options={yesNoOptions}
                             onChange={setTowingCharge}
+                        />
+
+                        <SelectBox
+                            label="RS/MD/ST Risk"
+                            id="rsdTerrorismRisk"
+                            value={rsdTerrorismRisk}
+                            placeholder="Select"
+                            options={yesNoOptions}
+                            onChange={setRsdTerrorismRisk}
                         />
 
                         <div className="grid md:grid-cols-2 gap-4 pt-2">
@@ -699,7 +734,7 @@ export default function CConstructionEquipmentPage() {
 
                         <Button
                             size="lg"
-                            className="px-8"
+                            className="gap-2 px-8"
                             disabled={loading || compulsoryLoading}
                             onClick={handleCalculate}
                         >
@@ -709,7 +744,10 @@ export default function CConstructionEquipmentPage() {
                                     Calculating...
                                 </>
                             ) : (
-                                "Calculate"
+                                <>
+                                    Calculate
+                                    <ArrowRight className="h-4 w-4" />
+                                </>
                             )}
                         </Button>
                     </div>

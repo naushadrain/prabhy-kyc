@@ -46,6 +46,30 @@ export const Home = () => {
       icon: "/Property-white.svg",
       route: "/home-insurance",
     },
+    {
+      id: "Burglary Housebreaking",
+      title: "Burglary & Housebreaking Insurance",
+      icon: "/burglary-housebreaking.svg",
+      route: "/burglary-housebreaking",
+    },
+    {
+      id: "cash",
+      title: "Cash Insurance",
+      icon: "/cash-insurance.svg",
+      route: "/cash-insurance",
+    },
+    {
+      id: "marine",
+      title: "Marine Insurance",
+      icon: "/marine-insurance.svg",
+      route: "/marine-insurance",
+    },
+    {
+      id: "agriculture",
+      title: "Agriculture Insurance",
+      icon: "/agriculture-insurance.svg",
+      route: "/agriculture-insurance",
+    }
   ];
 
   const handlePlanSelect = (planId: string, route: string) => {

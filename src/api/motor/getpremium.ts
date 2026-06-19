@@ -25,6 +25,7 @@ export type GetPremiumRequestPV = {
     include_personal_use_discount?: string;
     tailor_amount?: string;
     passanger_carrying_capacity?:string;
+    include_rsd_charge?: string;
 };
 export type GetPremiumRequestCV = {
     class_id: string;
@@ -46,6 +47,7 @@ export type GetPremiumRequestCV = {
     vehicle_reg?: string;
     include_towing_charge?: string;
     include_personal_use_discount?: string;
+    include_rsd_charge?: string;
 };
 
 export async function getMotorPremiumPV(payload: GetPremiumRequestPV) {
@@ -74,6 +76,7 @@ export async function getMotorPremiumPV(payload: GetPremiumRequestPV) {
         vehicle_reg: payload.vehicle_reg,
         include_towing_charge: payload.include_towing_charge,
         include_personal_use_discount: payload.include_personal_use_discount,
+        include_rsd_charge: payload.include_rsd_charge,
     });
 
     const { unixTs, signature } = buildSignatureForBody(bodyStr);
@@ -122,6 +125,7 @@ export async function getMotorPremiumCV(payload: GetPremiumRequestCV) {
         vehicle_reg: payload.vehicle_reg,
         include_towing_charge: payload.include_towing_charge,
         include_personal_use_discount: payload.include_personal_use_discount,
+        include_rsd_charge: payload.include_rsd_charge,
     });
 
     const { unixTs, signature } = buildSignatureForBody(bodyStr);
